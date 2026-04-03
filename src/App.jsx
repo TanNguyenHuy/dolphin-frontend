@@ -56,7 +56,6 @@ const AnimatedNumber = ({ value, className = '' }) => {
 };
 
 export default function App() {
-    // Đã thay đổi: Check cả bộ nhớ tạm và bộ nhớ vĩnh viễn
     const [authUser, setAuthUser] = useState(() => {
         if (typeof window !== 'undefined') { 
             const sessionUser = sessionStorage.getItem('authUser');
@@ -101,14 +100,14 @@ export default function App() {
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
 
+    // HỆ THỐNG PHÂN QUYỀN MỚI
     const isAdmin = authUser?.role === 'admin';
-    const isEditor = authUser?.role === 'editor';
-    const canEdit = isAdmin || isEditor;
+    const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
+    const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); if(isAdmin) fetchUsers(); } }, [authUser]);
 
-    // Xóa sạch cả 2 loại bộ nhớ khi đăng xuất
     const handleLogout = () => { 
         setAuthUser(null); 
         localStorage.removeItem('authUser'); 
@@ -178,9 +177,9 @@ export default function App() {
         catch (err) { alert("Lỗi tạo mới."); } finally { setIsProcessingCreate(false); }
     };
 
-    const handleDeleteSession = (e, id) => { if(!canEdit) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
+    const handleDeleteSession = (e, id) => { if(!canDelete) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
-    const handleDeleteRow = (id) => { if (!canEdit) return; setRowToDelete(id); setShowDeleteRowModal(true); };
+    const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
 
     const triggerRestore = () => { if(isAdmin) setShowRestoreModal(true); };
@@ -194,7 +193,7 @@ export default function App() {
     
     const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
     const handleAddBale = async (e) => { e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; try { const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); const updated = [...importedBales, res.data]; setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); setBaleName(''); setBaleCost(''); setBaleQty(''); } catch (err) { alert("Lỗi DB Lô hàng."); } };
-    const handleDeleteBale = async (id) => { if(!canEdit) return; try { await axios.delete(`${API_URL}/bales/${id}`); const updated = importedBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
+    const handleDeleteBale = async (id) => { if(!canDelete) return; try { await axios.delete(`${API_URL}/bales/${id}`); const updated = importedBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
@@ -271,8 +270,9 @@ export default function App() {
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
-    const progressPercent = Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100);if (!authUser) {
-        // Phân loại lưu trữ theo lựa chọn "Ghi nhớ tôi"
+    const progressPercent = Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100);
+
+    if (!authUser) {
         return <Auth onLoginSuccess={(u, rememberMe) => { 
             setAuthUser(u); 
             if (rememberMe) {
@@ -328,7 +328,7 @@ export default function App() {
                             {isAdmin && <Crown size={14} className="text-[#FF9500] shrink-0" title="Quản trị viên"/>}
                         </div>
                         <p className="text-[10px] md:text-[11px] font-semibold text-[#5c5c5c] tracking-wide truncate">
-                            {isAdmin ? 'Quản trị viên' : (isEditor ? 'Người chỉnh sửa' : 'Chỉ xem')}
+                            {isAdmin ? 'Quản trị viên' : (canEdit ? 'Có quyền chỉnh sửa' : 'Chỉ xem')}
                         </p>
                     </div>
                 </a>
@@ -348,7 +348,6 @@ export default function App() {
                             )}
                         </>
                     )}
-                    {/* ĐÃ SỬA: Loại bỏ hidden, nút đăng xuất hiện ở mọi thiết bị */}
                     <button onClick={handleLogout} title="Đăng xuất" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] rounded-full hover:bg-[#FF3B30]/20 transition-all shadow-sm active:scale-95 shrink-0"><LogOut size={16} className="md:w-[18px] md:h-[18px]"/></button>
                     <button onClick={triggerShutdown} title="Tắt Server" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-[#FF3B30]/15 text-[#FF3B30] rounded-full hover:bg-[#FF3B30]/30 transition-all active:scale-95 border border-[#FF3B30]/10 shrink-0"><Power size={16} className="md:w-[18px] md:h-[18px]"/></button>
                 </div>
@@ -409,7 +408,7 @@ export default function App() {
 
             <div className="max-w-[1200px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 
-                {/* --- GIAO DIỆN QUẢN TRỊ USERS (ADMIN PANEL) --- */}
+                {/* --- GIAO DIỆN QUẢN TRỊ USERS (ADMIN PANEL - NÂNG CẤP FULL QUYỀN LỰC) --- */}
                 {view === 'USERS' && isAdmin && (
                     <div className="space-y-6 animate-fade-in-up">
                         <div className="flex items-center justify-between pb-4 border-b border-gray-200/60">
@@ -418,47 +417,61 @@ export default function App() {
                         </div>
                         <div className="grid gap-4">
                             {usersList.map((user) => {
-                                const isBanned = user.ban_until > Date.now();
+                                const id = user._id || user.id;
+                                const perms = user.permissions || { canView: false, canEdit: false, canDelete: false };
+                                const isMe = (authUser.id === id) || (authUser._id === id);
+
                                 return (
-                                    <div key={user.id} className="liquid-glass p-4 rounded-[20px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div>
+                                    <div key={id} className={`liquid-glass p-4 rounded-[20px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${user.isBanned ? 'border-[#FF3B30]/30 bg-[#FF3B30]/5' : ''}`}>
+                                        <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-[#1D1D1F] text-[16px]">{user.name}</h3>
-                                                {user.role === 'admin' && <Crown size={14} className="text-[#FF9500]"/>}
-                                                {isBanned && <span className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">BỊ KHÓA</span>}
+                                                {user.role === 'admin' && <Crown size={14} className="text-[#FF9500]" title="Chủ tịch"/>}
+                                                {!user.isApproved && <span className="bg-[#FF9500] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">CHỜ DUYỆT</span>}
+                                                {user.isBanned && <span className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">BỊ CẤM</span>}
                                             </div>
                                             <p className="text-[13px] text-[#5c5c5c] font-medium">{user.email}</p>
-                                            {isBanned && <p className="text-[11px] text-[#FF3B30] font-semibold mt-1">Mở khóa lúc: {new Date(user.ban_until).toLocaleString('vi-VN')}</p>}
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {/* Sửa Quyền */}
-                                            <select 
-                                                value={user.role} 
-                                                onChange={(e) => handleUpdateUser(user.id, { role: e.target.value })}
-                                                className="bg-white/40 border border-white/60 text-[#1D1D1F] text-[13px] font-semibold rounded-xl px-3 py-2 outline-none"
-                                            >
-                                                <option value="admin">Admin (Toàn quyền)</option>
-                                                <option value="editor">Editor (Thêm/Sửa/Xóa)</option>
-                                                <option value="viewer">Viewer (Chỉ xem)</option>
-                                            </select>
 
-                                            {/* Phạt / Cấm */}
-                                            {user.id !== authUser.id && (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {/* KHỐI DUYỆT */}
+                                            {!user.isApproved ? (
+                                                <button onClick={() => handleUpdateUser(id, { isApproved: true })} className="bg-[#1DB2A0] hover:bg-[#158f80] text-white text-[12px] font-bold px-4 py-2 rounded-xl transition shadow-sm">
+                                                    Duyệt Vào
+                                                </button>
+                                            ) : (
+                                                <button onClick={() => handleUpdateUser(id, { isApproved: false })} disabled={isMe} className="bg-white/40 hover:bg-white text-[#5c5c5c] text-[12px] font-bold px-3 py-2 rounded-xl transition border border-white/50 disabled:opacity-50">
+                                                    Hủy Duyệt
+                                                </button>
+                                            )}
+
+                                            {/* KHỐI PHÂN QUYỀN (Xem/Sửa/Xóa) */}
+                                            <div className="flex gap-1 bg-white/30 p-1 rounded-xl border border-white/50 items-center">
+                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
+                                                    <input type="checkbox" checked={perms.canView} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canView: e.target.checked } })} disabled={isMe} className="accent-[#33A1FD]" />
+                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Xem</span>
+                                                </label>
+                                                <div className="w-[1px] h-4 bg-white/60"></div>
+                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
+                                                    <input type="checkbox" checked={perms.canEdit} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canEdit: e.target.checked } })} disabled={isMe} className="accent-[#26D0CE]" />
+                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Sửa</span>
+                                                </label>
+                                                <div className="w-[1px] h-4 bg-white/60"></div>
+                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#FF3B30]/10 rounded-lg transition'}`}>
+                                                    <input type="checkbox" checked={perms.canDelete} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canDelete: e.target.checked } })} disabled={isMe} className="accent-[#FF3B30]" />
+                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Xóa</span>
+                                                </label>
+                                            </div>
+
+                                            {/* KHỐI TRỪNG PHẠT (Cấm/Xóa) */}
+                                            {!isMe && (
                                                 <>
-                                                    <select 
-                                                        onChange={(e) => {
-                                                            if(e.target.value !== "") handleUpdateUser(user.id, { ban_days: Number(e.target.value) });
-                                                            e.target.value = ""; // reset
-                                                        }}
-                                                        className="bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-[13px] font-semibold rounded-xl px-3 py-2 outline-none cursor-pointer"
-                                                    >
-                                                        <option value="">Lệnh cấm...</option>
-                                                        <option value="1">Cấm 1 ngày</option>
-                                                        <option value="3">Cấm 3 ngày</option>
-                                                        <option value="7">Cấm 7 ngày</option>
-                                                        <option value="0">✅ Mở khóa ngay</option>
-                                                    </select>
-                                                    <button onClick={() => handleDeleteUser(user.id)} className="w-9 h-9 flex justify-center items-center bg-[#FF3B30]/10 hover:bg-[#FF3B30] text-[#FF3B30] hover:text-white rounded-xl transition-colors"><Trash2 size={16}/></button>
+                                                    <button onClick={() => handleUpdateUser(id, { isBanned: !user.isBanned })} className={`px-3 py-2 text-[12px] font-bold rounded-xl transition border shadow-sm ${user.isBanned ? 'bg-[#1DB2A0]/10 text-[#1DB2A0] border-[#1DB2A0]/20 hover:bg-[#1DB2A0]/20' : 'bg-white/40 text-[#FF3B30] border-white/50 hover:bg-[#FF3B30]/10'}`}>
+                                                        {user.isBanned ? 'Mở Khóa' : 'Cấm Cửa'}
+                                                    </button>
+                                                    <button onClick={() => handleDeleteUser(id)} className="w-9 h-9 flex justify-center items-center bg-[#FF3B30]/10 hover:bg-[#FF3B30] text-[#FF3B30] hover:text-white rounded-xl transition-colors shadow-sm">
+                                                        <Trash2 size={16}/>
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
@@ -546,12 +559,8 @@ export default function App() {
                                                                 <Wallet size={14}/>
                                                             </button>
                                                         )}
-                                                        {canEdit && (
-                                                            <>
-                                                                <button onClick={(e) => handleStartEditSession(e, ss)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>
-                                                                <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] hover:border-[#FF3B30]/30 rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>
-                                                            </>
-                                                        )}
+                                                        {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
+                                                        {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] hover:border-[#FF3B30]/30 rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
                                                         <ChevronRight size={18} className="text-[#8E8E93] ml-1 hidden xl:block" />
                                                     </div>
                                                 </div>
@@ -586,12 +595,8 @@ export default function App() {
                                                                 <Wallet size={12}/>
                                                             </button>
                                                         )}
-                                                        {canEdit && (
-                                                            <>
-                                                                <button onClick={(e) => handleStartEditSession(e, ss)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={12}/></button>
-                                                                <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={12}/></button>
-                                                            </>
-                                                        )}
+                                                        {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={12}/></button>}
+                                                        {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={12}/></button>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -666,7 +671,7 @@ export default function App() {
                                                     return (
                                                     <div key={b.id} className="p-3 bg-white/30 border border-white/40 rounded-[14px] flex items-center justify-between group shadow-sm min-w-0">
                                                         <div className="flex-1 min-w-0 pr-2"><div className="text-[13px] font-bold text-[#1D1D1F] truncate">{b.name || ''}</div><div className="text-[11px] text-[#5c5c5c] mt-0.5 font-medium truncate">SL: <span className="font-semibold text-[#1D1D1F]">{b.qty || 0}</span> • TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}</div></div>
-                                                        <div className="flex items-center gap-2 shrink-0"><span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>{canEdit && <button type="button" onClick={() => handleDeleteBale(b.id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white/40 hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-white/50 shadow-sm"><X size={12}/></button>}</div>
+                                                        <div className="flex items-center gap-2 shrink-0"><span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>{canDelete && <button type="button" onClick={() => handleDeleteBale(b.id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white/40 hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-white/50 shadow-sm"><X size={12}/></button>}</div>
                                                     </div>
                                                 )})}
                                             </div>
@@ -742,14 +747,10 @@ export default function App() {
                                                                 <div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
                                                                 <div className={`text-[17px] xl:text-[19px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
                                                             </div>
-                                                            <div className="flex items-center gap-1.5 shrink-0 border-l border-white/40 pl-3">
+                                                            <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-white/40 ml-2">
                                                                 {index === 0 && <span className="bg-[#26D0CE] text-white text-[9px] font-bold px-2 py-[3px] rounded-full uppercase tracking-widest shadow-sm mr-1">Mới</span>}
-                                                                {canEdit && (
-                                                                    <>
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={14}/></button>
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={14}/></button>
-                                                                    </>
-                                                                )}
+                                                                {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={14}/></button>}
+                                                                {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={14}/></button>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -772,12 +773,8 @@ export default function App() {
                                                             <div className="text-right shrink-0"><div className="text-[6.5px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div><div className={`text-[14px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div></div>
                                                             <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-white/40 ml-2">
                                                                 {index === 0 && <span className="bg-[#26D0CE] text-white text-[7px] font-bold px-1.5 py-[2px] rounded-full uppercase tracking-widest shadow-sm">Mới</span>}
-                                                                {canEdit && (
-                                                                    <>
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>
-                                                                    </>
-                                                                )}
+                                                                {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
+                                                                {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
                                                             </div>
                                                         </div>
                                                     </div>
