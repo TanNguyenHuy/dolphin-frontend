@@ -4,7 +4,7 @@ import { Trash2, Plus, Calendar, Download, Fish, Power, Save, Upload, Crown, X, 
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 
-const API_URL = typeof window !== 'undefined' ? `http://${window.location.hostname}:5000/api` : 'http://localhost:5000/api'; 
+const API_URL = 'https://dolphin-backend-dkev.onrender.com/api';
 const AD_COST_PER_SALE = 350000; 
 
 const formatCurrency = (val) => { const num = Number(val); return isNaN(num) ? "0" : new Intl.NumberFormat('vi-VN', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.round(num)); };

@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Mail, Lock, User, KeyRound, CheckCircle2, ArrowLeft, Eye, EyeOff, LogIn, UserPlus, RefreshCw } from 'lucide-react';
 
 // DÁN LINK RENDER CỦA BẠN VÀO ĐÂY (Nhớ giữ lại chữ /api ở cuối nhé)
-const API_URL = 'https://dolphin-backend-abcd.onrender.com/api';
+const API_URL = 'https://dolphin-backend-dkev.onrender.com/api';
+
 export default function Auth({ onLoginSuccess }) {
     const [viewMode, setViewMode] = useState('login');
     const [formData, setFormData] = useState({ name: '', email: '', password: '' });
