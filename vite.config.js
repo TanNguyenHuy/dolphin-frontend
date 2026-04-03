@@ -1,11 +1,8 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    host: true, // Dòng này cực quan trọng để vào bằng IP Tailscale
-    port: 5173
-  }
+  base: "./", // <--- CHỈ CẦN THÊM ĐÚNG DÒNG NÀY ĐỂ FIX LỖI GIAO DIỆN
 })
