@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/react'
+import react from '@vitejs/react-swc'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "./", // <--- CHỈ CẦN THÊM ĐÚNG DÒNG NÀY ĐỂ FIX LỖI GIAO DIỆN
+  base: "./", 
 })
