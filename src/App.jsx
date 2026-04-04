@@ -71,7 +71,7 @@ export default function App() {
         try { 
             const res = await axios.get(`${API_URL}/sessions`); 
             const sessionsData = Array.isArray(res.data) ? res.data : [];
-            const enrichedSessions = await Promise.all(sessionsData.map(async (ss) => {
+            let enrichedSessions = await Promise.all(sessionsData.map(async (ss) => {
                 try {
                     const detailRes = await axios.get(`${API_URL}/data/${ss.id}`);
                     const dailyList = detailRes.data?.daily || [];
@@ -98,6 +98,16 @@ export default function App() {
                 } catch(e) { ss.quang_cao = 0; ss.tong_tien_ton_computed = 0; ss.actual_start_date = ss.start_date; ss.actual_end_date = ss.start_date; }
                 return ss;
             }));
+
+            // SẮP XẾP ĐỢT BÁN: MỚI NHẤT LÊN TRÊN
+            enrichedSessions.forEach((ss, idx) => ss.originalIndex = idx);
+            enrichedSessions.sort((a, b) => {
+                const dateA = new Date(a.actual_start_date || a.start_date || 0).getTime();
+                const dateB = new Date(b.actual_start_date || b.start_date || 0).getTime();
+                if (dateB === dateA) return b.originalIndex - a.originalIndex;
+                return dateB - dateA;
+            });
+
             setSessions(enrichedSessions); 
         } catch (err) {} 
     };
@@ -195,8 +205,22 @@ export default function App() {
                 avgCost = detailData.computed?.trung_binh || 0; tien_ton = Math.round(sl_con * avgCost); loi = Math.round(row.so_tien_ban_duoc || 0);
             }
             if ((row.so_tien_ban_duoc || 0) > maxRevenue && (row.so_tien_ban_duoc || 0) > 0) { maxRevenue = row.so_tien_ban_duoc; mvpRowId = row.id; }
-            exactTotalVonTon += tien_ton; return { ...row, loi, sl_nhap, sl_con, tien_ton };
+            return { ...row, loi, sl_nhap, sl_con, tien_ton, originalIndex: index }; // Lưu index gốc để sort ổn định
         });
+
+        // SẮP XẾP SẢN PHẨM: MỚI NHẤT LÊN TRÊN
+        enrichedDaily.sort((a, b) => {
+            const dateA = new Date(a.ngay_ban || 0).getTime();
+            const dateB = new Date(b.ngay_ban || 0).getTime();
+            if (dateB === dateA) return b.originalIndex - a.originalIndex; // Cùng ngày thì cái mới nhập nhảy lên trên
+            return dateB - dateA;
+        });
+
+        // ĐÁNH LẠI SỐ THỨ TỰ (STT) TỪ LỚN ĐẾN BÉ
+        enrichedDaily = enrichedDaily.map((row, idx) => ({
+            ...row,
+            stt: enrichedDaily.length - idx
+        }));
     }
 
     useEffect(() => {
@@ -356,7 +380,7 @@ export default function App() {
                     <DashboardView 
                         dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} 
                         globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} 
-                        totalRevenueForTax={totalRevenueForTax} /* LÀ DÒNG CHỮ NÀY ĐÂY Ạ */
+                        totalRevenueForTax={totalRevenueForTax} 
                         safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} 
                         isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} 
                         setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
