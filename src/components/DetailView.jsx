@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Wallet } from 'lucide-react';
+import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
 export default function DetailView({
@@ -10,7 +10,6 @@ export default function DetailView({
     isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete
 }) {
 
-    // Hàm tính số ngày
     const calculateDaysDiff = (start, end) => { 
         if (!start || !end) return 0; 
         const d1 = new Date(start); const d2 = new Date(end); 
@@ -130,7 +129,6 @@ export default function DetailView({
                                     return (
                                         <div key={row.id || index} className={`p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
                                             
-                                            {/* GIAO DIỆN MÁY TÍNH */}
                                             <div className="hidden lg:flex items-center w-full min-w-0">
                                                 <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                                                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
@@ -166,7 +164,6 @@ export default function DetailView({
                                                 </div>
                                             </div>
 
-                                            {/* GIAO DIỆN ĐIỆN THOẠI */}
                                             <div className="flex flex-col gap-3 w-full lg:hidden min-w-0">
                                                 <div className="flex items-start gap-3 w-full min-w-0">
                                                     <div className="w-8 h-8 mt-0.5 rounded-full bg-white/60 border border-white/80 text-[#1D1D1F] flex items-center justify-center font-bold text-[10px] shrink-0 tabular-nums shadow-sm">{row.stt || 0}</div>

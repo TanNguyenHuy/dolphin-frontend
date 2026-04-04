@@ -7,6 +7,7 @@ import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
+
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
         if (typeof window !== 'undefined') { 
@@ -149,9 +150,6 @@ export default function App() {
     const triggerShutdown = () => setShowShutdownConfirm(true);
     const confirmShutdown = async () => { setShowShutdownConfirm(false); setIsShutdown(true); try { await axios.post(`${API_URL}/shutdown`); } catch (err) {} };
 
-    // ==========================================
-    // CỖ MÁY TÍNH TOÁN ĐÃ ĐƯỢC LẮP LẠI VÀO ĐÂY
-    // ==========================================
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
@@ -201,6 +199,11 @@ export default function App() {
         });
     }
 
+    useEffect(() => {
+        if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); } 
+        else { setShowFireworks(false); }
+    }, [view, isTargetReached, currentId]);
+
     const progressPercent = Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100);
 
     const handleExport = () => { 
@@ -208,10 +211,6 @@ export default function App() {
         enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
-
-    // ==========================================
-    // KẾT THÚC CỖ MÁY TÍNH TOÁN
-    // ==========================================
 
     if (!authUser) {
         return <Auth onLoginSuccess={(u, rememberMe) => { 
