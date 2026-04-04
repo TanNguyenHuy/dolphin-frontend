@@ -1,59 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, Calendar, Download, Fish, Power, Save, Upload, Crown, X, AlertTriangle, RefreshCw, Pencil, Box, Package, Percent, Link as LinkIcon, BarChart3, ChevronRight, ChevronLeft, LogOut, Users, ShieldAlert, ShieldCheck, Ban, Wallet } from 'lucide-react';
+import { Trash2, Plus, Calendar, Download, Fish, Power, Save, Upload, Crown, X, AlertTriangle, RefreshCw, Pencil, Box, Package, Percent, Link as LinkIcon, BarChart3, ChevronRight, ChevronLeft, LogOut, Users, Wallet } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
-
-const API_URL = 'https://dolphin-backend-dkev.onrender.com/api';
-const AD_COST_PER_SALE = 350000; 
-
-const formatCurrency = (val) => { const num = Number(val); return isNaN(num) ? "0" : new Intl.NumberFormat('vi-VN', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.round(num)); };
-const formatInput = (val) => { if (val === null || val === undefined) return ""; const num = val.toString().replace(/,/g, ""); return (isNaN(num) || num === "") ? "" : Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
-const parseInput = (val) => { if (!val) return 0; const parsed = parseFloat(val.toString().replace(/,/g, "")); return isNaN(parsed) ? 0 : parsed; };
-const formatDateDisplay = (dateStr) => { if(!dateStr || typeof dateStr !== 'string') return "..."; const parts = dateStr.split('-'); if (parts.length !== 3) return dateStr; return `${parts[2]}/${parts[1]}/${parts[0]}`; };
-const getTodayString = () => { try { return new Date().toISOString().split('T')[0]; } catch { return "2026-01-01"; } };
-
-const getSessionName = (name, start, end) => {
-    const safeName = String(name || '').trim();
-    if (!safeName || safeName === 'Thống kê tự động' || safeName.startsWith('Thống kê từ') || safeName.startsWith('Thống kê ngày') || safeName.includes('➔')) {
-        const sStr = formatDateDisplay(start); const eStr = formatDateDisplay(end);
-        if (sStr === eStr) return `Ngày ${sStr}`;
-        if (sStr.slice(-4) === eStr.slice(-4) && sStr.slice(-4) !== "...") return `${sStr.slice(0, 5)} ➔ ${eStr}`;
-        return `${sStr} ➔ ${eStr}`;
-    }
-    return safeName; 
-};
-
-const Confetti = () => {
-    const pieces = useMemo(() => Array.from({ length: 120 }).map((_, i) => ({
-        id: i, left: `${Math.random() * 100}%`, width: `${Math.random() * 8 + 6}px`, height: `${Math.random() * 14 + 8}px`,
-        bg: ['#26D0CE', '#33A1FD', '#FF3B30', '#FF9500', '#1DB2A0', '#FF2D55'][Math.floor(Math.random() * 6)],
-        dur: `${Math.random() * 3 + 2}s`, del: `${Math.random() * 1.5}s`, rot: `${Math.random() * 360}deg`
-    })), []);
-    return (
-        <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
-            <style>{`@keyframes confettiFall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(var(--rot)); opacity: 0; } }`}</style>
-            {pieces.map(p => (<div key={p.id} className="absolute top-[-10%]" style={{ left: p.left, width: p.width, height: p.height, backgroundColor: p.bg, '--rot': p.rot, animation: `confettiFall ${p.dur} linear ${p.del} forwards` }} />))}
-        </div>
-    );
-};
-
-const AnimatedNumber = ({ value, className = '' }) => {
-    const [displayValue, setDisplayValue] = useState(Number(value) || 0);
-    useEffect(() => {
-        const end = Math.round(Number(value) || 0); if (isNaN(end)) return;
-        let start = displayValue; if (start === end) return;
-        const duration = 800; const startTime = performance.now(); let animationFrame;
-        const update = (currentTime) => {
-            const progress = Math.min((currentTime - startTime) / duration, 1);
-            setDisplayValue(Math.round(start + (end - start) * (1 - Math.pow(1 - progress, 4))));
-            if (progress < 1) animationFrame = requestAnimationFrame(update); else setDisplayValue(end);
-        };
-        animationFrame = requestAnimationFrame(update);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [value]);
-    return <span className={`tabular-nums tracking-tight ${className}`}>{formatCurrency(displayValue)}</span>;
-};
+import AdminPanel from './components/AdminPanel'; // IMPORT COMPONENT ADMIN
+import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getTodayString, getSessionName, Confetti, AnimatedNumber } from './utils'; // IMPORT CÔNG CỤ
 
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
@@ -67,7 +18,6 @@ export default function App() {
     });
 
     const [view, setView] = useState('DASHBOARD');
-    const [usersList, setUsersList] = useState([]);
     
     const [sessions, setSessions] = useState([]);
     const [currentId, setCurrentId] = useState(null);
@@ -105,7 +55,7 @@ export default function App() {
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
-    useEffect(() => { if(authUser) { fetchDashboard(); if(isAdmin) fetchUsers(); } }, [authUser]);
+    useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
     const handleLogout = () => { 
         setAuthUser(null); 
@@ -114,10 +64,6 @@ export default function App() {
         setView('DASHBOARD'); 
         setDetailData(null); 
     };
-
-    const fetchUsers = async () => { try { const res = await axios.get(`${API_URL}/users`); setUsersList(res.data); } catch(err){} };
-    const handleUpdateUser = async (id, updateData) => { try { await axios.put(`${API_URL}/users/${id}`, updateData); fetchUsers(); } catch(err) { alert('Lỗi cập nhật user!'); } };
-    const handleDeleteUser = async (id) => { if(window.confirm('Xóa vĩnh viễn tài khoản này?')) { try { await axios.delete(`${API_URL}/users/${id}`); fetchUsers(); } catch(err) {} } };
 
     const calculateDaysDiff = (start, end) => { 
         if (!start || !end) return 0; 
@@ -409,76 +355,7 @@ export default function App() {
                 
                 {/* --- GIAO DIỆN QUẢN TRỊ USERS (ADMIN PANEL - NÂNG CẤP FULL QUYỀN LỰC) --- */}
                 {view === 'USERS' && isAdmin && (
-                    <div className="space-y-6 animate-fade-in-up">
-                        <div className="flex items-center justify-between pb-4 border-b border-gray-200/60">
-                            <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] font-semibold bg-white/30 px-4 py-2 rounded-full border border-white/40 shadow-sm"><ChevronLeft size={18}/> Về Dashboard</button>
-                            <h2 className="text-[20px] md:text-[24px] font-black text-[#1D1D1F]">Quản lý Tài Khoản</h2>
-                        </div>
-                        <div className="grid gap-4">
-                            {usersList.map((user) => {
-                                const id = user._id || user.id;
-                                const perms = user.permissions || { canView: false, canEdit: false, canDelete: false };
-                                const isMe = (authUser.id === id) || (authUser._id === id);
-
-                                return (
-                                    <div key={id} className={`liquid-glass p-4 rounded-[20px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${user.isBanned ? 'border-[#FF3B30]/30 bg-[#FF3B30]/5' : ''}`}>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-[#1D1D1F] text-[16px]">{user.name}</h3>
-                                                {user.role === 'admin' && <Crown size={14} className="text-[#FF9500]" title="Chủ tịch"/>}
-                                                {!user.isApproved && <span className="bg-[#FF9500] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">CHỜ DUYỆT</span>}
-                                                {user.isBanned && <span className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">BỊ CẤM</span>}
-                                            </div>
-                                            <p className="text-[13px] text-[#5c5c5c] font-medium">{user.email}</p>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {/* KHỐI DUYỆT */}
-                                            {!user.isApproved ? (
-                                                <button onClick={() => handleUpdateUser(id, { isApproved: true })} className="bg-[#1DB2A0] hover:bg-[#158f80] text-white text-[12px] font-bold px-4 py-2 rounded-xl transition shadow-sm">
-                                                    Duyệt Vào
-                                                </button>
-                                            ) : (
-                                                <button onClick={() => handleUpdateUser(id, { isApproved: false })} disabled={isMe} className="bg-white/40 hover:bg-white text-[#5c5c5c] text-[12px] font-bold px-3 py-2 rounded-xl transition border border-white/50 disabled:opacity-50">
-                                                    Hủy Duyệt
-                                                </button>
-                                            )}
-
-                                            {/* KHỐI PHÂN QUYỀN (Xem/Sửa/Xóa) */}
-                                            <div className="flex gap-1 bg-white/30 p-1 rounded-xl border border-white/50 items-center">
-                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
-                                                    <input type="checkbox" checked={perms.canView} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canView: e.target.checked } })} disabled={isMe} className="accent-[#33A1FD]" />
-                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Xem</span>
-                                                </label>
-                                                <div className="w-[1px] h-4 bg-white/60"></div>
-                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
-                                                    <input type="checkbox" checked={perms.canEdit} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canEdit: e.target.checked } })} disabled={isMe} className="accent-[#26D0CE]" />
-                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Sửa</span>
-                                                </label>
-                                                <div className="w-[1px] h-4 bg-white/60"></div>
-                                                <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#FF3B30]/10 rounded-lg transition'}`}>
-                                                    <input type="checkbox" checked={perms.canDelete} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canDelete: e.target.checked } })} disabled={isMe} className="accent-[#FF3B30]" />
-                                                    <span className="text-[12px] font-semibold text-[#1D1D1F]">Xóa</span>
-                                                </label>
-                                            </div>
-
-                                            {/* KHỐI TRỪNG PHẠT (Cấm/Xóa) */}
-                                            {!isMe && (
-                                                <>
-                                                    <button onClick={() => handleUpdateUser(id, { isBanned: !user.isBanned })} className={`px-3 py-2 text-[12px] font-bold rounded-xl transition border shadow-sm ${user.isBanned ? 'bg-[#1DB2A0]/10 text-[#1DB2A0] border-[#1DB2A0]/20 hover:bg-[#1DB2A0]/20' : 'bg-white/40 text-[#FF3B30] border-white/50 hover:bg-[#FF3B30]/10'}`}>
-                                                        {user.isBanned ? 'Mở Khóa' : 'Cấm Cửa'}
-                                                    </button>
-                                                    <button onClick={() => handleDeleteUser(id)} className="w-9 h-9 flex justify-center items-center bg-[#FF3B30]/10 hover:bg-[#FF3B30] text-[#FF3B30] hover:text-white rounded-xl transition-colors shadow-sm">
-                                                        <Trash2 size={16}/>
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
+                    <AdminPanel setView={setView} authUser={authUser} />
                 )}
 
                 {/* --- GIAO DIỆN TRANG CHỦ --- */}
@@ -520,7 +397,7 @@ export default function App() {
                                 <h2 className="text-[17px] md:text-[18px] font-bold text-[#1D1D1F] tracking-tight">Danh sách đợt bán</h2>
                                 <span className="text-[12px] font-bold bg-white/40 text-[#1D1D1F] border border-white/40 px-2.5 py-0.5 rounded-full">{safeSessions.length}</span>
                             </div>
-                            <div className="flex flex-col divide-y divide-white/30 w-full min-w-0 overflow-x-auto custom-scrollbar">
+                            <div className="flex flex-col divide-y divide-white/30 w-full min-w-0">
                                 {enrichedSessions.map((ss, index) => {
                                     if (!ss) return null;
                                     const sl_con = (ss.tong_sl_nhap || 0) - (ss.tong_sl_ban || 0);
@@ -528,39 +405,41 @@ export default function App() {
                                     let displayVonTon = ss.tong_tien_ton_computed || 0;
                                     const sessionName = getSessionName(ss.name, ss.actual_start_date, ss.actual_end_date);
                                     return (
-                                        <div key={ss.id || index} onClick={() => fetchDetail(ss.id)} className="p-4 md:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 cursor-pointer bg-transparent hover:bg-white/20 transition-colors duration-300 w-full min-w-[min-content] lg:min-w-0">
+                                        <div key={ss.id || index} onClick={() => fetchDetail(ss.id)} className="p-4 md:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 cursor-pointer bg-transparent hover:bg-white/20 transition-colors duration-300 w-full min-w-0">
                                             
                                             {/* GIAO DIỆN MÁY TÍNH */}
                                             <div className="hidden lg:flex items-center w-full min-w-0">
-                                                <div className="flex items-center gap-2 xl:gap-3 min-w-0 flex-1 pr-2">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                                                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{safeSessions.length - index}</div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-1.5 mb-0.5"><h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{sessionName}</h3></div>
+                                                        <div className="flex items-center gap-1.5 mb-0.5"><h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{sessionName}</h3>{index === 0 && <span className="w-2 h-2 bg-[#1DB2A0] rounded-full shrink-0 shadow-[0_0_8px_rgba(29,178,160,0.6)]"></span>}</div>
                                                         <div className="text-[11px] text-[#5c5c5c] font-medium tabular-nums flex items-center gap-1"><Calendar size={11}/> {calculateDaysDiff(ss.actual_start_date, ss.actual_end_date)} ngày</div>
                                                     </div>
                                                 </div>
-                                                <div className="flex justify-center gap-1.5 xl:gap-2 shrink-0">
-                                                    <div className="w-[50px] xl:w-[55px] bg-white/20 border border-white/30 rounded-[14px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums whitespace-nowrap">{ss.tong_sl_nhap || 0}</div></div>
-                                                    <div className={`w-[50px] xl:w-[55px] rounded-[14px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/20 border-white/30'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{ss.tong_sl_ban || 0}</div></div>
-                                                    <div className="w-[50px] xl:w-[55px] bg-white/20 border border-white/30 rounded-[14px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums whitespace-nowrap">{sl_con}</div></div>
+                                                
+                                                <div className="flex justify-center gap-2 shrink-0">
+                                                    <div className="w-[60px] bg-white/20 border border-white/30 rounded-[14px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{ss.tong_sl_nhap || 0}</div></div>
+                                                    <div className={`w-[60px] rounded-[14px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/20 border-white/30'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{ss.tong_sl_ban || 0}</div></div>
+                                                    <div className="w-[60px] bg-white/20 border border-white/30 rounded-[14px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{sl_con}</div></div>
                                                 </div>
-                                                <div className="flex items-center justify-end gap-2 xl:gap-3 shrink-0 w-auto pl-1">
-                                                    <div className="text-right space-y-0.5 hidden xl:block shrink-0 pr-1 min-w-[120px]">
-                                                        <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Chi phí</span> <span className="font-bold text-[#1D1D1F] tabular-nums whitespace-nowrap">{formatCurrency((ss.so_tien_cua_kien || 0) + (ss.so_tien_giat_ui || 0) + ss.quang_cao)}</span></div>
-                                                        <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums whitespace-nowrap">{formatCurrency(displayVonTon)}</span></div>
+
+                                                <div className="flex items-center justify-end gap-3 shrink-0 w-auto pl-2">
+                                                    <div className="text-right space-y-0.5 hidden xl:block shrink-0 pr-1 min-w-[130px]">
+                                                        <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Chi phí</span> <span className="font-bold text-[#1D1D1F] tabular-nums">{formatCurrency((ss.so_tien_cua_kien || 0) + (ss.so_tien_giat_ui || 0) + ss.quang_cao)}</span></div>
+                                                        <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(displayVonTon)}</span></div>
                                                     </div>
-                                                    <div className="text-right shrink-0 min-w-[100px]">
+                                                    <div className="text-right shrink-0 min-w-[110px]">
                                                         <div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
-                                                        <div className={`text-[15px] xl:text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(ss.realProfit) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(ss.realProfit)}</div>
+                                                        <div className={`text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(ss.realProfit) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(ss.realProfit)}</div>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-white/40 ml-1">
                                                         {isAdmin && (
-                                                            <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#1DB2A0] hover:border-[#1DB2A0]/30 rounded-full transition-colors shadow-sm" title="Phát lương (30%)">
+                                                            <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#1DB2A0] rounded-full transition-colors shadow-sm" title="Phát lương (30%)">
                                                                 <Wallet size={14}/>
                                                             </button>
                                                         )}
-                                                        {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
-                                                        {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] hover:border-[#FF3B30]/30 rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
+                                                        {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
+                                                        {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
                                                         <ChevronRight size={18} className="text-[#8E8E93] ml-1 hidden xl:block" />
                                                     </div>
                                                 </div>
@@ -571,7 +450,7 @@ export default function App() {
                                                 <div className="flex items-start gap-3 w-full min-w-0">
                                                     <div className="w-10 h-10 mt-0.5 rounded-full flex items-center justify-center font-bold text-[14px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{safeSessions.length - index}</div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-1.5 mb-1"><h3 className="font-bold text-[#1D1D1F] text-[15px] leading-snug break-words whitespace-normal group-hover:text-[#1A5B82] transition-colors">{sessionName}</h3></div>
+                                                        <div className="flex items-center gap-1.5 mb-1"><h3 className="font-bold text-[#1D1D1F] text-[15px] leading-snug break-words whitespace-normal group-hover:text-[#1A5B82] transition-colors">{sessionName}</h3>{index === 0 && <span className="w-2 h-2 bg-[#1DB2A0] rounded-full shrink-0 shadow-[0_0_8px_rgba(29,178,160,0.6)]"></span>}</div>
                                                         <div className="text-[12px] text-[#5c5c5c] font-medium tabular-nums flex items-center gap-1 mb-1.5"><Calendar size={12}/> {calculateDaysDiff(ss.actual_start_date, ss.actual_end_date)} ngày</div>
                                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[#5c5c5c]">
                                                             <span>C.phí: <strong className="text-[#1D1D1F]">{formatCurrency((ss.so_tien_cua_kien || 0) + (ss.so_tien_giat_ui || 0) + ss.quang_cao)}</strong></span>
@@ -581,16 +460,16 @@ export default function App() {
                                                 </div>
                                                 <div className="flex justify-between items-center border-t border-white/20 pt-3 min-w-0">
                                                     <div className="flex gap-1.5 shrink-0">
-                                                        <div className="w-[42px] bg-white/20 border border-white/30 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[11px] tabular-nums whitespace-nowrap">{ss.tong_sl_nhap || 0}</div></div>
-                                                        <div className={`w-[42px] rounded-[10px] py-1 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/20 border-white/30'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[11px] tabular-nums whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{ss.tong_sl_ban || 0}</div></div>
-                                                        <div className="w-[42px] bg-white/20 border border-white/30 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[11px] tabular-nums whitespace-nowrap">{sl_con}</div></div>
+                                                        <div className="w-[42px] bg-white/20 border border-white/30 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[11px] tabular-nums">{ss.tong_sl_nhap || 0}</div></div>
+                                                        <div className={`w-[42px] rounded-[10px] py-1 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/20 border-white/30'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[11px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{ss.tong_sl_ban || 0}</div></div>
+                                                        <div className="w-[42px] bg-white/20 border border-white/30 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[11px] tabular-nums">{sl_con}</div></div>
                                                     </div>
                                                     <div className="text-right shrink-1 min-w-0 flex-1 px-1.5">
                                                         <div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
                                                         <div className={`text-[14px] sm:text-[15px] font-black tabular-nums tracking-tighter whitespace-nowrap ${parseFloat(ss.realProfit) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(ss.realProfit)}</div>
                                                     </div>
                                                     <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-white/40 ml-1">
-                                                        {isAdmin && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white hover:text-[#1DB2A0] hover:border-[#1DB2A0]/30 rounded-full transition-colors shadow-sm"><Wallet size={12}/></button>}
+                                                        {isAdmin && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white hover:text-[#1DB2A0] rounded-full transition-colors shadow-sm"><Wallet size={12}/></button>}
                                                         {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={12}/></button>}
                                                         {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-1.5 text-[#5c5c5c] bg-white/30 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={12}/></button>}
                                                     </div>
@@ -709,14 +588,14 @@ export default function App() {
                                         <h2 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
                                         <span className="text-[12px] font-bold bg-white/40 border border-white/50 text-[#1D1D1F] px-2.5 py-0.5 rounded-full">{(detailData?.daily || []).length}</span>
                                     </div>
-                                    <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0 overflow-x-auto custom-scrollbar">
+                                    <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0">
                                         {(enrichedDaily || []).map((row, index) => {
                                             if (!row) return null;
                                             const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                                             return (
                                                 <div key={row.id || index} className={`p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
                                                     
-                                                    {/* GIAO DIỆN MÁY TÍNH (ĐÃ THÁO KHUNG ÉP KÍCH THƯỚC) */}
+                                                    {/* GIAO DIỆN MÁY TÍNH (ĐÃ THÁO BỎ HOÀN TOÀN KHUNG ÉP KÍCH THƯỚC) */}
                                                     <div className="hidden lg:flex items-center w-full min-w-0">
                                                         <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                                                             <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
