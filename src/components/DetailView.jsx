@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Wallet } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
 export default function DetailView({
@@ -121,86 +121,88 @@ export default function DetailView({
                             <h2 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
                             <span className="text-[12px] font-bold bg-white/40 border border-white/50 text-[#1D1D1F] px-2.5 py-0.5 rounded-full">{(detailData?.daily || []).length}</span>
                         </div>
-                        <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0 overflow-x-auto custom-scrollbar">
-                            <div className="min-w-[850px]">
-                                {(enrichedDaily || []).map((row, index) => {
-                                    if (!row) return null;
-                                    const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
-                                    return (
-                                        <div key={row.id || index} className={`p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
-                                            
-                                            <div className="hidden lg:flex items-center w-full min-w-0">
-                                                <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-                                                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-1 mb-0.5">
-                                                            {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
-                                                            <h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{row.ten_san_pham || ''}</h3>
-                                                            {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0 ml-1"><LinkIcon size={10}/></a>}
-                                                        </div>
-                                                        <div className="text-[11px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
+                        {/* ĐÃ XÓA class "overflow-x-auto custom-scrollbar" Ở ĐÂY */}
+                        <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0">
+                            {/* ĐÃ XÓA HOÀN TOÀN thẻ <div className="min-w-[850px]"> ÉP KÍCH THƯỚC */}
+                            {(enrichedDaily || []).map((row, index) => {
+                                if (!row) return null;
+                                const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
+                                return (
+                                    <div key={row.id || index} className={`p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
+                                        
+                                        {/* GIAO DIỆN MÁY TÍNH */}
+                                        <div className="hidden lg:flex items-center w-full min-w-0">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1 mb-0.5">
+                                                        {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
+                                                        <h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{row.ten_san_pham || ''}</h3>
+                                                        {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0 ml-1"><LinkIcon size={10}/></a>}
                                                     </div>
-                                                </div>
-                                                
-                                                <div className="flex justify-center gap-2 shrink-0">
-                                                    <div className="w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
-                                                    <div className={`w-[60px] rounded-[12px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
-                                                    <div className="w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
-                                                </div>
-
-                                                <div className="flex items-center justify-end gap-3 shrink-0 w-auto pl-2">
-                                                    <div className="text-right space-y-0.5 hidden xl:block shrink-0 pr-1 min-w-[130px]">
-                                                        <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Doanh thu</span> <span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
-                                                        <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
-                                                    </div>
-                                                    <div className="text-right shrink-0 min-w-[110px]">
-                                                        <div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
-                                                        <div className={`text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-white/40 ml-1">
-                                                        {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
-                                                        {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
-                                                    </div>
+                                                    <div className="text-[11px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
                                                 </div>
                                             </div>
+                                            
+                                            <div className="flex justify-center gap-2 shrink-0">
+                                                <div className="w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
+                                                <div className={`w-[60px] rounded-[12px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
+                                                <div className="w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
+                                            </div>
 
-                                            <div className="flex flex-col gap-3 w-full lg:hidden min-w-0">
-                                                <div className="flex items-start gap-3 w-full min-w-0">
-                                                    <div className="w-8 h-8 mt-0.5 rounded-full bg-white/60 border border-white/80 text-[#1D1D1F] flex items-center justify-center font-bold text-[10px] shrink-0 tabular-nums shadow-sm">{row.stt || 0}</div>
-                                                    <div className="min-w-0 flex-1 pr-2">
-                                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                                            {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
-                                                            <h3 className="font-bold text-[#1D1D1F] text-[11px] leading-snug break-words">{row.ten_san_pham || ''}</h3>
-                                                            {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0"><LinkIcon size={8}/></a>}
-                                                        </div>
-                                                        <div className="text-[8px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
-                                                        
-                                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-[#5c5c5c] mt-1">
-                                                            <span>D.thu: <strong className="text-[#1D1D1F]">+{formatCurrency(row.so_tien_ban_duoc || 0)}</strong></span>
-                                                            <span>V.tồn: <strong className="text-[#1D1D1F]">{formatCurrency(row.tien_ton || 0)}</strong></span>
-                                                        </div>
-                                                    </div>
+                                            <div className="flex items-center justify-end gap-3 shrink-0 w-auto pl-2">
+                                                <div className="text-right space-y-0.5 hidden xl:block shrink-0 pr-1 min-w-[130px]">
+                                                    <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Doanh thu</span> <span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
+                                                    <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
                                                 </div>
-                                                <div className="flex justify-between items-center border-t border-white/20 pt-2.5 min-w-0">
-                                                    <div className="flex gap-1.5 shrink-0">
-                                                        <div className="w-[40px] bg-white/30 border border-white/40 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[10px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
-                                                        <div className={`w-[40px] rounded-[10px] py-1 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[7px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[10px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
-                                                        <div className="w-[40px] bg-white/30 border border-white/40 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[10px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
-                                                    </div>
-                                                    <div className="text-right shrink-1 min-w-0 flex-1 px-1.5">
-                                                        <div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
-                                                        <div className={`text-[13px] sm:text-[14px] font-black tabular-nums tracking-tighter whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-white/40">
-                                                        {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
-                                                        {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
-                                                    </div>
+                                                <div className="text-right shrink-0 min-w-[110px]">
+                                                    <div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
+                                                    <div className={`text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-white/40 ml-1">
+                                                    {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
+                                                    {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
                                                 </div>
                                             </div>
                                         </div>
-                                    )
-                                })}
-                            </div>
+
+                                        {/* GIAO DIỆN ĐIỆN THOẠI */}
+                                        <div className="flex flex-col gap-3 w-full lg:hidden min-w-0">
+                                            <div className="flex items-start gap-3 w-full min-w-0">
+                                                <div className="w-8 h-8 mt-0.5 rounded-full bg-white/60 border border-white/80 text-[#1D1D1F] flex items-center justify-center font-bold text-[10px] shrink-0 tabular-nums shadow-sm">{row.stt || 0}</div>
+                                                <div className="min-w-0 flex-1 pr-2">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
+                                                        <h3 className="font-bold text-[#1D1D1F] text-[11px] leading-snug break-words">{row.ten_san_pham || ''}</h3>
+                                                        {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0"><LinkIcon size={8}/></a>}
+                                                    </div>
+                                                    <div className="text-[8px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
+                                                    
+                                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-[#5c5c5c] mt-1">
+                                                        <span>D.thu: <strong className="text-[#1D1D1F]">+{formatCurrency(row.so_tien_ban_duoc || 0)}</strong></span>
+                                                        <span>V.tồn: <strong className="text-[#1D1D1F]">{formatCurrency(row.tien_ton || 0)}</strong></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center border-t border-white/20 pt-2.5 min-w-0">
+                                                <div className="flex gap-1.5 shrink-0">
+                                                    <div className="w-[40px] bg-white/30 border border-white/40 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[10px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
+                                                    <div className={`w-[40px] rounded-[10px] py-1 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[7px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[10px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
+                                                    <div className="w-[40px] bg-white/30 border border-white/40 rounded-[10px] py-1 text-center shadow-sm shrink-0"><div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[10px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
+                                                </div>
+                                                <div className="text-right shrink-1 min-w-0 flex-1 px-1.5">
+                                                    <div className="text-[7px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
+                                                    <div className={`text-[13px] sm:text-[14px] font-black tabular-nums tracking-tighter whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0 pl-1 border-l border-white/40">
+                                                    {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
+                                                    {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
                 </div>
