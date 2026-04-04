@@ -1,6 +1,6 @@
 import React from 'react';
-import { Calendar, Package, Percent, BarChart3, ChevronRight, Wallet, Pencil, Trash2 } from 'lucide-react';
-import { formatCurrency, formatInput, getSessionName, AnimatedNumber } from '../utils';
+import { Calendar, Package, Percent, BarChart3, ChevronRight, Wallet, Pencil, Trash2, Crown, Link as LinkIcon } from 'lucide-react';
+import { formatCurrency, formatInput, getSessionName, AnimatedNumber, formatDateDisplay } from '../utils';
 
 export default function DashboardView({ 
     dashboardProfit, globalTongCon, globalTongNhap, globalVonTon, showTax, taxAmount, displayRevenueTr, 

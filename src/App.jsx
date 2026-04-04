@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, Power, Save, Upload, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet } from 'lucide-react';
+import { Trash2, Plus, Power, Save, Upload, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
-
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
         if (typeof window !== 'undefined') { 

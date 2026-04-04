@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Wallet } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
 export default function DetailView({
