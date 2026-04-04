@@ -1,17 +1,36 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Fish } from 'lucide-react';
 import { API_URL } from './utils';
 
 export default function Auth({ onLoginSuccess }) {
+    const [isRightPanelActive, setIsRightPanelActive] = useState(false); // Điều khiển hiệu ứng trượt
     const [view, setView] = useState('LOGIN'); // 'LOGIN', 'REGISTER', 'FORGOT'
-    const [step, setStep] = useState(1); // 1: Nhập thông tin, 2: Nhập OTP
+    const [step, setStep] = useState(1); // 1: Nhập info, 2: Nhập OTP
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
 
+    // Đổi tab (Trượt màn hình)
+    const togglePanel = (toRegister) => {
+        setIsRightPanelActive(toRegister);
+        setView(toRegister ? 'REGISTER' : 'LOGIN');
+        setStep(1);
+        setError('');
+        setSuccessMsg('');
+    };
+
+    // Mở tab Quên Mật Khẩu (Nằm đè lên Login)
+    const openForgot = () => {
+        setView('FORGOT');
+        setStep(1);
+        setError('');
+        setSuccessMsg('');
+    };
+
+    // XỬ LÝ GỬI OTP
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setError(''); setSuccessMsg(''); setIsLoading(true);
@@ -19,7 +38,7 @@ export default function Auth({ onLoginSuccess }) {
             const type = view === 'REGISTER' ? 'register' : 'forgot';
             const res = await axios.post(`${API_URL}/send-otp`, { email: formData.email, type });
             setSuccessMsg(res.data.message);
-            setStep(2);
+            setStep(2); // Chuyển sang ô nhập mã 6 số
         } catch (err) {
             setError(err.response?.data?.error || 'Lỗi gửi mail!');
         } finally {
@@ -27,6 +46,7 @@ export default function Auth({ onLoginSuccess }) {
         }
     };
 
+    // XỬ LÝ ĐĂNG NHẬP / XÁC NHẬN ĐĂNG KÝ
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(''); setSuccessMsg(''); setIsLoading(true);
@@ -38,18 +58,14 @@ export default function Auth({ onLoginSuccess }) {
             } 
             else if (view === 'REGISTER') {
                 await axios.post(`${API_URL}/register`, formData);
-                // Tạo xong KHÔNG VÀO TRANG CHỦ, bắt quay lại Login
                 setSuccessMsg('Tạo tài khoản thành công! Vui lòng đăng nhập.');
-                setView('LOGIN');
-                setStep(1);
-                setFormData({ ...formData, password: '', otp: '' });
+                togglePanel(false); // Tạo xong trượt về Login
             } 
             else if (view === 'FORGOT') {
                 await axios.post(`${API_URL}/reset-password`, { email: formData.email, otp: formData.otp, newPassword: formData.newPassword });
                 setSuccessMsg('Đổi mật khẩu thành công! Vui lòng đăng nhập.');
                 setView('LOGIN');
                 setStep(1);
-                setFormData({ ...formData, password: '', otp: '', newPassword: '' });
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Sai thông tin!');
@@ -59,70 +75,149 @@ export default function Auth({ onLoginSuccess }) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-aurora font-sans">
-            <div className="w-full max-w-[420px] bg-white/70 backdrop-blur-2xl rounded-[32px] p-8 shadow-xl border border-white/50">
+        <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans">
+            {/* CONTAINER CHÍNH CHỨA HIỆU ỨNG TRƯỢT */}
+            <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[30px] shadow-2xl overflow-hidden transition-all duration-700 ease-in-out ${isRightPanelActive ? 'right-panel-active' : ''}`} id="container">
                 
-                <div className="flex flex-col items-center mb-8">
-                    {/* TRẢ LẠI LOGO CŨ CỦA SẾP */}
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 mb-4 overflow-hidden">
-                        <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" onError={(e) => e.target.style.display='none'} />
-                    </div>
-                    <h1 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight text-center">
-                        {view === 'LOGIN' ? 'Mừng Trở Lại!' : (view === 'REGISTER' ? 'Tạo Tài Khoản' : 'Quên Mật Khẩu')}
-                    </h1>
-                    <p className="text-[13px] text-[#5c5c5c] font-medium mt-1 text-center">
-                        {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : (view === 'REGISTER' ? 'Tài khoản đầu tiên sẽ là Admin' : 'Nhập email để nhận mã khôi phục')}
-                    </p>
+                {/* 1. FORM ĐĂNG KÝ (BÊN PHẢI) */}
+                <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex items-center justify-center p-10 transition-all duration-700 ease-in-out z-10 ${isRightPanelActive ? 'translate-x-full opacity-100 z-20' : 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto'}`}>
+                    <form onSubmit={step === 1 ? handleSendOTP : handleSubmit} className="flex flex-col items-center justify-center w-full h-full text-center">
+                        <h1 className="font-bold text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
+                        <p className="text-[14px] text-gray-500 mb-6">Tài khoản đầu tiên sẽ là Admin (Chủ trọ)</p>
+                        
+                        {error && <span className="text-red-500 text-xs mb-3 font-semibold">{error}</span>}
+                        {successMsg && <span className="text-green-500 text-xs mb-3 font-semibold">{successMsg}</span>}
+
+                        {step === 1 ? (
+                            <>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-4">
+                                    <User size={18} className="text-gray-400" />
+                                    <input required type="text" placeholder="Tên hiển thị" className="bg-transparent outline-none border-none w-full ml-3 text-[14px]" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                </div>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-4">
+                                    <Mail size={18} className="text-gray-400" />
+                                    <input required type="email" placeholder="Email đăng nhập" className="bg-transparent outline-none border-none w-full ml-3 text-[14px]" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                </div>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-6 relative">
+                                    <Lock size={18} className="text-gray-400" />
+                                    <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                </div>
+                                <button type="submit" disabled={isLoading} className="rounded-full border border-transparent bg-[#42d4d2] text-white text-[13px] font-bold py-3.5 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-[#3bc2c0] w-full shadow-md flex justify-center">
+                                    {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'GỬI MÃ OTP QUA EMAIL'}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-4 mb-6">
+                                    <KeyRound size={18} className="text-[#42d4d2]" />
+                                    <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[16px] text-center font-bold tracking-[0.3em]" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
+                                </div>
+                                <button type="submit" disabled={isLoading} className="rounded-full border border-transparent bg-[#42d4d2] text-white text-[13px] font-bold py-3.5 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-[#3bc2c0] w-full shadow-md flex justify-center">
+                                    {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'XÁC NHẬN ĐĂNG KÝ'}
+                                </button>
+                            </>
+                        )}
+                        <button type="button" onClick={() => togglePanel(false)} className="md:hidden mt-6 text-[#42d4d2] text-sm underline">Đã có tài khoản? Đăng nhập</button>
+                    </form>
                 </div>
 
-                {error && <div className="mb-6 p-3.5 bg-[#FF3B30]/10 rounded-2xl text-[#FF3B30] text-[13px] font-bold text-center">{error}</div>}
-                {successMsg && <div className="mb-6 p-3.5 bg-[#1DB2A0]/10 rounded-2xl text-[#1DB2A0] text-[13px] font-bold text-center">{successMsg}</div>}
-
-                <form onSubmit={view !== 'LOGIN' && step === 1 ? handleSendOTP : handleSubmit} className="space-y-3.5">
-                    
-                    {view === 'REGISTER' && step === 1 && (
-                        <input required type="text" placeholder="Tên của bạn" className="w-full px-4 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px]" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                    )}
-
-                    {step === 1 && (
-                        <input required type="email" placeholder="Email" className="w-full px-4 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px]" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                    )}
-
-                    {view === 'LOGIN' && (
-                        <div className="relative">
-                            <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="w-full pl-4 pr-12 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px]" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#86868B]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                {/* 2. FORM ĐĂNG NHẬP / QUÊN MẬT KHẨU (BÊN TRÁI) */}
+                <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex items-center justify-center p-10 transition-all duration-700 ease-in-out z-20 bg-white ${isRightPanelActive ? 'translate-x-full opacity-0 pointer-events-none' : ''}`}>
+                    <form onSubmit={view === 'FORGOT' && step === 1 ? handleSendOTP : handleSubmit} className="flex flex-col items-center justify-center w-full h-full text-center">
+                        <div className="w-14 h-14 bg-[#42d4d2] rounded-full flex items-center justify-center mb-4 text-white shadow-md">
+                            <Fish size={28} /> {/* Đổi thành logo sếp nếu cần */}
                         </div>
-                    )}
+                        <h1 className="font-bold text-[30px] mb-2 text-[#333]">
+                            {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
+                        </h1>
+                        <p className="text-[14px] text-gray-500 mb-6">
+                            {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : 'Nhập email để nhận mã khôi phục'}
+                        </p>
 
-                    {step === 2 && (
-                        <>
-                            <input required type="text" placeholder="Nhập mã OTP (6 số)" className="w-full px-4 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px] text-center font-bold tracking-widest" value={formData.otp} onChange={e => setFormData({ ...formData, otp: e.target.value })} maxLength={6} />
-                            {view === 'FORGOT' && (
-                                <input required type="password" placeholder="Mật khẩu mới" className="w-full px-4 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px]" value={formData.newPassword} onChange={e => setFormData({ ...formData, newPassword: e.target.value })} />
-                            )}
-                            {view === 'REGISTER' && (
-                                <input required type="password" placeholder="Mật khẩu của bạn" className="w-full px-4 py-3.5 bg-white border border-[#e5e5ea] rounded-2xl outline-none focus:border-[#26D0CE] text-[14px]" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
-                            )}
-                        </>
-                    )}
+                        {error && <span className="text-red-500 text-xs mb-3 font-semibold">{error}</span>}
+                        {successMsg && <span className="text-green-500 text-xs mb-3 font-semibold">{successMsg}</span>}
 
-                    <button type="submit" disabled={isLoading} className="w-full py-3.5 bg-[#42d4d2] text-white rounded-2xl font-bold text-[14px] hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2">
-                        {isLoading ? <RefreshCw size={18} className="animate-spin" /> : (view === 'LOGIN' ? 'ĐĂNG NHẬP' : (step === 1 ? 'GỬI MÃ OTP' : 'XÁC NHẬN'))}
-                    </button>
-                </form>
-
-                <div className="mt-6 flex flex-col items-center gap-3">
-                    {view === 'LOGIN' ? (
-                        <>
-                            <button type="button" onClick={() => { setView('FORGOT'); setError(''); setSuccessMsg(''); }} className="text-[13px] text-[#5c5c5c] hover:text-[#1D1D1F]">Quên mật khẩu?</button>
-                            <button type="button" onClick={() => { setView('REGISTER'); setError(''); setSuccessMsg(''); }} className="text-[13px] text-[#42d4d2] font-semibold hover:underline">Chưa có tài khoản? Tạo mới ngay</button>
-                        </>
-                    ) : (
-                        <button type="button" onClick={() => { setView('LOGIN'); setStep(1); setError(''); setSuccessMsg(''); }} className="text-[13px] text-[#5c5c5c] hover:text-[#1D1D1F] flex items-center gap-1">← Đã có tài khoản? Đăng nhập</button>
-                    )}
+                        {view === 'LOGIN' ? (
+                            <>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-4">
+                                    <Mail size={18} className="text-gray-400" />
+                                    <input required type="email" placeholder="Email" className="bg-transparent outline-none border-none w-full ml-3 text-[14px]" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                </div>
+                                <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-6 relative">
+                                    <Lock size={18} className="text-gray-400" />
+                                    <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                </div>
+                                <button type="submit" disabled={isLoading} className="rounded-full border border-transparent bg-[#42d4d2] text-white text-[13px] font-bold py-3.5 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-[#3bc2c0] w-full shadow-md flex justify-center">
+                                    {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐĂNG NHẬP'}
+                                </button>
+                                <button type="button" onClick={openForgot} className="mt-4 text-[13px] text-gray-500 hover:text-[#42d4d2] transition-colors border-b border-transparent hover:border-[#42d4d2]">Quên mật khẩu?</button>
+                            </>
+                        ) : (
+                            // GIAO DIỆN QUÊN MẬT KHẨU
+                            step === 1 ? (
+                                <>
+                                    <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-6">
+                                        <Mail size={18} className="text-gray-400" />
+                                        <input required type="email" placeholder="Email của bạn" className="bg-transparent outline-none border-none w-full ml-3 text-[14px]" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                    </div>
+                                    <button type="submit" disabled={isLoading} className="rounded-full border border-transparent bg-[#42d4d2] text-white text-[13px] font-bold py-3.5 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-[#3bc2c0] w-full shadow-md flex justify-center mb-4">
+                                        {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'NHẬN MÃ OTP'}
+                                    </button>
+                                    <button type="button" onClick={() => setView('LOGIN')} className="text-[13px] text-gray-500 hover:text-[#42d4d2]">Quay lại Đăng nhập</button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-4">
+                                        <KeyRound size={18} className="text-gray-400" />
+                                        <input required type="text" placeholder="Mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-center tracking-widest font-bold" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
+                                    </div>
+                                    <div className="bg-[#f4f8f7] w-full rounded-full flex items-center px-4 py-3 mb-6 relative">
+                                        <Lock size={18} className="text-gray-400" />
+                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                    </div>
+                                    <button type="submit" disabled={isLoading} className="rounded-full border border-transparent bg-[#42d4d2] text-white text-[13px] font-bold py-3.5 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-[#3bc2c0] w-full shadow-md flex justify-center mb-4">
+                                        {isLoading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐỔI MẬT KHẨU'}
+                                    </button>
+                                    <button type="button" onClick={() => setView('LOGIN')} className="text-[13px] text-gray-500 hover:text-[#42d4d2]">Hủy</button>
+                                </>
+                            )
+                        )}
+                        <button type="button" onClick={() => togglePanel(true)} className="md:hidden mt-6 text-[#42d4d2] text-sm underline">Chưa có tài khoản? Tạo ngay</button>
+                    </form>
                 </div>
-                
+
+                {/* 3. LỚP PHỦ HIỆU ỨNG TRƯỢT (OVERLAY - CHỈ HIỆN TRÊN DESKTOP) */}
+                <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : ''}`}>
+                    <div className={`bg-gradient-to-r from-[#42d4d2] to-[#3bc2c0] bg-no-repeat bg-cover bg-center text-white relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : ''}`}>
+                        
+                        {/* Overlay Đăng Nhập (Bên Trái của Overlay) */}
+                        <div className={`absolute top-0 flex flex-col items-center justify-center w-1/2 h-full px-10 text-center transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
+                            <h1 className="font-bold text-[32px] mb-4">Mừng Trở Lại!</h1>
+                            <p className="text-[14px] font-light tracking-wide leading-relaxed mb-8">
+                                Đăng nhập ngay để tiếp tục quản lý dòng tiền của bạn.
+                            </p>
+                            <button onClick={() => togglePanel(false)} className="rounded-full border-2 border-white bg-transparent text-white text-[13px] font-bold py-3 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#42d4d2]">
+                                ĐĂNG NHẬP
+                            </button>
+                        </div>
+
+                        {/* Overlay Đăng Ký (Bên Phải của Overlay) */}
+                        <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-10 text-center transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
+                            <h1 className="font-bold text-[32px] mb-4">Chào Người Mới!</h1>
+                            <p className="text-[14px] font-light tracking-wide leading-relaxed mb-8">
+                                Đăng ký để sử dụng không gian quản lý tài chính thông minh nhất.
+                            </p>
+                            <button onClick={() => togglePanel(true)} className="rounded-full border-2 border-white bg-transparent text-white text-[13px] font-bold py-3 px-12 tracking-wider uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#42d4d2]">
+                                TẠO TÀI KHOẢN
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
         </div>
     );
