@@ -193,34 +193,51 @@ export default function App() {
 
         let maxRevenue = -Infinity; const sortedBales = [...importedBales].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
 
-        enrichedDaily = dailyList.map((row, index) => {
-            const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
-            let sl_nhap = row.so_luong_nhap || 0; let sl_con = sl_nhap - (row.so_luong || 0); let loi = 0; let tien_ton = 0; let avgCost = 0;
-            if (matchedBale) {
-                avgCost = (matchedBale.cost || 0) / (matchedBale.qty || 1); tien_ton = Math.round(sl_con * avgCost);
-                let cumulativeRevenue = 0;
-                for (let i = dailyList.length - 1; i >= index; i--) { if (String(dailyList[i].ten_san_pham || '').toLowerCase().includes(String(matchedBale.name || '').toLowerCase())) cumulativeRevenue += (dailyList[i].so_tien_ban_duoc || 0); }
-                loi = Math.round(cumulativeRevenue - (matchedBale.cost || 0)); 
-            } else {
-                avgCost = detailData.computed?.trung_binh || 0; tien_ton = Math.round(sl_con * avgCost); loi = Math.round(row.so_tien_ban_duoc || 0);
-            }
-            if ((row.so_tien_ban_duoc || 0) > maxRevenue && (row.so_tien_ban_duoc || 0) > 0) { maxRevenue = row.so_tien_ban_duoc; mvpRowId = row.id; }
-            return { ...row, loi, sl_nhap, sl_con, tien_ton, originalIndex: index }; // Lưu index gốc để sort ổn định
-        });
-
-        // SẮP XẾP SẢN PHẨM: MỚI NHẤT LÊN TRÊN
-        enrichedDaily.sort((a, b) => {
+        // BƯỚC 1: Xếp từ CŨ đến MỚI để tính toán cộng dồn chính xác theo dòng thời gian
+        let chronologicalList = [...dailyList].map((item, idx) => ({...item, originalIdx: idx}));
+        chronologicalList.sort((a, b) => {
             const dateA = new Date(a.ngay_ban || 0).getTime();
             const dateB = new Date(b.ngay_ban || 0).getTime();
-            if (dateB === dateA) return b.originalIndex - a.originalIndex; // Cùng ngày thì cái mới nhập nhảy lên trên
+            if (dateA === dateB) return a.originalIdx - b.originalIdx;
+            return dateA - dateB;
+        });
+
+        // BƯỚC 2: Tính Toán Lợi Nhuận Cộng Dồn
+        chronologicalList = chronologicalList.map((row, index, arr) => {
+            const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
+            let sl_nhap = row.so_luong_nhap || 0; let sl_con = sl_nhap - (row.so_luong || 0); let loi = 0; let tien_ton = 0; let avgCost = 0;
+            
+            if (matchedBale) {
+                avgCost = (matchedBale.cost || 0) / (matchedBale.qty || 1); 
+                tien_ton = Math.round(sl_con * avgCost);
+                
+                // CỘNG DỒN doanh thu của tất cả đơn hàng cùng Lô tính từ đầu cho đến ngày này
+                let cumulativeRevenue = 0;
+                for (let i = 0; i <= index; i++) {
+                    if (String(arr[i].ten_san_pham || '').toLowerCase().includes(String(matchedBale.name || '').toLowerCase())) {
+                        cumulativeRevenue += (arr[i].so_tien_ban_duoc || 0);
+                    }
+                }
+                loi = Math.round(cumulativeRevenue - (matchedBale.cost || 0)); 
+            } else {
+                avgCost = detailData.computed?.trung_binh || 0; 
+                tien_ton = Math.round(sl_con * avgCost); 
+                loi = Math.round(row.so_tien_ban_duoc || 0);
+            }
+            
+            if ((row.so_tien_ban_duoc || 0) > maxRevenue && (row.so_tien_ban_duoc || 0) > 0) { maxRevenue = row.so_tien_ban_duoc; mvpRowId = row.id; }
+            return { ...row, loi, sl_nhap, sl_con, tien_ton }; 
+        });
+
+        // BƯỚC 3: Xếp ngược lại thành MỚI NHẤT LÊN TRÊN để hiển thị ra ngoài màn hình
+        enrichedDaily = [...chronologicalList].sort((a, b) => {
+            const dateA = new Date(a.ngay_ban || 0).getTime();
+            const dateB = new Date(b.ngay_ban || 0).getTime();
+            if (dateB === dateA) return b.originalIdx - a.originalIdx;
             return dateB - dateA;
         });
 
-        // ĐÁNH LẠI SỐ THỨ TỰ (STT) TỪ LỚN ĐẾN BÉ
-        enrichedDaily = enrichedDaily.map((row, idx) => ({
-            ...row,
-            stt: enrichedDaily.length - idx
-        }));
+        enrichedDaily = enrichedDaily.map((row, idx) => ({ ...row, stt: enrichedDaily.length - idx }));
     }
 
     useEffect(() => {
