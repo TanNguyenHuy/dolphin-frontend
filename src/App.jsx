@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Trash2, Plus, Power, Save, Upload, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
-import { API_URL, formatCurrency, formatInput, parseInput, getTodayString, Confetti } from './utils';
+import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
@@ -75,7 +76,7 @@ export default function App() {
                     const detailRes = await axios.get(`${API_URL}/data/${ss.id}`);
                     const dailyList = detailRes.data?.daily || [];
                     
-                    ss.quang_cao = dailyList.length * 350000;
+                    ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
                     let balesData = [];
                     try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const sortedBales = [...balesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
@@ -149,6 +150,9 @@ export default function App() {
     const triggerShutdown = () => setShowShutdownConfirm(true);
     const confirmShutdown = async () => { setShowShutdownConfirm(false); setIsShutdown(true); try { await axios.post(`${API_URL}/shutdown`); } catch (err) {} };
 
+    // ==========================================
+    // CỖ MÁY TÍNH TOÁN ĐÃ ĐƯỢC LẮP LẠI VÀO ĐÂY
+    // ==========================================
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
@@ -173,7 +177,7 @@ export default function App() {
         const dailyList = Array.isArray(detailData.daily) ? detailData.daily : [];
         const itemCount = dailyList.length;
         dynamicTarget = Math.max(1, Math.ceil(itemCount / 4)) * 10000000;
-        detailAutoAdCost = itemCount * 350000;
+        detailAutoAdCost = itemCount * AD_COST_PER_SALE;
         detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - (detailData.so_tien_giat_ui || 0) - detailAutoAdCost;
         isTargetReached = detailProfit >= dynamicTarget && itemCount > 0;
 
@@ -198,12 +202,17 @@ export default function App() {
         });
     }
 
-    useEffect(() => {
-        if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); } 
-        else { setShowFireworks(false); }
-    }, [view, isTargetReached, currentId]);
-
     const progressPercent = Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100);
+
+    const handleExport = () => { 
+        if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
+        enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
+        csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
+    };
+
+    // ==========================================
+    // KẾT THÚC CỖ MÁY TÍNH TOÁN
+    // ==========================================
 
     if (!authUser) {
         return <Auth onLoginSuccess={(u, rememberMe) => { 
