@@ -56,7 +56,8 @@ export default function App() {
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 // ==========================================
-    // DÁN CODE RADAR VÀO ĐÚNG CHỖ NÀY NHÉ SẾP
+   // ==========================================
+    // DÁN ĐÈ LẠI ĐOẠN RADAR NÀY NHÉ SẾP
     // ==========================================
     useEffect(() => {
         if (!authUser || !authUser.email) return; 
@@ -66,7 +67,7 @@ export default function App() {
                 const res = await axios.post(`${API_URL}/check-status`, { email: authUser.email });
                 const latestData = res.data;
 
-                // 1. NẾU BỊ CẤM -> ĐÁ VĂNG RA MÀN HÌNH ĐĂNG NHẬP
+                // 1. NẾU BỊ CẤM HOẶC HỦY DUYỆT -> ĐÁ VĂNG
                 if (latestData.isBanned || !latestData.isApproved) {
                     alert("Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!");
                     setAuthUser(null);
@@ -76,7 +77,7 @@ export default function App() {
                     return;
                 }
 
-                // 2. NẾU BỊ THAY ĐỔI QUYỀN -> CẬP NHẬT NÚT BẤM LẬP TỨC
+                // 2. NẾU BỊ THAY ĐỔI QUYỀN -> CẬP NHẬT NÚT BẤM
                 if (JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || authUser.role !== latestData.role) {
                     setAuthUser(prev => ({ 
                         ...prev, 
@@ -86,15 +87,22 @@ export default function App() {
                 }
 
             } catch (error) {
-                console.error("Radar đang mất kết nối tạm thời...");
+                // XỬ LÝ LỖI KHI TÀI KHOẢN BỊ XÓA HẲN KHIỎI DATABASE (LỖI 404)
+                if (error.response && error.response.status === 404) {
+                    alert("Tài khoản của bạn đã bị xóa khỏi hệ thống!");
+                    setAuthUser(null);
+                    localStorage.removeItem('authUser');
+                    sessionStorage.removeItem('authUser');
+                    window.location.reload(); 
+                } else {
+                    console.error("Radar đang mất kết nối tạm thời...");
+                }
             }
         };
 
         const radar = setInterval(checkRealTimeStatus, 5000);
         return () => clearInterval(radar); 
     }, [authUser]);
-    // ==========================================
-    // KẾT THÚC ĐOẠN RADAR
     // ==========================================
     const handleLogout = () => { 
         setAuthUser(null); 
