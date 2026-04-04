@@ -55,7 +55,47 @@ export default function App() {
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
+// ==========================================
+    // DÁN CODE RADAR VÀO ĐÚNG CHỖ NÀY NHÉ SẾP
+    // ==========================================
+    useEffect(() => {
+        if (!authUser || !authUser.email) return; 
 
+        const checkRealTimeStatus = async () => {
+            try {
+                const res = await axios.post(`${API_URL}/check-status`, { email: authUser.email });
+                const latestData = res.data;
+
+                // 1. NẾU BỊ CẤM -> ĐÁ VĂNG RA MÀN HÌNH ĐĂNG NHẬP
+                if (latestData.isBanned || !latestData.isApproved) {
+                    alert("Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!");
+                    setAuthUser(null);
+                    localStorage.removeItem('authUser');
+                    sessionStorage.removeItem('authUser');
+                    window.location.reload(); 
+                    return;
+                }
+
+                // 2. NẾU BỊ THAY ĐỔI QUYỀN -> CẬP NHẬT NÚT BẤM LẬP TỨC
+                if (JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || authUser.role !== latestData.role) {
+                    setAuthUser(prev => ({ 
+                        ...prev, 
+                        permissions: latestData.permissions, 
+                        role: latestData.role 
+                    }));
+                }
+
+            } catch (error) {
+                console.error("Radar đang mất kết nối tạm thời...");
+            }
+        };
+
+        const radar = setInterval(checkRealTimeStatus, 5000);
+        return () => clearInterval(radar); 
+    }, [authUser]);
+    // ==========================================
+    // KẾT THÚC ĐOẠN RADAR
+    // ==========================================
     const handleLogout = () => { 
         setAuthUser(null); 
         localStorage.removeItem('authUser'); 
