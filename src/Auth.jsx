@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound } from 'lucide-react';
 import { API_URL } from './utils';
-import './Auth.css'; // Sếp nhớ giữ file css nếu có, không thì Tailwind dưới này đã bao trọn rồi
+//import './Auth.css'; // Sếp nhớ giữ file css nếu có, không thì Tailwind dưới này đã bao trọn rồi
 
 export default function Auth({ onLoginSuccess }) {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
