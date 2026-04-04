@@ -356,6 +356,7 @@ export default function App() {
                     <DashboardView 
                         dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} 
                         globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} 
+                        totalRevenueForTax={totalRevenueForTax} /* LÀ DÒNG CHỮ NÀY ĐÂY Ạ */
                         safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} 
                         isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} 
                         setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
