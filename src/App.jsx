@@ -6,6 +6,7 @@ import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
+import ChatBox from './components/ChatBox';
 import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 
 export default function App() {
@@ -448,6 +449,8 @@ export default function App() {
                     />
                 )}
             </div>
+            {/* GẮN BONG BÓNG CHAT VÀO ĐÂY */}
+            <ChatBox authUser={authUser} />
         </div>
     );
 }
