@@ -8,8 +8,6 @@ export default function ChatBox({ authUser }) {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [isSending, setIsSending] = useState(false);
-    
-    // BIẾN LƯU SỐ TIN NHẮN CHƯA ĐỌC
     const [unreadCount, setUnreadCount] = useState(0); 
     const messagesEndRef = useRef(null);
 
@@ -18,40 +16,47 @@ export default function ChatBox({ authUser }) {
     };
 
     const fetchMessages = async () => {
+        if (!authUser || !authUser.email) return;
         try {
             const res = await axios.get(`${API_URL}/chat`);
             const fetchedMessages = res.data;
             setMessages(fetchedMessages);
             
-            // LOGIC ĐẾM TIN NHẮN CHƯA ĐỌC
-            const lastRead = localStorage.getItem('lastReadChatTime');
-            if (lastRead) {
-                // Đếm tin nhắn MỚI HƠN lần cuối xem VÀ KHÔNG PHẢI do mình gửi
-                const unread = fetchedMessages.filter(m => new Date(m.timestamp) > new Date(lastRead) && m.senderEmail !== authUser.email).length;
+            // TẠO BỘ NHỚ RIÊNG CHO TỪNG TÀI KHOẢN ĐỂ KHÔNG BỊ "LÚ" KHI TEST CHÉO
+            const storageKey = `lastRead_${authUser.email}`;
+            const lastReadServerTime = localStorage.getItem(storageKey);
+            
+            if (isOpen) {
+                // Đang mở chat -> Đánh dấu đã đọc bằng mốc thời gian của Server (Tránh lệch múi giờ)
+                if (fetchedMessages.length > 0) {
+                    localStorage.setItem(storageKey, fetchedMessages[fetchedMessages.length - 1].timestamp);
+                }
+                setUnreadCount(0);
+            } else if (lastReadServerTime) {
+                // Đang đóng chat -> Đếm tin nhắn mới từ Server
+                const unread = fetchedMessages.filter(m => 
+                    new Date(m.timestamp) > new Date(lastReadServerTime) && 
+                    m.senderEmail !== authUser.email
+                ).length;
                 setUnreadCount(unread);
             } else {
-                // Lần đầu vào app, báo đỏ toàn bộ tin của người khác
+                // Lần đầu đăng nhập
                 const unread = fetchedMessages.filter(m => m.senderEmail !== authUser.email).length;
                 setUnreadCount(unread);
             }
         } catch (err) { console.error(err); }
     };
 
-    // QUÉT TIN NHẮN NGẦM LIÊN TỤC MỖI 3 GIÂY (Dù đóng hay mở)
+    // QUÉT TIN MỚI MỖI 3 GIÂY VÀ RESET KHI TRẠNG THÁI ĐÓNG/MỞ THAY ĐỔI
     useEffect(() => {
-        fetchMessages(); 
+        fetchMessages();
         const interval = setInterval(fetchMessages, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [authUser, isOpen]); 
 
-    // KHI MỞ HỘP THOẠI -> TỰ ĐỘNG ĐÁNH DẤU ĐÃ ĐỌC HẾT
     useEffect(() => {
-        if (isOpen) {
-            localStorage.setItem('lastReadChatTime', new Date().toISOString());
-            setUnreadCount(0);
-        }
         scrollToBottom();
-    }, [isOpen, messages]);
+    }, [messages, isOpen]);
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -64,9 +69,7 @@ export default function ChatBox({ authUser }) {
                 text: text.trim()
             });
             setText('');
-            // Gửi xong là tính như vừa xem tin mới nhất
-            localStorage.setItem('lastReadChatTime', new Date().toISOString());
-            await fetchMessages();
+            await fetchMessages(); 
         } catch (err) {
             console.error("Lỗi gửi tin nhắn", err);
         } finally {
@@ -76,7 +79,7 @@ export default function ChatBox({ authUser }) {
 
     return (
         <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
-            {/* KHUNG CHAT MỞ RỘNG */}
+            {/* KHUNG CHAT */}
             <div className={`transition-all duration-300 ease-in-out origin-bottom-right ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 h-0 w-0 overflow-hidden'}`}>
                 <div className="w-[320px] sm:w-[350px] h-[450px] bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl flex flex-col overflow-hidden">
                     
@@ -130,7 +133,7 @@ export default function ChatBox({ authUser }) {
                 </div>
             </div>
 
-            {/* BONG BÓNG CHAT KÈM THÔNG BÁO SỐ LƯỢNG MÀU ĐỎ */}
+            {/* NÚT BẤM CÓ VÒNG TRÒN BÁO ĐỎ */}
             <div className="relative">
                 <button 
                     onClick={() => setIsOpen(!isOpen)}
@@ -139,14 +142,12 @@ export default function ChatBox({ authUser }) {
                     {isOpen ? <X size={24} /> : <MessageCircle size={26} />}
                 </button>
                 
-                {/* VÒNG TRÒN ĐỎ BÁO TIN NHẮN MỚI */}
                 {!isOpen && unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[#FF3B30] text-white text-[11px] font-black w-[22px] h-[22px] flex items-center justify-center rounded-full shadow-lg border-[2px] border-white animate-bounce">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </div>
-            
         </div>
     );
 }
