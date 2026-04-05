@@ -1,92 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ChevronLeft } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
-    const [usersList, setUsersList] = useState([]);
+    const [users, setUsers] = useState([]);
 
-    useEffect(() => {
+    useEffect(() => { fetchUsers(); }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/users`);
+            setUsers(res.data);
+        } catch (error) { console.error("Lỗi fetch users:", error); }
+    };
+
+    const togglePermission = async (id, currentPermissions, field) => {
+        const updated = { ...currentPermissions, [field]: !currentPermissions[field] };
+        await axios.put(`${API_URL}/users/${id}`, { permissions: updated });
         fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => { 
-        try { const res = await axios.get(`${API_URL}/users`); setUsersList(res.data); } 
-        catch(err) {} 
     };
 
-    const handleUpdateUser = async (id, updateData) => { 
-        try { await axios.put(`${API_URL}/users/${id}`, updateData); fetchUsers(); } 
-        catch(err) { alert('Lỗi cập nhật user!'); } 
+    const handleApprove = async (id, isApproved) => {
+        await axios.put(`${API_URL}/users/${id}`, { isApproved: !isApproved });
+        fetchUsers();
     };
 
-    const handleDeleteUser = async (id) => { 
-        if(window.confirm('Xóa vĩnh viễn tài khoản này?')) { 
-            try { await axios.delete(`${API_URL}/users/${id}`); fetchUsers(); } 
-            catch(err) {} 
-        } 
+    const handleRestrict = async (id, days) => {
+        let restrictedUntil = null;
+        let isBanned = false;
+
+        if (days === 'forever') {
+            isBanned = true; // Cấm vĩnh viễn
+        } else if (days !== '0' && days !== 'restricted') {
+            // Cộng thêm số ngày Hạn chế vào thời điểm hiện tại
+            restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
+        }
+
+        await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
+        fetchUsers();
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Xóa vĩnh viễn người dùng này? Hành động không thể hoàn tác!")) {
+            await axios.delete(`${API_URL}/users/${id}`);
+            fetchUsers();
+        }
+    };
+
+    const getRestrictStatus = (u) => {
+        if (u.isBanned) return 'forever';
+        if (u.restrictedUntil && new Date(u.restrictedUntil) > new Date()) return 'restricted';
+        return '0';
     };
 
     return (
-        <div className="space-y-6 animate-fade-in-up">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-200/60">
-                <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] font-semibold bg-white/30 px-4 py-2 rounded-full border border-white/40 shadow-sm"><ChevronLeft size={18}/> Về Dashboard</button>
-                <h2 className="text-[20px] md:text-[24px] font-black text-[#1D1D1F]">Quản lý Tài Khoản</h2>
+        <div className="animate-fade-in-up">
+            <div className="flex items-center justify-between mb-8">
+                <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-2 text-[#5c5c5c] hover:text-[#1DB2A0] font-semibold bg-white/50 px-4 py-2 rounded-full shadow-sm transition-colors active:scale-95 border border-white/60">
+                    <ArrowLeft size={16} /> Về Dashboard
+                </button>
+                <h2 className="text-[24px] md:text-[28px] font-black text-[#1D1D1F] tracking-tight">Quản lý Tài Khoản</h2>
             </div>
-            <div className="grid gap-4">
-                {usersList.map((user) => {
-                    const id = user._id || user.id;
-                    const perms = user.permissions || { canView: false, canEdit: false, canDelete: false };
-                    const isMe = (authUser.id === id) || (authUser._id === id);
+
+            <div className="space-y-4">
+                {users.map(u => {
+                    const restrictStatus = getRestrictStatus(u);
+                    const isRestricted = restrictStatus !== '0';
 
                     return (
-                        <div key={id} className={`liquid-glass p-4 rounded-[20px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${user.isBanned ? 'border-[#FF3B30]/30 bg-[#FF3B30]/5' : ''}`}>
-                            <div className="flex-1">
+                        <div key={u._id} className="liquid-glass rounded-[24px] p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all hover:bg-white/60 shadow-sm border border-white/50">
+                            
+                            {/* THÔNG TIN NGƯỜI DÙNG */}
+                            <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-bold text-[#1D1D1F] text-[16px]">{user.name}</h3>
-                                    {user.role === 'admin' && <Crown size={14} className="text-[#FF9500]" title="Chủ tịch"/>}
-                                    {!user.isApproved && <span className="bg-[#FF9500] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">CHỜ DUYỆT</span>}
-                                    {user.isBanned && <span className="bg-[#FF3B30] text-white text-[9px] px-2 py-0.5 rounded-full font-bold">BỊ CẤM</span>}
+                                    <h3 className="font-bold text-[16px] text-[#1D1D1F] truncate">{u.name}</h3>
+                                    {u.role === 'admin' && <Crown size={16} className="text-[#FF9500] shrink-0"/>}
                                 </div>
-                                <p className="text-[13px] text-[#5c5c5c] font-medium">{user.email}</p>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                                {/* KHỐI DUYỆT */}
-                                {!user.isApproved ? (
-                                    <button onClick={() => handleUpdateUser(id, { isApproved: true })} className="bg-[#1DB2A0] hover:bg-[#158f80] text-white text-[12px] font-bold px-4 py-2 rounded-xl transition shadow-sm">Duyệt Vào</button>
-                                ) : (
-                                    <button onClick={() => handleUpdateUser(id, { isApproved: false })} disabled={isMe} className="bg-white/40 hover:bg-white text-[#5c5c5c] text-[12px] font-bold px-3 py-2 rounded-xl transition border border-white/50 disabled:opacity-50">Hủy Duyệt</button>
-                                )}
-
-                                {/* KHỐI PHÂN QUYỀN */}
-                                <div className="flex gap-1 bg-white/30 p-1 rounded-xl border border-white/50 items-center">
-                                    <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
-                                        <input type="checkbox" checked={perms.canView} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canView: e.target.checked } })} disabled={isMe} className="accent-[#33A1FD]" />
-                                        <span className="text-[12px] font-semibold text-[#1D1D1F]">Xem</span>
-                                    </label>
-                                    <div className="w-[1px] h-4 bg-white/60"></div>
-                                    <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/40 rounded-lg transition'}`}>
-                                        <input type="checkbox" checked={perms.canEdit} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canEdit: e.target.checked } })} disabled={isMe} className="accent-[#26D0CE]" />
-                                        <span className="text-[12px] font-semibold text-[#1D1D1F]">Sửa</span>
-                                    </label>
-                                    <div className="w-[1px] h-4 bg-white/60"></div>
-                                    <label className={`flex items-center gap-1.5 px-2 py-1 ${isMe ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#FF3B30]/10 rounded-lg transition'}`}>
-                                        <input type="checkbox" checked={perms.canDelete} onChange={(e) => handleUpdateUser(id, { permissions: { ...perms, canDelete: e.target.checked } })} disabled={isMe} className="accent-[#FF3B30]" />
-                                        <span className="text-[12px] font-semibold text-[#1D1D1F]">Xóa</span>
-                                    </label>
-                                </div>
-
-                                {/* KHỐI TRỪNG PHẠT */}
-                                {!isMe && (
-                                    <>
-                                        <button onClick={() => handleUpdateUser(id, { isBanned: !user.isBanned })} className={`px-3 py-2 text-[12px] font-bold rounded-xl transition border shadow-sm ${user.isBanned ? 'bg-[#1DB2A0]/10 text-[#1DB2A0] border-[#1DB2A0]/20 hover:bg-[#1DB2A0]/20' : 'bg-white/40 text-[#FF3B30] border-white/50 hover:bg-[#FF3B30]/10'}`}>
-                                            {user.isBanned ? 'Mở Khóa' : 'Cấm Cửa'}
-                                        </button>
-                                        <button onClick={() => handleDeleteUser(id)} className="w-9 h-9 flex justify-center items-center bg-[#FF3B30]/10 hover:bg-[#FF3B30] text-[#FF3B30] hover:text-white rounded-xl transition-colors shadow-sm"><Trash2 size={16}/></button>
-                                    </>
+                                <p className="text-[13px] text-[#5c5c5c] truncate">{u.email}</p>
+                                
+                                {/* HIỂN THỊ ĐỒNG HỒ ĐẾM NGƯỢC NẾU BỊ HẠN CHẾ */}
+                                {restrictStatus === 'restricted' && u.restrictedUntil && (
+                                    <p className="text-[12px] text-[#FF3B30] mt-1.5 flex items-center gap-1 font-semibold">
+                                        <Clock size={12}/> Hạn chế đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
+                                    </p>
                                 )}
                             </div>
+
+                            {/* KHU VỰC CÁC NÚT BẤM VÀ QUYỀN */}
+                            {u.role !== 'admin' ? (
+                                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                    <button onClick={() => handleApprove(u._id, u.isApproved)} className={`px-4 py-2.5 text-[13px] font-bold rounded-xl transition-all shadow-sm active:scale-95 ${u.isApproved ? 'text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200' : 'text-white bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] hover:opacity-90 border border-transparent'}`}>
+                                        {u.isApproved ? 'Hủy Duyệt' : 'Duyệt Vào'}
+                                    </button>
+                                    
+                                    <div className="flex items-center gap-4 bg-white/70 border border-gray-200 rounded-xl px-4 py-2.5 shadow-inner">
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#1DB2A0] transition-colors">
+                                            <input type="checkbox" checked={u.permissions?.canPay || false} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-[#1DB2A0] w-4 h-4 cursor-pointer"/> P.Lương
+                                        </label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#33A1FD] transition-colors">
+                                            <input type="checkbox" checked={u.permissions?.canEdit || false} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-[#33A1FD] w-4 h-4 cursor-pointer"/> Sửa
+                                        </label>
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF3B30] transition-colors">
+                                            <input type="checkbox" checked={u.permissions?.canDelete || false} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-[#FF3B30] w-4 h-4 cursor-pointer"/> Xóa
+                                        </label>
+                                    </div>
+
+                                    {/* MENU CHỌN NGÀY HẠN CHẾ */}
+                                    <select 
+                                        className={`text-[13px] font-bold px-3 py-2.5 rounded-xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-[#FF3B30]/10 text-[#FF3B30] border-[#FF3B30]/30' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                                        onChange={(e) => handleRestrict(u._id, e.target.value)}
+                                        value={restrictStatus}
+                                    >
+                                        <option value="0">Bình thường</option>
+                                        <option value="1">Hạn chế 1 ngày</option>
+                                        <option value="2">Hạn chế 2 ngày</option>
+                                        <option value="3">Hạn chế 3 ngày</option>
+                                        <option value="7">Hạn chế 7 ngày</option>
+                                        <option value="forever">Cấm vĩnh viễn</option>
+                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị hạn chế...</option>}
+                                    </select>
+
+                                    <button onClick={() => handleDelete(u._id)} className="w-[40px] h-[40px] flex items-center justify-center bg-white border border-gray-200 text-[#FF3B30] rounded-xl hover:bg-[#FF3B30] hover:text-white transition-all shadow-sm active:scale-95" title="Xóa tài khoản"><Trash2 size={16}/></button>
+                                </div>
+                            ) : (
+                                <div className="px-4 py-2.5 bg-[#FF9500]/10 text-[#FF9500] text-[13px] font-bold rounded-xl border border-[#FF9500]/20 flex items-center gap-2 shrink-0 shadow-sm">
+                                    <ShieldAlert size={16}/> Quyền Tối Cao
+                                </div>
+                            )}
                         </div>
                     )
                 })}
