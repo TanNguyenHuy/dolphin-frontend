@@ -5,7 +5,7 @@ import { formatCurrency, formatInput, getSessionName, AnimatedNumber, formatDate
 export default function DashboardView({ 
     dashboardProfit, globalTongCon, globalTongNhap, globalVonTon, showTax, taxAmount, displayRevenueTr, 
     totalRevenueForTax, 
-    safeSessions, enrichedSessions, fetchDetail, isAdmin, canEdit, canDelete, 
+    safeSessions, enrichedSessions, fetchDetail, isAdmin, canEdit, canDelete, canPay, // ĐÃ BỔ SUNG QUYỀN canPay Ở ĐÂY
     setSalarySession, setShowSalaryModal, handleStartEditSession, handleDeleteSession 
 }) {
     
@@ -19,7 +19,7 @@ export default function DashboardView({
     return (
         <div className="space-y-6 md:space-y-8 animate-fade-in-up">
             
-            {/* THỐNG KÊ TỔNG QUAN (Giữ nguyên) */}
+            {/* THỐNG KÊ TỔNG QUAN */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
                 <div className="lg:col-span-7 liquid-glass-dark p-6 md:p-8 rounded-[32px] relative overflow-hidden flex flex-col justify-between min-h-[180px] transition-transform duration-300 hover:-translate-y-1">
                     <div className="absolute top-0 right-0 p-6 opacity-10"><BarChart3 size={120} strokeWidth={1} /></div>
@@ -58,7 +58,6 @@ export default function DashboardView({
                     <span className="text-[12px] font-bold bg-white/40 text-[#1D1D1F] border border-white/40 px-2.5 py-0.5 rounded-full">{safeSessions.length}</span>
                 </div>
                 
-                {/* LỚP BỌC MỚI ĐÃ ĐƯỢC XÓA BỎ ÉP BUỘC min-w-[850px] GÂY LỖI */}
                 <div className="flex flex-col divide-y divide-white/30 w-full overflow-x-auto custom-scrollbar">
                     <div className="w-full">
                         {enrichedSessions.map((ss, index) => {
@@ -72,7 +71,7 @@ export default function DashboardView({
                                 <div key={ss.id || index} onClick={() => fetchDetail(ss.id)} className="p-4 md:p-5 hover:bg-white/20 transition-colors duration-300 w-full cursor-pointer">
                                     
                                     {/* ========================================= */}
-                                    {/* 1. GIAO DIỆN MÁY TÍNH (Giữ nguyên siêu đẹp) */}
+                                    {/* 1. GIAO DIỆN MÁY TÍNH */}
                                     {/* ========================================= */}
                                     <div className="hidden lg:flex items-center justify-between w-full min-w-[850px]">
                                         <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
@@ -99,7 +98,8 @@ export default function DashboardView({
                                                 <div className={`text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(ss.realProfit) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(ss.realProfit)}</div>
                                             </div>
                                             <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-white/40 ml-1">
-                                                {isAdmin && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#1DB2A0] rounded-full transition-colors shadow-sm" title="Phát lương (30%)"><Wallet size={14}/></button>}
+                                                {/* ĐÃ ĐỔI THÀNH canPay CHO NÚT PHÁT LƯƠNG */}
+                                                {canPay && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#1DB2A0] rounded-full transition-colors shadow-sm" title="Phát lương (30%)"><Wallet size={14}/></button>}
                                                 {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors shadow-sm"><Pencil size={14}/></button>}
                                                 {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors shadow-sm"><Trash2 size={14}/></button>}
                                                 <ChevronRight size={18} className="text-[#8E8E93] ml-1 hidden xl:block" />
@@ -108,11 +108,10 @@ export default function DashboardView({
                                     </div>
 
                                     {/* ========================================= */}
-                                    {/* 2. GIAO DIỆN ĐIỆN THOẠI (Xếp 3 tầng chuẩn App) */}
+                                    {/* 2. GIAO DIỆN ĐIỆN THOẠI (Xếp 3 tầng) */}
                                     {/* ========================================= */}
                                     <div className="flex flex-col gap-4 w-full lg:hidden">
                                         
-                                        {/* TẦNG 1: Tên & Thời gian */}
                                         <div className="flex items-start gap-3 w-full">
                                             <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[14px] bg-white/60 border border-white/50 text-[#1D1D1F] shrink-0 shadow-sm">
                                                 {safeSessions.length - index}
@@ -127,7 +126,6 @@ export default function DashboardView({
                                             </div>
                                         </div>
 
-                                        {/* TẦNG 2: Khu vực hiển thị Nhập - Bán - Còn */}
                                         <div className="bg-white/40 border border-white/50 rounded-[16px] p-3 flex justify-between items-center shadow-sm w-full">
                                             <div className="text-center flex-1 border-r border-white/50">
                                                 <div className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1">Nhập</div>
@@ -143,7 +141,6 @@ export default function DashboardView({
                                             </div>
                                         </div>
 
-                                        {/* TẦNG 3: Chi phí, Lợi nhuận và Các Nút Action */}
                                         <div className="flex justify-between items-end w-full">
                                             <div>
                                                 <div className="text-[11px] text-[#5c5c5c] mb-1">Chi phí: <span className="font-semibold text-[#1D1D1F]">{formatCurrency((ss.so_tien_cua_kien || 0) + (ss.so_tien_giat_ui || 0) + ss.quang_cao)}đ</span></div>
@@ -156,7 +153,8 @@ export default function DashboardView({
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5 shrink-0">
-                                                {isAdmin && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="w-9 h-9 flex items-center justify-center text-[#5c5c5c] bg-white hover:text-[#1DB2A0] rounded-full shadow-sm border border-gray-100"><Wallet size={14}/></button>}
+                                                {/* ĐÃ ĐỔI THÀNH canPay CHO NÚT PHÁT LƯƠNG */}
+                                                {canPay && <button onClick={(e) => { e.stopPropagation(); setSalarySession(ss); setShowSalaryModal(true); }} className="w-9 h-9 flex items-center justify-center text-[#5c5c5c] bg-white hover:text-[#1DB2A0] rounded-full shadow-sm border border-gray-100"><Wallet size={14}/></button>}
                                                 {canEdit && <button onClick={(e) => handleStartEditSession(e, ss)} className="w-9 h-9 flex items-center justify-center text-[#5c5c5c] bg-white hover:text-[#33A1FD] rounded-full shadow-sm border border-gray-100"><Pencil size={14}/></button>}
                                                 {canDelete && <button onClick={(e) => handleDeleteSession(e, ss.id)} className="w-9 h-9 flex items-center justify-center text-[#5c5c5c] bg-white hover:text-[#FF3B30] rounded-full shadow-sm border border-gray-100"><Trash2 size={14}/></button>}
                                             </div>
