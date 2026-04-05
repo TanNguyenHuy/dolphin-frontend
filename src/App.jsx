@@ -52,6 +52,7 @@ export default function App() {
     const isAdmin = authUser?.role === 'admin';
     const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
+    const canPay = isAdmin || authUser?.permissions?.canPay === true; // THÊM DÒNG NÀY
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
