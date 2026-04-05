@@ -49,17 +49,18 @@ export default function App() {
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
 
+    // ==========================================
+    // ĐÃ FIX LỖI: BỔ SUNG QUYỀN canPay Ở ĐÂY
+    // ==========================================
     const isAdmin = authUser?.role === 'admin';
     const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
-    const canPay = isAdmin || authUser?.permissions?.canPay === true; // THÊM DÒNG NÀY
+    const canPay = isAdmin || authUser?.permissions?.canPay === true;
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
-    // ==========================================
     // RADAR: KIỂM TRA QUYỀN REAL-TIME
-    // ==========================================
     useEffect(() => {
         if (!authUser || !authUser.email) return; 
 
@@ -286,7 +287,6 @@ export default function App() {
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
             
-            {/* ĐÂY LÀ "BÙA HỘ MỆNH" CHỐNG LỖI CSS TRÊN VERCEL */}
             <style dangerouslySetInnerHTML={{ __html: `
                 html, body, div, span, p, h1, h2, h3, h4, h5, h6 { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
                 .font-sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
@@ -294,10 +294,8 @@ export default function App() {
                 @keyframes scale-up { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 .animate-scale-up { animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 
-                /* TÁI TẠO MÀU NỀN GRADIENT CỰC ĐẸP */
                 .bg-aurora { background: linear-gradient(135deg, #E0F7FA 0%, #E0F2FE 50%, #F0FDFA 100%); }
                 
-                /* HIỆU ỨNG KÍNH MỜ CHO HEADER & CÁC CARD */
                 .liquid-glass { 
                     background: rgba(255, 255, 255, 0.55); 
                     backdrop-filter: blur(24px) saturate(150%); 
@@ -306,7 +304,6 @@ export default function App() {
                     box-shadow: 0 8px 32px rgba(0,0,0,0.05); 
                 }
                 
-                /* CARD TỐI MÀU (LỢI NHUẬN RÒNG) */
                 .liquid-glass-dark { 
                     background: rgba(30, 41, 59, 0.75); 
                     backdrop-filter: blur(24px) saturate(150%); 
@@ -374,7 +371,7 @@ export default function App() {
             {showDeleteModal && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[340px] animate-scale-up relative text-center"><div className="w-14 h-14 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-5 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><AlertTriangle size={28} /></div><h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa đợt thống kê?</h2><p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Hành động này <strong className="text-[#FF3B30]">vĩnh viễn</strong> và không thể khôi phục.</p><div className="flex flex-col gap-3"><button onClick={confirmDeleteSession} className="w-full bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold hover:bg-[#D70015] transition-colors text-[15px] shadow-md active:opacity-70">Xóa Đợt Bán</button><button onClick={() => setShowDeleteModal(false)} className="w-full py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy thao tác</button></div></div></div>)}
             {showDeleteRowModal && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 w-full max-w-[340px] animate-scale-up relative text-center"><div className="w-12 h-12 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-4 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><Trash2 size={24} /></div><h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa sản phẩm này?</h2><p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Dữ liệu sẽ bị xóa ngay lập tức.</p><div className="flex gap-3"><button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 border border-white/50 hover:bg-white transition-colors text-[15px] active:opacity-70">Hủy</button><button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold text-[15px] hover:bg-[#D70015] transition-colors disabled:opacity-50 shadow-md active:opacity-70">{isProcessingDelete ? '...' : 'Xóa'}</button></div></div></div>)}
 
-            {/* MODAL PHÁT LƯƠNG CHUẨN VIETQR (Napas 247) */}
+            {/* MODAL PHÁT LƯƠNG */}
             {showSalaryModal && salarySession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
                     <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center">
@@ -432,7 +429,9 @@ export default function App() {
                         globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} 
                         totalRevenueForTax={totalRevenueForTax} 
                         safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} 
-                        isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} 
+                        isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} 
+                        canPay={canPay} /* BỔ SUNG QUYỀN Ở ĐÂY RỒI NÈ SẾP */
+                        setSalarySession={setSalarySession} 
                         setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
                     />
                 )}
