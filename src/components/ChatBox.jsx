@@ -8,9 +8,11 @@ export default function ChatBox({ authUser }) {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [isSending, setIsSending] = useState(false);
+    
+    // BIẾN LƯU SỐ TIN NHẮN CHƯA ĐỌC
+    const [unreadCount, setUnreadCount] = useState(0); 
     const messagesEndRef = useRef(null);
 
-    // Cuộn xuống tin nhắn mới nhất
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -18,23 +20,38 @@ export default function ChatBox({ authUser }) {
     const fetchMessages = async () => {
         try {
             const res = await axios.get(`${API_URL}/chat`);
-            setMessages(res.data);
+            const fetchedMessages = res.data;
+            setMessages(fetchedMessages);
+            
+            // LOGIC ĐẾM TIN NHẮN CHƯA ĐỌC
+            const lastRead = localStorage.getItem('lastReadChatTime');
+            if (lastRead) {
+                // Đếm tin nhắn MỚI HƠN lần cuối xem VÀ KHÔNG PHẢI do mình gửi
+                const unread = fetchedMessages.filter(m => new Date(m.timestamp) > new Date(lastRead) && m.senderEmail !== authUser.email).length;
+                setUnreadCount(unread);
+            } else {
+                // Lần đầu vào app, báo đỏ toàn bộ tin của người khác
+                const unread = fetchedMessages.filter(m => m.senderEmail !== authUser.email).length;
+                setUnreadCount(unread);
+            }
         } catch (err) { console.error(err); }
     };
 
-    // Tự động làm mới chat mỗi 3 giây khi mở hộp thoại
+    // QUÉT TIN NHẮN NGẦM LIÊN TỤC MỖI 3 GIÂY (Dù đóng hay mở)
     useEffect(() => {
-        let interval;
-        if (isOpen) {
-            fetchMessages();
-            interval = setInterval(fetchMessages, 3000);
-        }
+        fetchMessages(); 
+        const interval = setInterval(fetchMessages, 3000);
         return () => clearInterval(interval);
-    }, [isOpen]);
+    }, []);
 
+    // KHI MỞ HỘP THOẠI -> TỰ ĐỘNG ĐÁNH DẤU ĐÃ ĐỌC HẾT
     useEffect(() => {
+        if (isOpen) {
+            localStorage.setItem('lastReadChatTime', new Date().toISOString());
+            setUnreadCount(0);
+        }
         scrollToBottom();
-    }, [messages, isOpen]);
+    }, [isOpen, messages]);
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -47,6 +64,8 @@ export default function ChatBox({ authUser }) {
                 text: text.trim()
             });
             setText('');
+            // Gửi xong là tính như vừa xem tin mới nhất
+            localStorage.setItem('lastReadChatTime', new Date().toISOString());
             await fetchMessages();
         } catch (err) {
             console.error("Lỗi gửi tin nhắn", err);
@@ -61,7 +80,6 @@ export default function ChatBox({ authUser }) {
             <div className={`transition-all duration-300 ease-in-out origin-bottom-right ${isOpen ? 'scale-100 opacity-100 mb-4' : 'scale-0 opacity-0 h-0 w-0 overflow-hidden'}`}>
                 <div className="w-[320px] sm:w-[350px] h-[450px] bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-2xl flex flex-col overflow-hidden">
                     
-                    {/* Header Chat */}
                     <div className="bg-gradient-to-r from-[#26D0CE] to-[#33A1FD] p-3 flex justify-between items-center text-white shadow-sm">
                         <div className="flex items-center gap-2">
                             <MessageCircle size={18} />
@@ -72,7 +90,6 @@ export default function ChatBox({ authUser }) {
                         </button>
                     </div>
 
-                    {/* Nội dung Chat */}
                     <div className="flex-1 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3 bg-[#f0f4f9]/50">
                         {messages.length === 0 ? (
                             <div className="text-center text-gray-400 text-[12px] my-auto italic">Chưa có ghi chú nào. Hãy là người đầu tiên!</div>
@@ -94,7 +111,6 @@ export default function ChatBox({ authUser }) {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Khung Nhập Liệu */}
                     <form onSubmit={handleSend} className="p-3 bg-white border-t border-gray-100 flex gap-2 items-center">
                         <input 
                             type="text" 
@@ -114,13 +130,23 @@ export default function ChatBox({ authUser }) {
                 </div>
             </div>
 
-            {/* BONG BÓNG CHAT (NÚT BẤM) */}
-            <button 
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ${isOpen ? 'bg-[#FF3B30] rotate-90' : 'bg-gradient-to-tr from-[#33A1FD] to-[#26D0CE] rotate-0'}`}
-            >
-                {isOpen ? <X size={24} /> : <MessageCircle size={26} />}
-            </button>
+            {/* BONG BÓNG CHAT KÈM THÔNG BÁO SỐ LƯỢNG MÀU ĐỎ */}
+            <div className="relative">
+                <button 
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ${isOpen ? 'bg-[#FF3B30] rotate-90' : 'bg-gradient-to-tr from-[#33A1FD] to-[#26D0CE] rotate-0'}`}
+                >
+                    {isOpen ? <X size={24} /> : <MessageCircle size={26} />}
+                </button>
+                
+                {/* VÒNG TRÒN ĐỎ BÁO TIN NHẮN MỚI */}
+                {!isOpen && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#FF3B30] text-white text-[11px] font-black w-[22px] h-[22px] flex items-center justify-center rounded-full shadow-lg border-[2px] border-white animate-bounce">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
+            </div>
+            
         </div>
     );
 }
