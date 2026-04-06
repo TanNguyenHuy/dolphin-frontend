@@ -6,7 +6,7 @@ import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
-import ChatBox from './components/ChatBox';
+import ChatBox from './components/ChatBox'; // Nhớ import ChatBox
 import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 
 export default function App() {
@@ -50,9 +50,6 @@ export default function App() {
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
 
-    // ==========================================
-    // ĐÃ FIX LỖI: BỔ SUNG QUYỀN canPay Ở ĐÂY
-    // ==========================================
     const isAdmin = authUser?.role === 'admin';
     const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
@@ -334,8 +331,10 @@ export default function App() {
 
             <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
 
-            {/* HEADER */}
-            <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[calc(100%-3rem)] max-w-6xl z-50 liquid-glass rounded-full px-5 py-3 md:py-3.5 flex justify-between items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
+            {/* ========================================================= */}
+            {/* ĐÃ MỞ RỘNG HEADER TỪ max-w-6xl (1152px) LÊN max-w-[1600px] */}
+            {/* ========================================================= */}
+            <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-full px-5 py-3 md:py-3.5 flex justify-between items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
                 <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
                     <div className="w-9 h-9 md:w-11 md:h-11 bg-white/60 backdrop-blur-md rounded-full shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform group-hover:scale-105 border border-white/50"><img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='block'}} /><Fish size={18} className="text-[#33A1FD] hidden" /></div>
                     <div className="min-w-0 pr-2">
@@ -416,7 +415,10 @@ export default function App() {
                 </div>
             )}
 
-            <div className="max-w-[1200px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
+            {/* ========================================================= */}
+            {/* ĐÃ MỞ RỘNG PHẦN THÂN TRANG TỪ max-w-[1200px] LÊN max-w-[1600px] */}
+            {/* ========================================================= */}
+            <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 
                 {/* ADMIN PANEL */}
                 {view === 'USERS' && isAdmin && (
@@ -430,8 +432,7 @@ export default function App() {
                         globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} 
                         totalRevenueForTax={totalRevenueForTax} 
                         safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} 
-                        isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} 
-                        canPay={canPay} /* BỔ SUNG QUYỀN Ở ĐÂY RỒI NÈ SẾP */
+                        isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                         setSalarySession={setSalarySession} 
                         setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
                     />
@@ -449,8 +450,10 @@ export default function App() {
                     />
                 )}
             </div>
-            {/* GẮN BONG BÓNG CHAT VÀO ĐÂY */}
+
+            {/* BONG BÓNG CHAT NHÓM */}
             <ChatBox authUser={authUser} />
+
         </div>
     );
 }
