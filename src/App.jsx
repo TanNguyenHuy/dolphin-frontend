@@ -6,7 +6,7 @@ import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
-import ChatBox from './components/ChatBox'; // Nhớ import ChatBox
+import ChatBox from './components/ChatBox';
 import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 
 export default function App() {
@@ -58,7 +58,6 @@ export default function App() {
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
-    // RADAR: KIỂM TRA QUYỀN REAL-TIME
     useEffect(() => {
         if (!authUser || !authUser.email) return; 
 
@@ -170,13 +169,50 @@ export default function App() {
     const handleAddBale = async (e) => { e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; try { const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); const updated = [...importedBales, res.data]; setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); setBaleName(''); setBaleCost(''); setBaleQty(''); } catch (err) { alert("Lỗi DB Lô hàng."); } };
     const handleDeleteBale = async (id) => { if(!canDelete) return; try { await axios.delete(`${API_URL}/bales/${id}`); const updated = importedBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
 
+    // ==========================================
+    // ĐÃ FIX: CHỐT CỨNG THỜI GIAN KHI THÊM MỚI
+    // ==========================================
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc) }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) { alert(`Lỗi: ${err.message}`); } finally { setIsProcessingAdd(false); }
+        try { 
+            await axios.post(`${API_URL}/daily`, { 
+                session_id: currentId, 
+                ten_san_pham: newItem.ten_san_pham, 
+                link_san_pham: newItem.link_san_pham, 
+                ngay_ban: newItem.ngay_ban, 
+                so_luong_nhap: parseInput(newItem.so_luong_nhap), 
+                so_luong: parseInput(newItem.so_luong), 
+                so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc),
+                updatedAt: new Date().toISOString() // BÍ KÍP ĐÂY SẾP: Đóng băng thời gian trên máy tính
+            }); 
+            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
+            if(freshRes.data) setDetailData(freshRes.data); 
+            setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); 
+        } catch (err) { alert(`Lỗi: ${err.message}`); } finally { setIsProcessingAdd(false); }
     };
     
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
-    const handleSaveEdit = async () => { if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc) }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } };
+    
+    // ==========================================
+    // ĐÃ FIX: CHỐT CỨNG THỜI GIAN KHI LƯU SỬA
+    // ==========================================
+    const handleSaveEdit = async () => { 
+        if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
+        try { 
+            const updatedRow = { 
+                ...editingRow, 
+                so_luong_nhap: parseInput(editingRow.so_luong_nhap), 
+                so_luong: parseInput(editingRow.so_luong), 
+                so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc),
+                updatedAt: new Date().toISOString() // Lại đóng băng một lần nữa
+            }; 
+            await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); 
+            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
+            if(freshRes.data) setDetailData(freshRes.data); 
+            setEditingRow(null); 
+        } catch (err) {} finally { setIsProcessingEdit(false); } 
+    };
+
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
     const handleSaveSession = async () => { if (!editingSession) return; try { await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: parseInput(editingSession.so_tien_cua_kien), so_tien_giat_ui: parseInput(editingSession.so_tien_giat_ui) }); await fetchDashboard(); if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId); setEditingSession(null); } catch (err) {} };
     
@@ -331,9 +367,6 @@ export default function App() {
 
             <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
 
-            {/* ========================================================= */}
-            {/* ĐÃ MỞ RỘNG HEADER TỪ max-w-6xl (1152px) LÊN max-w-[1600px] */}
-            {/* ========================================================= */}
             <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-full px-5 py-3 md:py-3.5 flex justify-between items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
                 <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
                     <div className="w-9 h-9 md:w-11 md:h-11 bg-white/60 backdrop-blur-md rounded-full shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform group-hover:scale-105 border border-white/50"><img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='block'}} /><Fish size={18} className="text-[#33A1FD] hidden" /></div>
@@ -415,9 +448,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* ========================================================= */}
-            {/* ĐÃ MỞ RỘNG PHẦN THÂN TRANG TỪ max-w-[1200px] LÊN max-w-[1600px] */}
-            {/* ========================================================= */}
             <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 
                 {/* ADMIN PANEL */}
@@ -451,7 +481,6 @@ export default function App() {
                 )}
             </div>
 
-            {/* BONG BÓNG CHAT NHÓM */}
             <ChatBox authUser={authUser} />
 
         </div>
