@@ -157,41 +157,55 @@ export default function App() {
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
+    // ==========================================
+    // ĐÃ FIX: CHỈ TÌM GIÁ SAU CHỮ GIÁ/SALE, BỎ QUA MÃ THỜI GIAN/LINK
+    // ==========================================
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) return;
         let q = 0; let r = 0;
-        try {
-            const data = JSON.parse(syncText);
-            if (Array.isArray(data)) {
-                q = data.length;
-                data.forEach(item => {
-                    let price = 0;
-                    for (let key in item) {
-                        let val = item[key];
-                        if (typeof val === 'number') { if (val > 100) price = Math.max(price, val); } 
-                        else if (typeof val === 'string') {
-                            let lower = val.toLowerCase();
-                            let digits = val.replace(/[^\d]/g, '');
-                            if (digits.length > 0) {
-                                let num = Number(digits);
-                                if (lower.includes('k') || lower.includes('nghìn') || lower.includes('nghin')) num *= 1000;
-                                if (num > 100) price = Math.max(price, num);
+        
+        let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
+        let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
+        
+        let foundFromSummary = false;
+        if (matchQ && matchR) {
+            q = Number(matchQ[1]);
+            let num = Number(matchR[1].replace(/[^\d]/g, ''));
+            if (matchR[2] && (matchR[2].toLowerCase() === 'k' || matchR[2].toLowerCase().includes('nghìn') || matchR[2].toLowerCase().includes('nghin'))) num *= 1000;
+            else if (syncText.toLowerCase().includes('k')) num *= 1000;
+            r = num;
+            foundFromSummary = true;
+        }
+
+        if (!foundFromSummary) {
+            try {
+                const data = JSON.parse(syncText);
+                if (Array.isArray(data)) {
+                    q = data.length; 
+                    data.forEach(item => {
+                        let itemPrice = 0;
+                        for (let key in item) {
+                            if (typeof item[key] === 'string') {
+                                let txt = item[key].toLowerCase();
+                                // Chặn lấy nhầm số từ các field kĩ thuật (id, url, time, date...)
+                                if (key.includes('url') || key.includes('link') || key.includes('id') || key.includes('time') || key.includes('scanned') || key.includes('date')) continue;
+                                
+                                // Chỉ bắt chính xác theo cụm từ (Giá, Sale...)
+                                let priceMatch = txt.match(/(?:giá|gia|sale)\s*[:\-]?\s*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
+                                if (priceMatch) {
+                                    let p = Number(priceMatch[1].replace(/[^\d]/g, ''));
+                                    if (priceMatch[2] && (priceMatch[2] === 'k' || priceMatch[2].includes('nghìn') || priceMatch[2].includes('nghin'))) p *= 1000;
+                                    else if (p > 0 && p < 1000) p *= 1000; 
+                                    if (p > itemPrice) itemPrice = p;
+                                }
                             }
                         }
-                    }
-                    r += price;
-                });
-            }
-        } catch (e) {
-            let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
-            if (matchQ) q = Number(matchQ[1]);
-            let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn)?/i);
-            if (matchR) {
-                let num = Number(matchR[1].replace(/[^\d]/g, ''));
-                if (matchR[2] || syncText.toLowerCase().includes('k')) num *= 1000;
-                r = num;
-            }
+                        r += itemPrice;
+                    });
+                }
+            } catch (e) { }
         }
+        
         if (q > 0) setSyncManualQty(q.toString());
         if (r > 0) setSyncManualRev(r.toString());
     }, [syncText]);
@@ -297,7 +311,6 @@ export default function App() {
         enrichedDaily = enrichedDaily.map((row, idx) => ({ ...row, stt: enrichedDaily.length - idx }));
     }
 
-    // ĐÂY LÀ DÒNG CODE CỨU MẠNG MÀ EM ĐÃ LỠ TAY XÓA MẤT
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
