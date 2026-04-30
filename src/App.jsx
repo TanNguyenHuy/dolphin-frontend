@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, Copy } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -366,7 +366,7 @@ export default function App() {
                         <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
                         
                         <div className="mb-4">
-                            <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><Copy className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
+                            <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><RefreshCw className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
                             <p className="text-[13px] text-[#5c5c5c] mt-1">Cập nhật thay thế cho: <strong className="text-[#1A5B82]">{syncRow.ten_san_pham}</strong></p>
                         </div>
 
