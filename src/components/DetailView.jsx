@@ -32,17 +32,15 @@ export default function DetailView({
 
     return (
         <div className="space-y-6 md:space-y-8 animate-fade-in-up pb-10">
+            {/* Header (Back, Export) */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/60 pb-4">
-                <button onClick={handleBack} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] transition-colors font-semibold text-[15px] active:opacity-70 bg-white/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/40 shadow-sm">
-                    <ChevronLeft size={18} strokeWidth={2.5}/> Trở về
-                </button>
+                <button onClick={handleBack} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] transition-colors font-semibold text-[15px] active:opacity-70 bg-white/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/40 shadow-sm"><ChevronLeft size={18} strokeWidth={2.5}/> Trở về</button>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button onClick={handleExport} className="w-full sm:w-auto px-4 py-2 liquid-glass text-[#1D1D1F] font-semibold rounded-full shadow-sm hover:bg-white/50 transition-all text-[13px] flex items-center justify-center gap-2 active:opacity-70">
-                        <Download size={14}/> Xuất Excel
-                    </button>
+                    <button onClick={handleExport} className="w-full sm:w-auto px-4 py-2 liquid-glass text-[#1D1D1F] font-semibold rounded-full shadow-sm hover:bg-white/50 transition-all text-[13px] flex items-center justify-center gap-2 active:opacity-70"><Download size={14}/> Xuất Excel</button>
                 </div>
             </div>
 
+            {/* Title & Target */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
                 <div className="min-w-0 flex-1">
                     <h2 className="text-[28px] md:text-[36px] font-black text-[#1D1D1F] tracking-tight leading-tight drop-shadow-sm break-words whitespace-normal">{getSessionName(detailData?.name, actualStartDate, actualEndDate)}</h2>
@@ -70,6 +68,7 @@ export default function DetailView({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+                {/* Left Column: Cost */}
                 <div className="lg:col-span-4 space-y-6">
                     <div className="liquid-glass rounded-[28px] overflow-hidden flex flex-col h-full min-w-0">
                         <div className="px-5 py-4 border-b border-white/40 flex items-center gap-2 bg-white/10"><Box size={18} className="text-[#1A5B82]" /><h3 className="text-[15px] font-bold text-[#1D1D1F] tracking-tight whitespace-nowrap">Chi phí Vốn</h3></div>
@@ -79,7 +78,6 @@ export default function DetailView({
                                 <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest block mb-1 whitespace-nowrap">Tổng Vốn Nhập</span>
                                 <div className="font-black text-white text-[28px] md:text-[30px] tabular-nums tracking-tight drop-shadow-sm whitespace-nowrap">{formatCurrency((detailData?.so_tien_cua_kien || 0) + (detailData?.so_tien_giat_ui || 0) + detailAutoAdCost)}<span className="text-[14px] text-white/70 ml-1 font-semibold">đ</span></div>
                             </div>
-                            
                             {canEdit && (
                                 <form onSubmit={handleAddBale} className="bg-white/20 p-4 rounded-[20px] space-y-3 shadow-sm border border-white/40 backdrop-blur-md">
                                     <input required placeholder="Tên lô hàng..." className="w-full min-w-0 liquid-input rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-[#1D1D1F] focus:border-[#26D0CE] outline-none transition-all" value={baleName} onChange={e=>setBaleName(e.target.value)} />
@@ -90,31 +88,20 @@ export default function DetailView({
                                     <button type="submit" className="w-full min-w-0 bg-white/60 text-[#1A5B82] border border-white/80 shadow-sm py-2.5 rounded-[12px] text-[13px] font-bold hover:bg-white transition-colors active:opacity-70 mt-1 whitespace-nowrap">Thêm Vốn Nhập</button>
                                 </form>
                             )}
-
                             {(importedBales || []).length > 0 && (
                                 <div className="space-y-2">
                                     {(importedBales || []).map(b => {
                                         if (!b) return null;
                                         return (
                                         <div key={b.id} className="p-3 bg-white/30 border border-white/40 rounded-[14px] flex items-center justify-between group shadow-sm min-w-0">
-                                            <div className="flex-1 min-w-0 pr-2">
-                                                <div className="text-[13px] font-bold text-[#1D1D1F] truncate">{b.name || ''}</div>
-                                                <div className="text-[11px] text-[#5c5c5c] mt-0.5 font-medium truncate">SL: <span className="font-semibold text-[#1D1D1F]">{b.qty || 0}</span> • TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}</div>
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                                {canDelete && <button type="button" onClick={() => handleDeleteBale(b.id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white/40 hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-white/50 shadow-sm"><X size={12}/></button>}
-                                            </div>
+                                            <div className="flex-1 min-w-0 pr-2"><div className="text-[13px] font-bold text-[#1D1D1F] truncate">{b.name || ''}</div><div className="text-[11px] text-[#5c5c5c] mt-0.5 font-medium truncate">SL: <span className="font-semibold text-[#1D1D1F]">{b.qty || 0}</span> • TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}</div></div>
+                                            <div className="flex items-center gap-2 shrink-0"><span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>{canDelete && <button type="button" onClick={() => handleDeleteBale(b.id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white/40 hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-white/50 shadow-sm"><X size={12}/></button>}</div>
                                         </div>
                                     )})}
                                 </div>
                             )}
-
                             <div className="mt-auto space-y-4 pt-4 border-t border-white/40 min-w-0">
-                                <div className="min-w-0">
-                                    <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1.5 block pl-1 whitespace-nowrap">Chi phí Giặt ủi / Khác</label>
-                                    <input disabled={!canEdit} className="w-full min-w-0 liquid-input rounded-[16px] px-4 py-3 font-bold text-right text-[#1D1D1F] text-[18px] focus:border-[#33A1FD] outline-none transition-all tabular-nums shadow-sm disabled:opacity-70 disabled:cursor-not-allowed" value={formatInput(detailData?.so_tien_giat_ui || 0)} onFocus={e => e.target.select()} onChange={e => updateSessionField('so_tien_giat_ui', parseInput(e.target.value))} />
-                                </div>
+                                <div className="min-w-0"><label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1.5 block pl-1 whitespace-nowrap">Chi phí Giặt ủi / Khác</label><input disabled={!canEdit} className="w-full min-w-0 liquid-input rounded-[16px] px-4 py-3 font-bold text-right text-[#1D1D1F] text-[18px] focus:border-[#33A1FD] outline-none transition-all tabular-nums shadow-sm disabled:opacity-70 disabled:cursor-not-allowed" value={formatInput(detailData?.so_tien_giat_ui || 0)} onFocus={e => e.target.select()} onChange={e => updateSessionField('so_tien_giat_ui', parseInput(e.target.value))} /></div>
                                 <div className="bg-white/20 border border-white/30 p-4 rounded-[16px] space-y-2.5 text-[13px] backdrop-blur-md min-w-0">
                                     <div className="flex justify-between gap-2 text-[#5c5c5c]"><span className="whitespace-nowrap">Tổng Hàng Nhập</span><span className="font-bold text-[#1D1D1F] tabular-nums shrink-0 whitespace-nowrap">{formatInput(detailData?.computed?.tong_sl_nhap || 0)}</span></div>
                                     <div className="flex justify-between gap-2 text-[#5c5c5c]"><span className="whitespace-nowrap">Tổng Đã Bán</span><span className="font-bold text-[#1DB2A0] tabular-nums shrink-0 whitespace-nowrap">{formatInput(detailData?.computed?.tong_sl_ban || 0)}</span></div>
@@ -129,6 +116,7 @@ export default function DetailView({
                     </div>
                 </div>
 
+                {/* Right Column: Add Item & List */}
                 <div className="lg:col-span-8 flex flex-col h-auto gap-6 md:gap-8 min-w-0">
                     {canEdit && (
                         <form onSubmit={handleAddItem} className="liquid-glass p-5 md:p-6 rounded-[28px] mb-2 min-w-0">
@@ -202,6 +190,7 @@ export default function DetailView({
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5 shrink-0 pl-1 xl:pl-2 border-l border-white/40 ml-1">
+                                                {/* NÚT SYNC DATA TỪ IG VỚI ICON REFRESHCW ĐÃ ĐƯỢC CHỨNG MINH LÀ AN TOÀN */}
                                                 {canEdit && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} 
@@ -212,6 +201,7 @@ export default function DetailView({
                                                         <RefreshCw size={12}/>
                                                     </button>
                                                 )}
+                                                
                                                 {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
                                                 {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
                                             </div>
