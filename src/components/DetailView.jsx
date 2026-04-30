@@ -156,9 +156,10 @@ export default function DetailView({
                                 const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                                 
                                 return (
-                                    <div key={row.id || index} className={`p-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
+                                    <div key={row.id || index} className={`p-4 flex flex-col xl:flex-row xl:items-center gap-4 xl:gap-6 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
                                         
-                                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-8 w-full xl:w-[45%] min-w-0">
+                                        {/* CỘT 1 & 2: Tên & Giờ - Tự động co giãn để đẩy các cột kia sang phải */}
+                                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-6 flex-1 min-w-0">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <div className="w-9 h-9 xl:w-10 xl:h-10 rounded-full flex items-center justify-center font-bold text-[12px] xl:text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
                                                 <div className="min-w-0 flex-1">
@@ -171,7 +172,7 @@ export default function DetailView({
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex flex-col justify-center xl:items-center pl-12 xl:pl-0 border-l-2 border-[#26D0CE]/30 xl:border-none shrink-0 min-w-[120px]">
+                                            <div className="flex flex-col justify-center xl:items-end pl-12 xl:pl-0 shrink-0 w-auto xl:w-[150px]">
                                                 <p className="text-[8px] xl:text-[9px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 xl:mb-1.5">Cập nhật lần cuối</p>
                                                 <div className="text-[10px] xl:text-[11px] font-semibold text-[#1A5B82] bg-white/40 px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-lg border border-white/50 shadow-sm inline-block whitespace-nowrap">
                                                     {row.updatedAt ? formatDateTime(row.updatedAt) : formatDateTime(row.ngay_ban)}
@@ -179,13 +180,15 @@ export default function DetailView({
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between xl:justify-center gap-2 xl:gap-3 shrink-0 w-full xl:w-[25%] pl-12 xl:pl-0">
+                                        {/* CỘT 3: NHẬP / BÁN / CÒN - Giữ nguyên không co giãn */}
+                                        <div className="flex justify-between xl:justify-center gap-2 xl:gap-3 shrink-0 pl-12 xl:pl-0 w-full xl:w-auto">
                                             <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
                                             <div className={`flex-1 xl:flex-none xl:w-[60px] rounded-[12px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
                                             <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
                                         </div>
 
-                                        <div className="flex items-center justify-between xl:justify-end gap-3 shrink-0 w-full xl:w-[30%] pl-12 xl:pl-0 border-t xl:border-none border-white/20 pt-2.5 xl:pt-0 mt-1 xl:mt-0">
+                                        {/* CỘT 4: DOANH THU & LỢI NHUẬN & CÁC NÚT THAO TÁC - Giữ nguyên không co giãn */}
+                                        <div className="flex items-center justify-between xl:justify-end gap-3 shrink-0 pl-12 xl:pl-0 border-t xl:border-none border-white/20 pt-2.5 xl:pt-0 mt-1 xl:mt-0 w-full xl:w-auto">
                                             <div className="text-right space-y-0.5 hidden sm:block shrink-0 pr-1 min-w-[130px]">
                                                 <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Doanh thu</span> <span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
                                                 <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
@@ -202,7 +205,6 @@ export default function DetailView({
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5 shrink-0 pl-1 xl:pl-2 border-l border-white/40 ml-1">
-                                                {/* NÚT SYNC DATA TỪ IG VỚI ICON REFRESHCW (CÁI XOAY XOAY MÀ SẾP ĐANG DÙNG OK) */}
                                                 {canEdit && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} 
@@ -213,7 +215,6 @@ export default function DetailView({
                                                         <RefreshCw size={12}/>
                                                     </button>
                                                 )}
-                                                
                                                 {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
                                                 {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
                                             </div>
