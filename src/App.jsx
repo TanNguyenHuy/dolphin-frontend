@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ClipboardPaste } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, Copy } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -33,7 +33,6 @@ export default function App() {
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     
-    // State đồng bộ IG
     const [syncRow, setSyncRow] = useState(null);
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
@@ -141,39 +140,15 @@ export default function App() {
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { 
-            await axios.post(`${API_URL}/daily`, { 
-                session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, 
-                ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), 
-                so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), 
-                updatedAt: new Date().toISOString() 
-            }); 
-            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
-            if(freshRes.data) setDetailData(freshRes.data); 
-            setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); 
-        } catch (err) {} finally { setIsProcessingAdd(false); }
+        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
-    
     const handleSaveEdit = async () => { 
         if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
-        try { 
-            const updatedRow = { 
-                ...editingRow, 
-                so_luong_nhap: parseInput(editingRow.so_luong_nhap), 
-                so_luong: parseInput(editingRow.so_luong), 
-                so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), 
-                updatedAt: new Date().toISOString() 
-            }; 
-            await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); 
-            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
-            if(freshRes.data) setDetailData(freshRes.data); 
-            setEditingRow(null); 
-        } catch (err) {} finally { setIsProcessingEdit(false); } 
+        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
-    // ĐỌC DỮ LIỆU TỪ JSON IG
     useEffect(() => {
         if (!syncText.trim()) return;
         let q = 0; let r = 0;
@@ -213,10 +188,8 @@ export default function App() {
         if (r > 0) setSyncManualRev(r.toString());
     }, [syncText]);
 
-    // HÀM LƯU ĐỒNG BỘ MỚI CỦA SẾP
     const handleConfirmSync = async () => {
-        if (!syncRow || isProcessingEdit) return; 
-        setIsProcessingEdit(true);
+        if (!syncRow || isProcessingEdit) return; setIsProcessingEdit(true);
         try {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
@@ -231,16 +204,8 @@ export default function App() {
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
             if(freshRes.data) setDetailData(freshRes.data); 
-            
-            setSyncRow(null); 
-            setSyncText(''); 
-            setSyncManualQty(''); 
-            setSyncManualRev('');
-        } catch (err) {
-            console.error("Lỗi:", err);
-        } finally { 
-            setIsProcessingEdit(false); 
-        }
+            setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');
+        } catch (err) {} finally { setIsProcessingEdit(false); }
     };
 
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
@@ -401,7 +366,7 @@ export default function App() {
                         <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
                         
                         <div className="mb-4">
-                            <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><ClipboardPaste className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
+                            <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><Copy className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
                             <p className="text-[13px] text-[#5c5c5c] mt-1">Cập nhật thay thế cho: <strong className="text-[#1A5B82]">{syncRow.ten_san_pham}</strong></p>
                         </div>
 
