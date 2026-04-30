@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Wallet, ClipboardPaste } from 'lucide-react';
+import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, ClipboardPaste } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
 const formatDateTime = (dateString) => {
@@ -15,27 +15,31 @@ const formatDateTime = (dateString) => {
 };
 
 export default function DetailView({
-    detailData, handleBack, handleExport, actualStartDate, actualEndDate, isTargetReached, detailProfit, 
-    dynamicTarget, progressPercent, detailAutoAdCost, canEdit, canDelete, 
-    handleAddBale, baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty, 
-    importedBales, handleDeleteBale, updateSessionField, handleAddItem, newItem, setNewItem, 
+    detailData, handleBack, handleExport, actualStartDate, actualEndDate, isTargetReached, detailProfit,
+    dynamicTarget, progressPercent, detailAutoAdCost, canEdit, canDelete,
+    handleAddBale, baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
+    importedBales, handleDeleteBale, updateSessionField, handleAddItem, newItem, setNewItem,
     isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete,
-    handleStartSync // NHẬN HÀM TỪ APP.JSX ĐỂ MỞ HỘP THOẠI
+    handleStartSync
 }) {
 
-    const calculateDaysDiff = (start, end) => { 
-        if (!start || !end) return 0; 
-        const d1 = new Date(start); const d2 = new Date(end); 
+    const calculateDaysDiff = (start, end) => {
+        if (!start || !end) return 0;
+        const d1 = new Date(start); const d2 = new Date(end);
         if (isNaN(d1) || isNaN(d2)) return 0;
-        return Math.max(0, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24))); 
+        return Math.max(0, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)));
     };
 
     return (
         <div className="space-y-6 md:space-y-8 animate-fade-in-up pb-10">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/60 pb-4">
-                <button onClick={handleBack} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] transition-colors font-semibold text-[15px] active:opacity-70 bg-white/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/40 shadow-sm"><ChevronLeft size={18} strokeWidth={2.5}/> Trở về</button>
+                <button onClick={handleBack} className="flex items-center gap-1.5 text-[#1A5B82] hover:text-[#0B3B60] transition-colors font-semibold text-[15px] active:opacity-70 bg-white/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/40 shadow-sm">
+                    <ChevronLeft size={18} strokeWidth={2.5}/> Trở về
+                </button>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button onClick={handleExport} className="w-full sm:w-auto px-4 py-2 liquid-glass text-[#1D1D1F] font-semibold rounded-full shadow-sm hover:bg-white/50 transition-all text-[13px] flex items-center justify-center gap-2 active:opacity-70"><Download size={14}/> Xuất Excel</button>
+                    <button onClick={handleExport} className="w-full sm:w-auto px-4 py-2 liquid-glass text-[#1D1D1F] font-semibold rounded-full shadow-sm hover:bg-white/50 transition-all text-[13px] flex items-center justify-center gap-2 active:opacity-70">
+                        <Download size={14}/> Xuất Excel
+                    </button>
                 </div>
             </div>
 
@@ -44,7 +48,7 @@ export default function DetailView({
                     <h2 className="text-[28px] md:text-[36px] font-black text-[#1D1D1F] tracking-tight leading-tight drop-shadow-sm break-words whitespace-normal">{getSessionName(detailData?.name, actualStartDate, actualEndDate)}</h2>
                     <p className="text-[13px] text-[#5c5c5c] font-medium mt-1 tabular-nums whitespace-nowrap">Thời gian hoạt động: {calculateDaysDiff(actualStartDate, actualEndDate)} ngày</p>
                 </div>
-                
+
                 <div className="flex flex-col md:items-end liquid-glass p-4 rounded-[20px] w-full md:w-auto min-w-[240px] shrink-0 relative overflow-hidden">
                     {isTargetReached && <div className="absolute inset-0 bg-[#1DB2A0]/10 animate-pulse-slow"></div>}
                     <div className="relative z-10 text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 flex items-center gap-1 whitespace-nowrap">
@@ -111,109 +115,102 @@ export default function DetailView({
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="lg:col-span-8 flex flex-col h-auto gap-6 md:gap-8 min-w-0">
-                    {canEdit && (
-                        <form onSubmit={handleAddItem} className="liquid-glass p-5 md:p-6 rounded-[28px] mb-2 min-w-0">
-                            <div className="flex items-center gap-2 mb-4"><div className="w-8 h-8 bg-white/60 border border-white/80 rounded-full flex items-center justify-center text-[#1A5B82] shadow-sm shrink-0"><Plus size={16} strokeWidth={2.5}/></div><h3 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight truncate">Ghi nhận giao dịch mới</h3></div>
-                            <div className="grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
-                                <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Ngày</label><input type="date" required className="w-full min-w-0 px-3 py-3 text-[14px] font-semibold liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F]" value={newItem.ngay_ban} onChange={e => setNewItem({...newItem, ngay_ban: e.target.value})}/></div>
-                                <div className="col-span-2 md:col-span-3 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Sản Phẩm</label><input required className="w-full min-w-0 px-3 py-3 text-[14px] font-semibold liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F]" placeholder="VD: Sơ mi..." value={newItem.ten_san_pham} onChange={e => setNewItem({...newItem, ten_san_pham: e.target.value})}/></div>
-                                <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Link</label><input className="w-full min-w-0 px-3 py-3 text-[14px] font-medium liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1A5B82]" placeholder="Opt..." value={newItem.link_san_pham} onChange={e => setNewItem({...newItem, link_san_pham: e.target.value})}/></div>
-                                <div className="col-span-1 md:col-span-1 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-center whitespace-nowrap">Nhập</label><input required className="w-full min-w-0 px-1 py-3 text-[14px] font-bold text-[#1A5B82] liquid-input rounded-[12px] text-center focus:border-[#26D0CE] outline-none transition-all tabular-nums" placeholder="0" value={formatInput(newItem.so_luong_nhap)} onChange={e => setNewItem({...newItem, so_luong_nhap: e.target.value})}/></div>
-                                <div className="col-span-1 md:col-span-1 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-center whitespace-nowrap">Bán</label><input required className="w-full min-w-0 px-1 py-3 text-[14px] font-bold text-[#1DB2A0] liquid-input rounded-[12px] text-center focus:border-[#1DB2A0] outline-none transition-all tabular-nums" placeholder="0" value={formatInput(newItem.so_luong)} onChange={e => setNewItem({...newItem, so_luong: e.target.value})}/></div>
-                                <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-right pr-1 whitespace-nowrap">Tổng thu</label><input required className="w-full min-w-0 px-3 py-3 text-[15px] font-bold liquid-input rounded-[12px] text-right focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F] tabular-nums" placeholder="0" value={formatInput(newItem.so_tien_ban_duoc)} onChange={e => setNewItem({...newItem, so_tien_ban_duoc: e.target.value})}/></div>
-                                <div className="col-span-2 md:col-span-1 min-w-0"><button type="submit" disabled={isProcessingAdd} className="w-full min-w-0 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3 rounded-[12px] font-bold hover:opacity-90 transition-colors flex items-center justify-center disabled:opacity-50 h-[44px] shadow-md active:opacity-70"><Plus size={18} strokeWidth={2.5}/></button></div>
+                    <div className="lg:col-span-8 flex flex-col h-auto gap-6 md:gap-8 min-w-0">
+                        {canEdit && (
+                            <form onSubmit={handleAddItem} className="liquid-glass p-5 md:p-6 rounded-[28px] mb-2 min-w-0">
+                                <div className="flex items-center gap-2 mb-4"><div className="w-8 h-8 bg-white/60 border border-white/80 rounded-full flex items-center justify-center text-[#1A5B82] shadow-sm shrink-0"><Plus size={16} strokeWidth={2.5}/></div><h3 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight truncate">Ghi nhận giao dịch mới</h3></div>
+                                <div className="grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
+                                    <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Ngày</label><input type="date" required className="w-full min-w-0 px-3 py-3 text-[14px] font-semibold liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F]" value={newItem.ngay_ban} onChange={e => setNewItem({...newItem, ngay_ban: e.target.value})}/></div>
+                                    <div className="col-span-2 md:col-span-3 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Sản Phẩm</label><input required className="w-full min-w-0 px-3 py-3 text-[14px] font-semibold liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F]" placeholder="VD: Sơ mi..." value={newItem.ten_san_pham} onChange={e => setNewItem({...newItem, ten_san_pham: e.target.value})}/></div>
+                                    <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1 whitespace-nowrap">Link</label><input className="w-full min-w-0 px-3 py-3 text-[14px] font-medium liquid-input rounded-[12px] focus:border-[#26D0CE] outline-none transition-all text-[#1A5B82]" placeholder="Opt..." value={newItem.link_san_pham} onChange={e => setNewItem({...newItem, link_san_pham: e.target.value})}/></div>
+                                    <div className="col-span-1 md:col-span-1 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-center whitespace-nowrap">Nhập</label><input required className="w-full min-w-0 px-1 py-3 text-[14px] font-bold text-[#1A5B82] liquid-input rounded-[12px] text-center focus:border-[#26D0CE] outline-none transition-all tabular-nums" placeholder="0" value={formatInput(newItem.so_luong_nhap)} onChange={e => setNewItem({...newItem, so_luong_nhap: e.target.value})}/></div>
+                                    <div className="col-span-1 md:col-span-1 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-center whitespace-nowrap">Bán</label><input required className="w-full min-w-0 px-1 py-3 text-[14px] font-bold text-[#1DB2A0] liquid-input rounded-[12px] text-center focus:border-[#1DB2A0] outline-none transition-all tabular-nums" placeholder="0" value={formatInput(newItem.so_luong)} onChange={e => setNewItem({...newItem, so_luong: e.target.value})}/></div>
+                                    <div className="col-span-2 md:col-span-2 min-w-0"><label className="text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block text-right pr-1 whitespace-nowrap">Tổng thu</label><input required className="w-full min-w-0 px-3 py-3 text-[15px] font-bold liquid-input rounded-[12px] text-right focus:border-[#26D0CE] outline-none transition-all text-[#1D1D1F] tabular-nums" placeholder="0" value={formatInput(newItem.so_tien_ban_duoc)} onChange={e => setNewItem({...newItem, so_tien_ban_duoc: e.target.value})}/></div>
+                                    <div className="col-span-2 md:col-span-1 min-w-0"><button type="submit" disabled={isProcessingAdd} className="w-full min-w-0 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3 rounded-[12px] font-bold hover:opacity-90 transition-colors flex items-center justify-center disabled:opacity-50 h-[44px] shadow-md active:opacity-70"><Plus size={18} strokeWidth={2.5}/></button></div>
+                                </div>
+                            </form>
+                        )}
+
+                        <div className="liquid-glass rounded-[28px] overflow-hidden min-w-0 mt-2">
+                            <div className="px-5 md:px-6 py-4 border-b border-white/40 flex justify-between items-center bg-white/10">
+                                <h2 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
+                                <span className="text-[12px] font-bold bg-white/40 border border-white/50 text-[#1D1D1F] px-2.5 py-0.5 rounded-full">{(detailData?.daily || []).length}</span>
                             </div>
-                        </form>
-                    )}
-
-                    <div className="liquid-glass rounded-[28px] overflow-hidden min-w-0 mt-2">
-                        <div className="px-5 md:px-6 py-4 border-b border-white/40 flex justify-between items-center bg-white/10">
-                            <h2 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
-                            <span className="text-[12px] font-bold bg-white/40 border border-white/50 text-[#1D1D1F] px-2.5 py-0.5 rounded-full">{(detailData?.daily || []).length}</span>
-                        </div>
-                        <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0">
-                            {(enrichedDaily || []).map((row, index) => {
-                                if (!row) return null;
-                                const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
-                                
-                                return (
-                                    <div key={row.id || index} className={`p-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
-                                        
-                                        {/* ======================================================== */}
-                                        {/* CỘT 1 & CỘT 2: TÊN SẢN PHẨM & THỜI GIAN CẬP NHẬT */}
-                                        {/* ======================================================== */}
-                                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-8 w-full xl:w-[45%] min-w-0">
+                            <div className="flex flex-col divide-y divide-white/30 pb-6 min-w-0">
+                                {(enrichedDaily || []).map((row, index) => {
+                                    if (!row) return null;
+                                    const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
+                                    
+                                    return (
+                                        <div key={row.id || index} className={`p-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 transition-colors hover:bg-white/30 w-full min-w-0 ${index === 0 ? 'bg-white/40' : ''} ${row.id === mvpRowId && index !== 0 ? 'bg-[#FF9500]/10' : ''}`}>
                                             
-                                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                <div className="w-9 h-9 xl:w-10 xl:h-10 rounded-full flex items-center justify-center font-bold text-[12px] xl:text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1 mb-0.5">
-                                                        {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
-                                                        <h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{row.ten_san_pham || ''}</h3>
-                                                        {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0 ml-1"><LinkIcon size={10}/></a>}
+                                            <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-8 w-full xl:w-[45%] min-w-0">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <div className="w-9 h-9 xl:w-10 xl:h-10 rounded-full flex items-center justify-center font-bold text-[12px] xl:text-[13px] bg-white/40 border border-white/50 text-[#1D1D1F] tabular-nums shrink-0 shadow-sm">{row.stt || 0}</div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1 mb-0.5">
+                                                            {row.id === mvpRowId && <Crown size={14} className="text-[#FF9500] shrink-0" />}
+                                                            <h3 className="font-bold text-[#1D1D1F] text-[13px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{row.ten_san_pham || ''}</h3>
+                                                            {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0 ml-1"><LinkIcon size={10}/></a>}
+                                                        </div>
+                                                        <div className="text-[11px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
                                                     </div>
-                                                    <div className="text-[11px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
+                                                </div>
+                                                
+                                                <div className="flex flex-col justify-center xl:items-center pl-12 xl:pl-0 border-l-2 border-[#26D0CE]/30 xl:border-none shrink-0 min-w-[120px]">
+                                                    <p className="text-[8px] xl:text-[9px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 xl:mb-1.5">Cập nhật lần cuối</p>
+                                                    <div className="text-[10px] xl:text-[11px] font-semibold text-[#1A5B82] bg-white/40 px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-lg border border-white/50 shadow-sm inline-block whitespace-nowrap">
+                                                        {row.updatedAt ? formatDateTime(row.updatedAt) : formatDateTime(row.ngay_ban)}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            
-                                            <div className="flex flex-col justify-center xl:items-center pl-12 xl:pl-0 border-l-2 border-[#26D0CE]/30 xl:border-none shrink-0 min-w-[120px]">
-                                                <p className="text-[8px] xl:text-[9px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 xl:mb-1.5">Cập nhật lần cuối</p>
-                                                <div className="text-[10px] xl:text-[11px] font-semibold text-[#1A5B82] bg-white/40 px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-lg border border-white/50 shadow-sm inline-block whitespace-nowrap">
-                                                    {row.updatedAt ? formatDateTime(row.updatedAt) : formatDateTime(row.ngay_ban)}
+
+                                            <div className="flex justify-between xl:justify-center gap-2 xl:gap-3 shrink-0 w-full xl:w-[25%] pl-12 xl:pl-0">
+                                                <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
+                                                <div className={`flex-1 xl:flex-none xl:w-[60px] rounded-[12px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
+                                                <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between xl:justify-end gap-3 shrink-0 w-full xl:w-[30%] pl-12 xl:pl-0 border-t xl:border-none border-white/20 pt-2.5 xl:pt-0 mt-1 xl:mt-0">
+                                                <div className="text-right space-y-0.5 hidden sm:block shrink-0 pr-1 min-w-[130px]">
+                                                    <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Doanh thu</span> <span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
+                                                    <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
+                                                </div>
+                                                
+                                                <div className="flex flex-col space-y-0.5 sm:hidden shrink-1 min-w-0 pr-2">
+                                                    <div className="text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">D.thu: </span><span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
+                                                    <div className="text-[9px] text-[#5c5c5c]"><span className="whitespace-nowrap">V.tồn: </span><span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
+                                                </div>
+
+                                                <div className="text-right shrink-0 min-w-[90px] xl:min-w-[110px]">
+                                                    <div className="text-[7px] xl:text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
+                                                    <div className={`text-[14px] xl:text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-1.5 shrink-0 pl-1 xl:pl-2 border-l border-white/40 ml-1">
+                                                    {canEdit && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} 
+                                                            disabled={isProcessingEdit || isProcessingDelete} 
+                                                            className="p-1.5 xl:p-2 text-[#1A5B82] bg-white/60 hover:bg-[#1DB2A0] hover:text-white rounded-full transition-colors active:opacity-70 shadow-sm" 
+                                                            title="Cập nhật thay thế từ Tool IG"
+                                                        >
+                                                            <ClipboardPaste size={12}/>
+                                                        </button>
+                                                    )}
+                                                    {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
+                                                    {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
                                                 </div>
                                             </div>
 
                                         </div>
-
-                                        {/* ======================================================== */}
-                                        {/* CỘT 3: NHẬP / BÁN / CÒN */}
-                                        {/* ======================================================== */}
-                                        <div className="flex justify-between xl:justify-center gap-2 xl:gap-3 shrink-0 w-full xl:w-[25%] pl-12 xl:pl-0">
-                                            <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div></div>
-                                            <div className={`flex-1 xl:flex-none xl:w-[60px] rounded-[12px] py-1.5 text-center shadow-sm border shrink-0 ${isBanGreater ? 'bg-[#1DB2A0]/15 border-[#1DB2A0]/30' : 'bg-white/30 border-white/40'}`}><div className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 whitespace-nowrap ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#5c5c5c]'}`}>Bán</div><div className={`font-bold text-[13px] tabular-nums ${isBanGreater ? 'text-[#1A5B82]' : 'text-[#1D1D1F]'}`}>{formatInput(row.so_luong || 0)}</div></div>
-                                            <div className="flex-1 xl:flex-none xl:w-[60px] bg-white/30 border border-white/40 rounded-[12px] py-1.5 text-center shadow-sm shrink-0"><div className="text-[8px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Còn</div><div className="font-bold text-[#1D1D1F] text-[13px] tabular-nums">{formatInput(row.sl_con || 0)}</div></div>
-                                        </div>
-
-                                        {/* ======================================================== */}
-                                        {/* CỘT 4: DOANH THU & LỢI NHUẬN & CÁC NÚT THAO TÁC */}
-                                        {/* ======================================================== */}
-                                        <div className="flex items-center justify-between xl:justify-end gap-3 shrink-0 w-full xl:w-[30%] pl-12 xl:pl-0 border-t xl:border-none border-white/20 pt-2.5 xl:pt-0 mt-1 xl:mt-0">
-                                            <div className="text-right space-y-0.5 hidden sm:block shrink-0 pr-1 min-w-[130px]">
-                                                <div className="flex justify-end gap-2 text-[11px]"><span className="text-[#5c5c5c] whitespace-nowrap">Doanh thu</span> <span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
-                                                <div className="flex justify-end gap-2 text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">Vốn tồn</span> <span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
-                                            </div>
-                                            
-                                            <div className="flex flex-col space-y-0.5 sm:hidden shrink-1 min-w-0 pr-2">
-                                                <div className="text-[10px] text-[#5c5c5c]"><span className="whitespace-nowrap">D.thu: </span><span className="font-bold text-[#1D1D1F] tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span></div>
-                                                <div className="text-[9px] text-[#5c5c5c]"><span className="whitespace-nowrap">V.tồn: </span><span className="font-medium tabular-nums">{formatCurrency(row.tien_ton || 0)}</span></div>
-                                            </div>
-
-                                            <div className="text-right shrink-0 min-w-[90px] xl:min-w-[110px]">
-                                                <div className="text-[7px] xl:text-[8px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5 whitespace-nowrap">Lợi Nhuận</div>
-                                                <div className={`text-[14px] xl:text-[16px] font-black tabular-nums tracking-tight whitespace-nowrap ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>{formatCurrency(row.loi || 0)}</div>
-                                            </div>
-                                            
-                                            {/* KHU VỰC NÚT BẤM (CẬP NHẬT TỪ IG NẰM Ở ĐÂY NÈ SẾP) */}
-                                            <div className="flex items-center gap-1.5 shrink-0 pl-1 xl:pl-2 border-l border-white/40 ml-1">
-                                                
-                                                {/* NÚT "DÁN DỮ LIỆU TỪ TOOL" */}
-                                                {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#1A5B82] bg-white/60 hover:bg-[#1DB2A0] hover:text-white rounded-full transition-colors active:opacity-70 shadow-sm" title="Cập nhật thay thế từ Tool IG"><ClipboardPaste size={12}/></button>}
-                                                
-                                                {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
-                                                {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                )
-                            })}
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
