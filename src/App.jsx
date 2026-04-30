@@ -21,7 +21,6 @@ export default function App() {
     });
 
     const [view, setView] = useState('DASHBOARD');
-    
     const [sessions, setSessions] = useState([]);
     const [currentId, setCurrentId] = useState(null);
     const [detailData, setDetailData] = useState(null);
@@ -34,6 +33,7 @@ export default function App() {
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     
+    // State đồng bộ IG
     const [syncRow, setSyncRow] = useState(null);
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
@@ -141,15 +141,39 @@ export default function App() {
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) {} finally { setIsProcessingAdd(false); }
+        try { 
+            await axios.post(`${API_URL}/daily`, { 
+                session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, 
+                ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), 
+                so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), 
+                updatedAt: new Date().toISOString() 
+            }); 
+            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
+            if(freshRes.data) setDetailData(freshRes.data); 
+            setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); 
+        } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
+    
     const handleSaveEdit = async () => { 
         if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
-        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
+        try { 
+            const updatedRow = { 
+                ...editingRow, 
+                so_luong_nhap: parseInput(editingRow.so_luong_nhap), 
+                so_luong: parseInput(editingRow.so_luong), 
+                so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), 
+                updatedAt: new Date().toISOString() 
+            }; 
+            await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); 
+            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
+            if(freshRes.data) setDetailData(freshRes.data); 
+            setEditingRow(null); 
+        } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
+    // ĐỌC DỮ LIỆU TỪ JSON IG
     useEffect(() => {
         if (!syncText.trim()) return;
         let q = 0; let r = 0;
@@ -167,7 +191,7 @@ export default function App() {
                             let digits = val.replace(/[^\d]/g, '');
                             if (digits.length > 0) {
                                 let num = Number(digits);
-                                if (lower.includes('k') || lower.includes('nghìn') || lower.includes('nghin')) num *= 1000;
+                                if (lower.includes('k') || lower.includes('nghìn')) num *= 1000;
                                 if (num > 100) price = Math.max(price, num);
                             }
                         }
@@ -189,8 +213,10 @@ export default function App() {
         if (r > 0) setSyncManualRev(r.toString());
     }, [syncText]);
 
+    // HÀM LƯU ĐỒNG BỘ MỚI CỦA SẾP
     const handleConfirmSync = async () => {
-        if (!syncRow || isProcessingEdit) return; setIsProcessingEdit(true);
+        if (!syncRow || isProcessingEdit) return; 
+        setIsProcessingEdit(true);
         try {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
@@ -205,8 +231,16 @@ export default function App() {
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
             if(freshRes.data) setDetailData(freshRes.data); 
-            setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');
-        } catch (err) {} finally { setIsProcessingEdit(false); }
+            
+            setSyncRow(null); 
+            setSyncText(''); 
+            setSyncManualQty(''); 
+            setSyncManualRev('');
+        } catch (err) {
+            console.error("Lỗi:", err);
+        } finally { 
+            setIsProcessingEdit(false); 
+        }
     };
 
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
@@ -337,19 +371,30 @@ export default function App() {
                         <p className="text-[10px] md:text-[11px] font-semibold text-[#5c5c5c] tracking-wide truncate">{isAdmin ? 'Quản trị viên' : (canEdit ? 'Có quyền chỉnh sửa' : 'Chỉ xem')}</p>
                     </div>
                 </a>
+                
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                    {/* KHÚC NÀY ĐÃ ĐƯỢC THÊM NGOẶC NHỌN ĐỂ HẾT BỊ LỖI */}
                     {view === 'DASHBOARD' && (
                         <>
-                            {isAdmin && <button onClick={() => setView('USERS')} title="Quản lý Người dùng" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-white/30 border border-white/40 text-[#1DB2A0] rounded-full hover:bg-white/60 transition-all shadow-sm active:scale-95"><Users size={16} className="md:w-[18px] md:h-[18px]"/></button>}
-                            {canEdit && <button onClick={handleCreateAutoSession} disabled={isProcessingCreate} className="w-9 h-9 md:w-auto md:px-5 md:py-3.5 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white font-semibold rounded-full hover:opacity-90 transition-all shadow-md flex items-center justify-center md:justify-start gap-2 text-[14px] disabled:opacity-50 active:scale-95 border border-white/20">{isProcessingCreate ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5}/>}<span className="hidden md:inline">Tạo Thống Kê</span></button>}
+                            {isAdmin && (
+                                <button onClick={() => setView('USERS')} title="Quản lý Người dùng" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-white/30 border border-white/40 text-[#1DB2A0] rounded-full hover:bg-white/60 transition-all shadow-sm active:scale-95">
+                                    <Users size={16} className="md:w-[18px] md:h-[18px]"/>
+                                </button>
+                            )}
+                            {canEdit && (
+                                <button onClick={handleCreateAutoSession} disabled={isProcessingCreate} className="w-9 h-9 md:w-auto md:px-5 md:py-3.5 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white font-semibold rounded-full hover:opacity-90 transition-all shadow-md flex items-center justify-center md:justify-start gap-2 text-[14px] disabled:opacity-50 active:scale-95 border border-white/20">
+                                    {isProcessingCreate ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5}/>}
+                                    <span className="hidden md:inline">Tạo Thống Kê</span>
+                                </button>
+                            )}
                         </>
                     )}
-                    <button onClick={handleLogout} title="Đăng xuất" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] rounded-full hover:bg-[#FF3B30]/20 transition-all shadow-sm active:scale-95 shrink-0"><LogOut size={16} className="md:w-[18px] md:h-[18px]"/></button>
+                    <button onClick={handleLogout} title="Đăng xuất" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] rounded-full hover:bg-[#FF3B30]/20 transition-all shadow-sm active:scale-95 shrink-0">
+                        <LogOut size={16} className="md:w-[18px] md:h-[18px]"/>
+                    </button>
                 </div>
             </div>
 
-            {/* MODAL ĐỒNG BỘ JSON TỪ TOOL IG */}
+            {/* MODAL CẬP NHẬT THAY THẾ JSON */}
             {syncRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
                     <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative">
@@ -364,7 +409,7 @@ export default function App() {
                             <div>
                                 <textarea 
                                     className="w-full px-4 py-3 liquid-input rounded-[16px] text-[12px] font-mono text-[#1D1D1F] outline-none transition-all resize-none h-[80px] custom-scrollbar placeholder-gray-500"
-                                    placeholder="Dán mã JSON hoặc copy dòng chữ 'Đã quét: X món...' từ Data Collector vào đây để tự động tính."
+                                    placeholder="Dán mã JSON hoặc copy dòng chữ 'Đã quét: X món...' từ Tool vào đây."
                                     value={syncText}
                                     onChange={e => setSyncText(e.target.value)}
                                 />
@@ -392,12 +437,139 @@ export default function App() {
                 </div>
             )}
 
-            {/* CÁC MODAL CŨ GIỮ NGUYÊN (EDIT, DELETE, SALARY...) */}
-            {editingRow && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative"><button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button><div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Sửa Bản Ghi</h2></div><div className="space-y-4"><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Ngày Bán</label><input type="date" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ngay_ban} onChange={e => setEditingRow({...editingRow, ngay_ban: e.target.value})} /></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên Sản Phẩm</label><input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ten_san_pham} onChange={e => setEditingRow({...editingRow, ten_san_pham: e.target.value})} /></div><div className="grid grid-cols-2 gap-3 w-full"><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Nhập</label><input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#33A1FD] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong_nhap)} onChange={e => setEditingRow({...editingRow, so_luong_nhap: e.target.value})} /></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Bán</label><input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong)} onChange={e => setEditingRow({...editingRow, so_luong: e.target.value})} /></div></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tổng Doanh Thu</label><input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} /></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Link (Tùy chọn)</label><input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#33A1FD] outline-none transition-all" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} /></div></div><div className="mt-8 flex gap-3"><button onClick={() => setEditingRow(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button><button onClick={handleSaveEdit} disabled={isProcessingEdit} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors disabled:opacity-50 text-[15px] shadow-md active:opacity-70">{isProcessingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi'}</button></div></div></div>)}
-            {editingSession && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative"><button onClick={() => setEditingSession(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/40 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button><div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Thiết lập đợt bán</h2></div><div className="space-y-4"><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên hiển thị (Tùy chọn)</label><input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingSession.name === 'Thống kê tự động' ? '' : editingSession.name} placeholder="Để trống hệ thống sẽ lấy Ngày" onChange={e => setEditingSession({...editingSession, name: e.target.value})} /></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí Nhập Kiện</label><input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} /></div><div><label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi, vận chuyển...)</label><input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_giat_ui)} onChange={e => setEditingSession({...editingSession, so_tien_giat_ui: e.target.value})} /></div></div><div className="mt-8 flex gap-3"><button onClick={() => setEditingSession(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button><button onClick={handleSaveSession} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors shadow-md text-[15px] active:opacity-70">Cập nhật</button></div></div></div>)}
-            {showDeleteModal && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[340px] animate-scale-up relative text-center"><div className="w-14 h-14 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-5 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><AlertTriangle size={28} /></div><h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa đợt thống kê?</h2><p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Hành động này <strong className="text-[#FF3B30]">vĩnh viễn</strong> và không thể khôi phục.</p><div className="flex flex-col gap-3"><button onClick={confirmDeleteSession} className="w-full bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold hover:bg-[#D70015] transition-colors text-[15px] shadow-md active:opacity-70">Xóa Đợt Bán</button><button onClick={() => setShowDeleteModal(false)} className="w-full py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy thao tác</button></div></div></div>)}
-            {showDeleteRowModal && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 w-full max-w-[340px] animate-scale-up relative text-center"><div className="w-12 h-12 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-4 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><Trash2 size={24} /></div><h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa sản phẩm này?</h2><p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Dữ liệu sẽ bị xóa ngay lập tức.</p><div className="flex gap-3"><button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 border border-white/50 hover:bg-white transition-colors text-[15px] active:opacity-70">Hủy</button><button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold text-[15px] hover:bg-[#D70015] transition-colors disabled:opacity-50 shadow-md active:opacity-70">{isProcessingDelete ? '...' : 'Xóa'}</button></div></div></div>)}
-            {showSalaryModal && salarySession && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all"><div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center"><button onClick={() => setShowSalaryModal(false)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button><div className="w-14 h-14 bg-[#1DB2A0]/10 rounded-full flex items-center justify-center mb-4 text-[#1DB2A0]"><Wallet size={28} /></div><h2 className="text-[22px] font-black text-[#1D1D1F] tracking-tight mb-1">Phát Lương Đợt Bán</h2><p className="text-[13px] text-[#5c5c5c] font-medium mb-6">Trích xuất 30% lợi nhuận</p>{salarySession.realProfit <= 0 ? (<div className="w-full p-4 bg-[#FF3B30]/10 rounded-2xl text-[#FF3B30] font-bold text-[14px]">Lợi nhuận đợt này đang âm hoặc bằng 0.<br/>Chưa thể phát lương!</div>) : (<><div className="w-full bg-white/40 rounded-[20px] p-4 mb-4 shadow-sm text-left"><div className="flex justify-between text-[13px] font-semibold text-[#5c5c5c] mb-2"><span>Tổng lợi nhuận:</span> <span className="text-[#1D1D1F]">{formatCurrency(salarySession.realProfit)}đ</span></div><div className="flex justify-between text-[15px] font-black text-[#1D1D1F] pt-2 border-t border-white/50"><span>Lương (30%):</span> <span className="text-[#1DB2A0]">{formatCurrency(Math.round(salarySession.realProfit * 0.3))}đ</span></div></div><div className="w-full text-left mb-4"><label className="text-[12px] font-bold text-[#5c5c5c] mb-1.5 ml-1 block">SĐT MoMo người nhận:</label><input type="text" className="w-full px-4 py-3 liquid-input rounded-[16px] text-[16px] font-bold text-[#1D1D1F] tracking-wider text-center outline-none transition-all" placeholder="Ví dụ: 0912345678" value={momoPhone} onChange={e => setMomoPhone(e.target.value.replace(/[^0-9]/g, ''))} maxLength={11} /></div>{momoPhone.length >= 10 ? (<div className="p-2 bg-white rounded-[20px] shadow-sm mb-2"><img src={`https://img.vietqr.io/image/momo-${momoPhone}-compact2.png?amount=${Math.round(salarySession.realProfit * 0.3)}&addInfo=PhatLuong`} alt="VietQR MoMo" className="w-48 h-48 mx-auto" /></div>) : (<div className="w-48 h-48 mx-auto bg-white/30 rounded-[20px] border border-white/50 flex items-center justify-center text-[12px] text-[#5c5c5c] font-medium p-4 text-center mb-2">Nhập đủ SĐT MoMo để tạo mã QR</div>)}<span className="text-[11px] font-medium text-[#8E8E93] italic">Quét bằng MoMo, Zalo, hoặc App Ngân hàng</span></>)}</div></div>)}
+            {/* MODAL SỬA BẢN GHI */}
+            {editingRow && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
+                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative">
+                        <button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                        <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Sửa Bản Ghi</h2></div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Ngày Bán</label>
+                                <input type="date" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ngay_ban} onChange={e => setEditingRow({...editingRow, ngay_ban: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên Sản Phẩm</label>
+                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ten_san_pham} onChange={e => setEditingRow({...editingRow, ten_san_pham: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 w-full">
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Nhập</label>
+                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#33A1FD] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong_nhap)} onChange={e => setEditingRow({...editingRow, so_luong_nhap: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Bán</label>
+                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong)} onChange={e => setEditingRow({...editingRow, so_luong: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tổng Doanh Thu</label>
+                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Link (Tùy chọn)</label>
+                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#33A1FD] outline-none transition-all" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} />
+                            </div>
+                        </div>
+                        <div className="mt-8 flex gap-3">
+                            <button onClick={() => setEditingRow(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button>
+                            <button onClick={handleSaveEdit} disabled={isProcessingEdit} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors disabled:opacity-50 text-[15px] shadow-md active:opacity-70">
+                                {isProcessingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
+            {editingSession && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
+                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative">
+                        <button onClick={() => setEditingSession(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/40 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                        <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Thiết lập đợt bán</h2></div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên hiển thị (Tùy chọn)</label>
+                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingSession.name === 'Thống kê tự động' ? '' : editingSession.name} placeholder="Để trống hệ thống sẽ lấy Ngày" onChange={e => setEditingSession({...editingSession, name: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí Nhập Kiện</label>
+                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi...)</label>
+                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_giat_ui)} onChange={e => setEditingSession({...editingSession, so_tien_giat_ui: e.target.value})} />
+                            </div>
+                        </div>
+                        <div className="mt-8 flex gap-3">
+                            <button onClick={() => setEditingSession(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button>
+                            <button onClick={handleSaveSession} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors shadow-md text-[15px] active:opacity-70">Cập nhật</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XÓA ĐỢT BÁN */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
+                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[340px] animate-scale-up relative text-center">
+                        <div className="w-14 h-14 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-5 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><AlertTriangle size={28} /></div>
+                        <h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa đợt thống kê?</h2>
+                        <p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Hành động này <strong className="text-[#FF3B30]">vĩnh viễn</strong> và không thể khôi phục.</p>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={confirmDeleteSession} className="w-full bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold hover:bg-[#D70015] transition-colors text-[15px] shadow-md active:opacity-70">Xóa Đợt Bán</button>
+                            <button onClick={() => setShowDeleteModal(false)} className="w-full py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy thao tác</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XÓA SẢN PHẨM */}
+            {showDeleteRowModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
+                    <div className="liquid-glass rounded-[32px] p-6 w-full max-w-[340px] animate-scale-up relative text-center">
+                        <div className="w-12 h-12 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-4 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><Trash2 size={24} /></div>
+                        <h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa sản phẩm này?</h2>
+                        <p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Dữ liệu sẽ bị xóa ngay lập tức.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 border border-white/50 hover:bg-white transition-colors text-[15px] active:opacity-70">Hủy</button>
+                            <button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold text-[15px] hover:bg-[#D70015] transition-colors disabled:opacity-50 shadow-md active:opacity-70">{isProcessingDelete ? '...' : 'Xóa'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL PHÁT LƯƠNG */}
+            {showSalaryModal && salarySession && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
+                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center">
+                        <button onClick={() => setShowSalaryModal(false)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                        <div className="w-14 h-14 bg-[#1DB2A0]/10 rounded-full flex items-center justify-center mb-4 text-[#1DB2A0]"><Wallet size={28} /></div>
+                        <h2 className="text-[22px] font-black text-[#1D1D1F] tracking-tight mb-1">Phát Lương Đợt Bán</h2>
+                        <p className="text-[13px] text-[#5c5c5c] font-medium mb-6">Trích xuất 30% lợi nhuận</p>
+                        {salarySession.realProfit <= 0 ? (
+                            <div className="w-full p-4 bg-[#FF3B30]/10 rounded-2xl text-[#FF3B30] font-bold text-[14px]">Lợi nhuận đợt này đang âm hoặc bằng 0.<br/>Chưa thể phát lương!</div>
+                        ) : (
+                            <>
+                                <div className="w-full bg-white/40 rounded-[20px] p-4 mb-4 shadow-sm text-left">
+                                    <div className="flex justify-between text-[13px] font-semibold text-[#5c5c5c] mb-2"><span>Tổng lợi nhuận:</span> <span className="text-[#1D1D1F]">{formatCurrency(salarySession.realProfit)}đ</span></div>
+                                    <div className="flex justify-between text-[15px] font-black text-[#1D1D1F] pt-2 border-t border-white/50"><span>Lương (30%):</span> <span className="text-[#1DB2A0]">{formatCurrency(Math.round(salarySession.realProfit * 0.3))}đ</span></div>
+                                </div>
+                                <div className="w-full text-left mb-4">
+                                    <label className="text-[12px] font-bold text-[#5c5c5c] mb-1.5 ml-1 block">SĐT MoMo người nhận:</label>
+                                    <input type="text" className="w-full px-4 py-3 liquid-input rounded-[16px] text-[16px] font-bold text-[#1D1D1F] tracking-wider text-center outline-none transition-all" placeholder="Ví dụ: 0912345678" value={momoPhone} onChange={e => setMomoPhone(e.target.value.replace(/[^0-9]/g, ''))} maxLength={11} />
+                                </div>
+                                {momoPhone.length >= 10 ? (
+                                    <div className="p-2 bg-white rounded-[20px] shadow-sm mb-2"><img src={`https://img.vietqr.io/image/momo-${momoPhone}-compact2.png?amount=${Math.round(salarySession.realProfit * 0.3)}&addInfo=PhatLuong`} alt="VietQR MoMo" className="w-48 h-48 mx-auto" /></div>
+                                ) : (
+                                    <div className="w-48 h-48 mx-auto bg-white/30 rounded-[20px] border border-white/50 flex items-center justify-center text-[12px] text-[#5c5c5c] font-medium p-4 text-center mb-2">Nhập đủ SĐT MoMo để tạo mã QR</div>
+                                )}
+                                <span className="text-[11px] font-medium text-[#8E8E93] italic">Quét bằng MoMo, Zalo, hoặc App Ngân hàng</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
