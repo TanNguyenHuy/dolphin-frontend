@@ -157,18 +157,22 @@ export default function App() {
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
-    // ==========================================
-    // ĐÃ FIX: CHỈ TÌM GIÁ SAU CHỮ GIÁ/SALE, BỎ QUA MÃ THỜI GIAN/LINK
-    // ==========================================
+    // =========================================================================
+    // ĐÃ FIX HOÀN TOÀN: BỘ MÁY ĐỌC JSON SIÊU CẤP
+    // =========================================================================
     useEffect(() => {
-        if (typeof syncText !== 'string' || !syncText.trim()) return;
+        if (typeof syncText !== 'string' || !syncText.trim()) {
+            setSyncManualQty(''); setSyncManualRev(''); return;
+        }
+        
         let q = 0; let r = 0;
         
+        // 1. Nếu dán chuỗi tóm tắt dạng "Đã quét: X món. Tổng: Y k"
         let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
         let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
         
         let foundFromSummary = false;
-        if (matchQ && matchR) {
+        if (matchQ && matchR && syncText.toLowerCase().includes('tổng')) {
             q = Number(matchQ[1]);
             let num = Number(matchR[1].replace(/[^\d]/g, ''));
             if (matchR[2] && (matchR[2].toLowerCase() === 'k' || matchR[2].toLowerCase().includes('nghìn') || matchR[2].toLowerCase().includes('nghin'))) num *= 1000;
@@ -177,6 +181,7 @@ export default function App() {
             foundFromSummary = true;
         }
 
+        // 2. Nếu dán CỤC JSON nguyên bản từ Data Collector V5
         if (!foundFromSummary) {
             try {
                 const data = JSON.parse(syncText);
@@ -184,30 +189,50 @@ export default function App() {
                     q = data.length; 
                     data.forEach(item => {
                         let itemPrice = 0;
-                        for (let key in item) {
-                            if (typeof item[key] === 'string') {
-                                let txt = item[key].toLowerCase();
-                                // Chặn lấy nhầm số từ các field kĩ thuật (id, url, time, date...)
-                                if (key.includes('url') || key.includes('link') || key.includes('id') || key.includes('time') || key.includes('scanned') || key.includes('date')) continue;
+                        
+                        // MẸO: Ép toàn bộ cấu trúc JSON phức tạp thành một chuỗi văn bản duy nhất để vượt qua các mảng/dấu phẩy lồng nhau
+                        let itemStr = JSON.stringify(item).toLowerCase();
+                        
+                        // Xóa sạch các mã xuống dòng \n, \r để Regex quét không bị vấp
+                        itemStr = itemStr.replace(/\\[nr]/g, ' ');
+
+                        // DÒ CHÍNH XÁC: Chỉ tìm các từ Giá, Sale
+                        let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
+                        
+                        if (matches.length > 0) {
+                            for (let m of matches) {
+                                let p = Number(m[1].replace(/[^\d]/g, ''));
+                                let unit = m[2] ? m[2].trim() : '';
                                 
-                                // Chỉ bắt chính xác theo cụm từ (Giá, Sale...)
-                                let priceMatch = txt.match(/(?:giá|gia|sale)\s*[:\-]?\s*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
-                                if (priceMatch) {
-                                    let p = Number(priceMatch[1].replace(/[^\d]/g, ''));
-                                    if (priceMatch[2] && (priceMatch[2] === 'k' || priceMatch[2].includes('nghìn') || priceMatch[2].includes('nghin'))) p *= 1000;
-                                    else if (p > 0 && p < 1000) p *= 1000; 
-                                    if (p > itemPrice) itemPrice = p;
+                                if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
+                                else if (p > 0 && p < 1000) p *= 1000; 
+                                
+                                // Chặn những con số khổng lồ vô lý (vd lỡ quét nhầm sđt)
+                                if (p > itemPrice && p < 10000000) {
+                                    itemPrice = p;
+                                }
+                            }
+                        } else {
+                            // DÒ DỰ PHÒNG: Nếu người đăng không ghi chữ "Giá", chỉ ghi số kèm chữ k/nghìn (Ví dụ: "Quần ống loe - 150k")
+                            let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
+                            for (let m of fallbackMatches) {
+                                let p = Number(m[1].replace(/[^\d]/g, ''));
+                                if (p > 10 && p < 1000) {
+                                    let tempPrice = p * 1000;
+                                    if (tempPrice > itemPrice && tempPrice < 10000000) itemPrice = tempPrice;
                                 }
                             }
                         }
+                        // Cộng tiền của bài post này vào TỔNG THU
                         r += itemPrice;
                     });
                 }
             } catch (e) { }
         }
         
-        if (q > 0) setSyncManualQty(q.toString());
-        if (r > 0) setSyncManualRev(r.toString());
+        // Cập nhật lên UI cho sếp xem, nếu r=0 thì hiển thị 0 để sếp biết nó không nhận diện được
+        setSyncManualQty(q > 0 ? q.toString() : '');
+        setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : ''));
     }, [syncText]);
 
     const handleConfirmSync = async () => {
