@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, Copy } from 'lucide-react';
+import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, RefreshCw } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
 const formatDateTime = (dateString) => {
@@ -202,6 +202,8 @@ export default function DetailView({
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5 shrink-0 pl-1 xl:pl-2 border-l border-white/40 ml-1">
+                                                
+                                                {/* NÚT SYNC DATA TỪ IG VỚI ICON REFRESHCW ĐÃ ĐƯỢC CHỨNG MINH LÀ AN TOÀN */}
                                                 {canEdit && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} 
@@ -209,9 +211,10 @@ export default function DetailView({
                                                         className="p-1.5 xl:p-2 text-[#1A5B82] bg-white/60 hover:bg-[#1DB2A0] hover:text-white rounded-full transition-colors active:opacity-70 shadow-sm" 
                                                         title="Cập nhật thay thế từ Tool IG"
                                                     >
-                                                        <Copy size={12}/>
+                                                        <RefreshCw size={12}/>
                                                     </button>
                                                 )}
+                                                
                                                 {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#33A1FD] rounded-full transition-colors active:opacity-70 shadow-sm"><Pencil size={12}/></button>}
                                                 {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-1.5 xl:p-2 text-[#5c5c5c] bg-white/40 hover:bg-white hover:text-[#FF3B30] rounded-full transition-colors active:opacity-70 shadow-sm"><Trash2 size={12}/></button>}
                                             </div>
