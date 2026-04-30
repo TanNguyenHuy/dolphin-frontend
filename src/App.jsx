@@ -95,7 +95,8 @@ export default function App() {
                     const dailyList = detailRes.data?.daily || [];
                     ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
-                    const sortedBales = [...balesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
+                    const safeBalesData = Array.isArray(balesData) ? balesData : [];
+                    const sortedBales = [...safeBalesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
                     let computedVonTon = 0; let trungBinh = ss.tong_sl_nhap > 0 ? (ss.so_tien_cua_kien / ss.tong_sl_nhap) : 0;
                     dailyList.forEach((row) => {
                         const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
@@ -124,8 +125,15 @@ export default function App() {
     const fetchDetail = async (id) => { 
         try { 
             const res = await axios.get(`${API_URL}/data/${id}`); 
-            let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
-            if(res.data) { setDetailData(res.data); setImportedBales(balesData); setCurrentId(id); setView('DETAIL'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            let balesData = []; 
+            try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
+            if(res.data) { 
+                setDetailData(res.data); 
+                setImportedBales(Array.isArray(balesData) ? balesData : []); 
+                setCurrentId(id); 
+                setView('DETAIL'); 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            }
         } catch (err) { alert("Lỗi tải dữ liệu. Vui lòng thử lại."); } 
     };
     
@@ -135,8 +143,8 @@ export default function App() {
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
     const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
-    const handleAddBale = async (e) => { e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; try { const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); const updated = [...importedBales, res.data]; setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); setBaleName(''); setBaleCost(''); setBaleQty(''); } catch (err) {} };
-    const handleDeleteBale = async (id) => { if(!canDelete) return; try { await axios.delete(`${API_URL}/bales/${id}`); const updated = importedBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
+    const handleAddBale = async (e) => { e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; try { const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); setBaleName(''); setBaleCost(''); setBaleQty(''); } catch (err) {} };
+    const handleDeleteBale = async (id) => { if(!canDelete) return; try { await axios.delete(`${API_URL}/bales/${id}`); const safeBales = Array.isArray(importedBales) ? importedBales : []; const updated = safeBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
@@ -150,7 +158,7 @@ export default function App() {
     };
 
     useEffect(() => {
-        if (!syncText.trim()) return;
+        if (typeof syncText !== 'string' || !syncText.trim()) return;
         let q = 0; let r = 0;
         try {
             const data = JSON.parse(syncText);
@@ -166,7 +174,7 @@ export default function App() {
                             let digits = val.replace(/[^\d]/g, '');
                             if (digits.length > 0) {
                                 let num = Number(digits);
-                                if (lower.includes('k') || lower.includes('nghìn') || lower.includes('nghin')) num *= 1000;
+                                if (lower.includes('k') || lower.includes('nghìn')) num *= 1000;
                                 if (num > 100) price = Math.max(price, num);
                             }
                         }
@@ -194,7 +202,12 @@ export default function App() {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
             
-            const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
+            const updatedRow = { 
+                ...syncRow, 
+                so_luong: newQty, 
+                so_tien_ban_duoc: newRev, 
+                updatedAt: new Date().toISOString() 
+            };
             
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
@@ -239,8 +252,9 @@ export default function App() {
         const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
         if (dates.length > 0) { actualStartDate = new Date(Math.min(...dates)).toISOString().split('T')[0]; actualEndDate = new Date(Math.max(...dates)).toISOString().split('T')[0]; }
 
-        const safeImportedBales = Array.isArray(importedBales) ? importedBales : [];
-        let maxRevenue = -Infinity; const sortedBales = [...safeImportedBales].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
+        // BỌC CHỐNG LỖI CỰC MẠNH Ở ĐÂY
+        const safeImportedBalesForSort = Array.isArray(importedBales) ? importedBales : [];
+        let maxRevenue = -Infinity; const sortedBales = [...safeImportedBalesForSort].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
 
         let chronologicalList = [...dailyList].map((item, idx) => ({...item, originalIdx: idx}));
         chronologicalList.sort((a, b) => {
