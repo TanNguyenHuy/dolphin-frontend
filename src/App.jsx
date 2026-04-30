@@ -166,7 +166,7 @@ export default function App() {
                             let digits = val.replace(/[^\d]/g, '');
                             if (digits.length > 0) {
                                 let num = Number(digits);
-                                if (lower.includes('k') || lower.includes('nghìn')) num *= 1000;
+                                if (lower.includes('k') || lower.includes('nghìn') || lower.includes('nghin')) num *= 1000;
                                 if (num > 100) price = Math.max(price, num);
                             }
                         }
@@ -194,12 +194,7 @@ export default function App() {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
             
-            const updatedRow = { 
-                ...syncRow, 
-                so_luong: newQty, 
-                so_tien_ban_duoc: newRev, 
-                updatedAt: new Date().toISOString() 
-            };
+            const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
             
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
@@ -244,7 +239,8 @@ export default function App() {
         const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
         if (dates.length > 0) { actualStartDate = new Date(Math.min(...dates)).toISOString().split('T')[0]; actualEndDate = new Date(Math.max(...dates)).toISOString().split('T')[0]; }
 
-        let maxRevenue = -Infinity; const sortedBales = [...importedBales].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
+        const safeImportedBales = Array.isArray(importedBales) ? importedBales : [];
+        let maxRevenue = -Infinity; const sortedBales = [...safeImportedBales].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
 
         let chronologicalList = [...dailyList].map((item, idx) => ({...item, originalIdx: idx}));
         chronologicalList.sort((a, b) => {
