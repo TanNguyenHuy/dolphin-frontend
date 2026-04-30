@@ -158,7 +158,7 @@ export default function App() {
     };
 
     // =========================================================================
-    // ĐÃ FIX HOÀN TOÀN: BỘ MÁY ĐỌC JSON SIÊU CẤP
+    // TRÍ TUỆ NHÂN TẠO VER 2.0: ĐỌC SẠCH MỌI LOẠI JSON TỪ TOOL IG
     // =========================================================================
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) {
@@ -167,70 +167,93 @@ export default function App() {
         
         let q = 0; let r = 0;
         
-        // 1. Nếu dán chuỗi tóm tắt dạng "Đã quét: X món. Tổng: Y k"
+        // Kịch bản 1: Sếp dán chuỗi chữ "Đã quét: X món. Tổng: Y k"
         let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
         let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
         
-        let foundFromSummary = false;
         if (matchQ && matchR && syncText.toLowerCase().includes('tổng')) {
             q = Number(matchQ[1]);
             let num = Number(matchR[1].replace(/[^\d]/g, ''));
             if (matchR[2] && (matchR[2].toLowerCase() === 'k' || matchR[2].toLowerCase().includes('nghìn') || matchR[2].toLowerCase().includes('nghin'))) num *= 1000;
             else if (syncText.toLowerCase().includes('k')) num *= 1000;
             r = num;
-            foundFromSummary = true;
-        }
-
-        // 2. Nếu dán CỤC JSON nguyên bản từ Data Collector V5
-        if (!foundFromSummary) {
+        } else {
+            // Kịch bản 2: Sếp dán CỤC JSON siêu phức tạp từ Tool
             try {
-                const data = JSON.parse(syncText);
-                if (Array.isArray(data)) {
-                    q = data.length; 
-                    data.forEach(item => {
+                let parsed = JSON.parse(syncText);
+                let dataArray = [];
+                
+                // Móc lấy cái mảng chứa sản phẩm ra (dù nó nằm chìm trong Object)
+                if (Array.isArray(parsed)) {
+                    dataArray = parsed;
+                } else if (parsed && typeof parsed === 'object') {
+                    if (Array.isArray(parsed.data)) dataArray = parsed.data;
+                    else if (Array.isArray(parsed.items)) dataArray = parsed.items;
+                }
+
+                if (dataArray.length > 0) {
+                    q = dataArray.length; 
+                    dataArray.forEach(item => {
                         let itemPrice = 0;
                         
-                        // MẸO: Ép toàn bộ cấu trúc JSON phức tạp thành một chuỗi văn bản duy nhất để vượt qua các mảng/dấu phẩy lồng nhau
-                        let itemStr = JSON.stringify(item).toLowerCase();
-                        
-                        // Xóa sạch các mã xuống dòng \n, \r để Regex quét không bị vấp
-                        itemStr = itemStr.replace(/\\[nr]/g, ' ');
-
-                        // DÒ CHÍNH XÁC: Chỉ tìm các từ Giá, Sale
-                        let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
-                        
-                        if (matches.length > 0) {
-                            for (let m of matches) {
-                                let p = Number(m[1].replace(/[^\d]/g, ''));
-                                let unit = m[2] ? m[2].trim() : '';
-                                
-                                if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
-                                else if (p > 0 && p < 1000) p *= 1000; 
-                                
-                                // Chặn những con số khổng lồ vô lý (vd lỡ quét nhầm sđt)
-                                if (p > itemPrice && p < 10000000) {
-                                    itemPrice = p;
-                                }
-                            }
-                        } else {
-                            // DÒ DỰ PHÒNG: Nếu người đăng không ghi chữ "Giá", chỉ ghi số kèm chữ k/nghìn (Ví dụ: "Quần ống loe - 150k")
-                            let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
-                            for (let m of fallbackMatches) {
-                                let p = Number(m[1].replace(/[^\d]/g, ''));
-                                if (p > 10 && p < 1000) {
-                                    let tempPrice = p * 1000;
-                                    if (tempPrice > itemPrice && tempPrice < 10000000) itemPrice = tempPrice;
+                        // CÁCH 1: Tìm key được định sẵn là "price", "gia"... (chống bắt nhầm sđt)
+                        if (typeof item === 'object' && item !== null) {
+                            for (let key in item) {
+                                let k = key.toLowerCase();
+                                if (k.includes('price') || k.includes('gia') || k.includes('sale') || k.includes('amount') || k.includes('total') || k === 'p') {
+                                    let val = item[key];
+                                    if (typeof val === 'number') {
+                                        itemPrice = val;
+                                        if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000; // Đổi 175 thành 175000
+                                        break;
+                                    } else if (typeof val === 'string') {
+                                        let p = Number(val.replace(/[^\d]/g, ''));
+                                        if (p > 0) {
+                                            itemPrice = p;
+                                            if (val.toLowerCase().includes('k') || itemPrice < 10000) itemPrice *= 1000;
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
-                        // Cộng tiền của bài post này vào TỔNG THU
-                        r += itemPrice;
+
+                        // CÁCH 2: Quét Regex hạng nặng (Nếu Cách 1 không thấy)
+                        if (itemPrice === 0 && typeof item === 'object' && item !== null) {
+                            // Đập dẹp toàn bộ object thành 1 chuỗi chữ dài ngoằng
+                            let itemStr = JSON.stringify(item).toLowerCase().replace(/\\[nr]/g, ' ');
+                            
+                            // Tẩy sạch các đường link rác (URL) để Regex không bắt nhầm số trong link
+                            itemStr = itemStr.replace(/https?:\/\/[^\s]+/g, '');
+
+                            // Đi săn cụm từ "giá 175k", "sale 150.000", ...
+                            let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
+                            if (matches.length > 0) {
+                                for (let m of matches) {
+                                    let p = Number(m[1].replace(/[^\d]/g, ''));
+                                    let unit = m[2] ? m[2].trim() : '';
+                                    if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
+                                    else if (p > 0 && p < 10000) p *= 1000; 
+                                    if (p > itemPrice && p < 10000000) itemPrice = p; // Chốt giá cao nhất
+                                }
+                            } else {
+                                // Cứu cánh cuối cùng: Lấy những con số có dính chữ 'k' (VD: 150k)
+                                let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
+                                for (let m of fallbackMatches) {
+                                    let p = Number(m[1].replace(/[^\d]/g, ''));
+                                    if (p > 10 && p < 10000) {
+                                        let tempPrice = p * 1000;
+                                        if (tempPrice > itemPrice && tempPrice < 10000000) itemPrice = tempPrice;
+                                    }
+                                }
+                            }
+                        }
+                        r += itemPrice; // Cộng tiền vào giỏ
                     });
                 }
-            } catch (e) { }
+            } catch (e) { console.error("Lỗi đọc JSON:", e); }
         }
         
-        // Cập nhật lên UI cho sếp xem, nếu r=0 thì hiển thị 0 để sếp biết nó không nhận diện được
         setSyncManualQty(q > 0 ? q.toString() : '');
         setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : ''));
     }, [syncText]);
