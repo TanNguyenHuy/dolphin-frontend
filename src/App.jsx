@@ -174,7 +174,7 @@ export default function App() {
                             let digits = val.replace(/[^\d]/g, '');
                             if (digits.length > 0) {
                                 let num = Number(digits);
-                                if (lower.includes('k') || lower.includes('nghìn')) num *= 1000;
+                                if (lower.includes('k') || lower.includes('nghìn') || lower.includes('nghin')) num *= 1000;
                                 if (num > 100) price = Math.max(price, num);
                             }
                         }
@@ -252,7 +252,6 @@ export default function App() {
         const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
         if (dates.length > 0) { actualStartDate = new Date(Math.min(...dates)).toISOString().split('T')[0]; actualEndDate = new Date(Math.max(...dates)).toISOString().split('T')[0]; }
 
-        // BỌC CHỐNG LỖI CỰC MẠNH Ở ĐÂY
         const safeImportedBalesForSort = Array.isArray(importedBales) ? importedBales : [];
         let maxRevenue = -Infinity; const sortedBales = [...safeImportedBalesForSort].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
 
@@ -297,6 +296,9 @@ export default function App() {
 
         enrichedDaily = enrichedDaily.map((row, idx) => ({ ...row, stt: enrichedDaily.length - idx }));
     }
+
+    // ĐÂY LÀ DÒNG CODE CỨU MẠNG MÀ EM ĐÃ LỠ TAY XÓA MẤT
+    const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
         if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); } 
