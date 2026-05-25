@@ -137,7 +137,7 @@ export default function DetailView({
                 {/* ---------- CỘT PHẢI: TẠO MỚI & DANH SÁCH SP ---------- */}
                 <div className="lg:col-span-8 flex flex-col h-auto gap-6 md:gap-8 min-w-0">
                     
-                    {/* FORM GHI NHẬN GIAO DỊCH (Làm Thẻ rời) */}
+                    {/* FORM GHI NHẬN GIAO DỊCH */}
                     {canEdit && (
                         <form onSubmit={handleAddItem} className="liquid-glass p-5 md:p-6 rounded-[32px] min-w-0 shadow-sm border border-white/60">
                             <div className="flex items-center gap-2 mb-4"><div className="w-8 h-8 bg-white/60 border border-white/80 rounded-full flex items-center justify-center text-[#1A5B82] shadow-sm shrink-0"><Plus size={16} strokeWidth={2.5}/></div><h3 className="text-[16px] font-bold text-[#1D1D1F] tracking-tight truncate">Ghi nhận giao dịch mới</h3></div>
@@ -153,19 +153,18 @@ export default function DetailView({
                         </form>
                     )}
 
-                    {/* DANH SÁCH CHI TIẾT SẢN PHẨM (ĐÃ CHIA THÀNH CARD RỜI) */}
+                    {/* DANH SÁCH CHI TIẾT SẢN PHẨM */}
                     <div className="liquid-glass rounded-[32px] p-3 sm:p-6 md:p-8 min-w-0 shadow-sm border border-white/60">
                         <div className="flex justify-between items-center mb-6 px-2 md:px-0">
                             <h2 className="text-[18px] md:text-[20px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
                             <span className="text-[12px] font-bold bg-white/60 border border-white/80 text-[#1D1D1F] px-3 py-1.5 rounded-full shadow-sm">{(detailData?.daily || []).length}</span>
                         </div>
                         
-                        {/* ĐỔI DIVIDE-Y THÀNH GAP-4 ĐỂ TÁCH RỜI */}
                         <div className="flex flex-col gap-4 md:gap-5 min-w-0">
                             {(enrichedDaily || []).map((row, index) => {
                                 if (!row) return null;
                                 const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
-                                const isMVP = row.id === mvpRowId && index !== 0; // Top 1 doanh thu (Không tính dòng đầu tiên)
+                                const isMVP = row.id === mvpRowId && index !== 0; 
                                 
                                 return (
                                     <div 
@@ -174,7 +173,7 @@ export default function DetailView({
                                     >
                                         
                                         {/* NHÓM 1: Cột STT, Tên SP, Giờ Cập nhật */}
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xl:w-[42%] min-w-0">
+                                        <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-6 w-full xl:w-[45%] min-w-0">
                                             
                                             {/* STT + Tên SP */}
                                             <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
@@ -187,21 +186,22 @@ export default function DetailView({
                                                         <h3 className="font-bold text-[#1D1D1F] text-[14px] md:text-[15px] leading-snug truncate group-hover:text-[#1A5B82] transition-colors">{row.ten_san_pham || ''}</h3>
                                                         {row.link_san_pham && <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#1A5B82] bg-white/50 border border-white/60 shadow-sm p-1 rounded-full hover:bg-white transition-colors shrink-0"><LinkIcon size={10}/></a>}
                                                     </div>
-                                                    <div className="text-[11px] md:text-[12px] text-[#5c5c5c] font-medium tabular-nums whitespace-nowrap">{formatDateDisplay(row.ngay_ban)}</div>
+                                                    {/* Đã thêm TRUNCATE để chữ cắt dấu ... nếu quá dài */}
+                                                    <div className="text-[11px] md:text-[12px] text-[#5c5c5c] font-medium tabular-nums truncate">{formatDateDisplay(row.ngay_ban)}</div>
                                                 </div>
                                             </div>
                                             
                                             {/* Giờ cập nhật */}
-                                            <div className="flex flex-col sm:items-end pl-12 md:pl-14 sm:pl-0 shrink-0">
+                                            <div className="flex flex-col justify-center xl:items-center pl-12 md:pl-16 xl:pl-0 shrink-0 w-auto xl:w-[130px]">
                                                 <p className="text-[9px] md:text-[10px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1">Cập nhật lần cuối</p>
-                                                <div className="text-[11px] md:text-[12px] font-semibold text-[#1A5B82] bg-white/70 px-2.5 py-1 md:py-1.5 rounded-[10px] border border-gray-200/60 shadow-sm inline-block whitespace-nowrap">
+                                                <div className="text-[11px] md:text-[12px] font-semibold text-[#1A5B82] bg-white/70 px-2.5 py-1 md:py-1.5 rounded-[10px] border border-gray-200/60 shadow-sm inline-block whitespace-nowrap text-center">
                                                     {row.updatedAt ? formatDateTime(row.updatedAt) : formatDateTime(row.ngay_ban)}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* NHÓM 2: Cột Nhập / Bán / Còn */}
-                                        <div className="flex justify-between xl:justify-center gap-2 md:gap-3 shrink-0 xl:w-[26%] pl-12 md:pl-14 sm:pl-0 w-full xl:w-auto">
+                                        <div className="flex justify-between xl:justify-center gap-2 md:gap-3 shrink-0 xl:w-[25%] pl-12 md:pl-16 xl:pl-0 w-full xl:w-auto">
                                             <div className="flex-1 xl:flex-none xl:w-[65px] bg-white/70 border border-gray-200/60 rounded-[14px] py-2 text-center shadow-sm">
                                                 <div className="text-[9px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-0.5 whitespace-nowrap">Nhập</div>
                                                 <div className="font-bold text-[#1D1D1F] text-[13px] md:text-[14px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div>
@@ -217,7 +217,7 @@ export default function DetailView({
                                         </div>
 
                                         {/* NHÓM 3: Cột Doanh Thu, Lợi Nhuận, Cụm Nút Thao Tác */}
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between xl:justify-end gap-4 shrink-0 xl:w-[32%] pl-12 md:pl-14 sm:pl-0 border-t sm:border-none border-gray-200/60 pt-3 sm:pt-0 mt-1 sm:mt-0 w-full xl:w-auto">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between xl:justify-end gap-4 shrink-0 xl:w-[30%] pl-12 md:pl-16 xl:pl-0 border-t sm:border-none border-gray-200/60 pt-3 sm:pt-0 mt-1 sm:mt-0 w-full xl:w-auto">
                                             
                                             {/* Doanh thu + Vốn tồn */}
                                             <div className="flex flex-row sm:flex-col justify-between sm:justify-center gap-1 sm:gap-0.5 sm:text-right shrink-0 sm:min-w-[120px]">
