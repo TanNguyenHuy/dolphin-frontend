@@ -3,16 +3,16 @@ import { Calendar, Wallet, Pencil, Trash2, ChevronRight, TrendingUp, Package, Pe
 import { formatCurrency, formatInput, getSessionName } from '../utils';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 
-// Custom Tooltip hiển thị kính mờ (Glassmorphism) cực đẹp khi rê chuột
+// Custom Tooltip: Đổi sang nền trắng sáng, bóng bẩy
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="bg-[#1D1D1F]/80 backdrop-blur-xl border border-white/20 p-4 rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.25)] transform transition-all">
-                <p className="text-white/60 text-[11px] uppercase tracking-widest mb-1.5 font-bold flex items-center gap-2">
+            <div className="bg-white/95 backdrop-blur-xl border border-gray-100 p-4 rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] transform transition-all">
+                <p className="text-[#8E8E93] text-[11px] uppercase tracking-widest mb-1.5 font-bold flex items-center gap-2">
                     <Calendar size={12} /> Đợt {data.name}
                 </p>
-                <p className={`text-[18px] font-black tracking-tight drop-shadow-md ${data.profit >= 0 ? 'text-[#26D0CE]' : 'text-[#FF453A]'}`}>
+                <p className={`text-[18px] font-black tracking-tight drop-shadow-sm ${data.profit >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>
                     {formatCurrency(data.profit)} <span className="text-[12px] font-bold opacity-80">VNĐ</span>
                 </p>
             </div>
@@ -83,61 +83,57 @@ export default function DashboardView({
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
                 
-                {/* ---------- CỘT TRÁI: BIỂU ĐỒ NÂNG CẤP LÀM LẠI ---------- */}
-                <div className="lg:col-span-7 bg-gradient-to-br from-[#475569] to-[#1e293b] rounded-[32px] p-5 md:p-8 text-white relative shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-white/10 flex flex-col min-h-[350px] overflow-hidden">
+                {/* ---------- CỘT TRÁI: BIỂU ĐỒ (ĐÃ ĐỔI SANG MÀU SÁNG PHONG THỦY) ---------- */}
+                <div className="lg:col-span-7 bg-white rounded-[32px] p-5 md:p-8 text-[#1D1D1F] relative shadow-[0_12px_40px_rgba(255,149,0,0.06)] border border-gray-100 flex flex-col min-h-[350px] overflow-hidden hover:shadow-[0_12px_40px_rgba(255,149,0,0.12)] transition-shadow duration-500">
                     
-                    {/* Họa tiết lót nền cho sang */}
-                    <div className="absolute right-0 bottom-0 opacity-[0.03] transform translate-x-1/4 translate-y-1/4 pointer-events-none">
+                    {/* Họa tiết lót nền */}
+                    <div className="absolute right-0 bottom-0 opacity-[0.03] transform translate-x-1/4 translate-y-1/4 pointer-events-none text-[#FF9500]">
                         <TrendingUp size={200} strokeWidth={1} />
                     </div>
 
                     <div className="flex justify-between items-start mb-6 z-10 relative">
                         <div>
-                            <h3 className="text-[12px] md:text-[13px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2 mb-1">
+                            <h3 className="text-[12px] md:text-[13px] font-bold text-[#8E8E93] uppercase tracking-widest flex items-center gap-2 mb-1">
                                 Lợi nhuận năm {selectedYear}
                             </h3>
-                            <div className="text-[32px] md:text-[44px] font-black tracking-tight tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-[#26D0CE] to-[#33A1FD] leading-none drop-shadow-md">
-                                {formatCurrency(yearlyTotal)}<span className="text-[16px] text-white/50 ml-1.5 font-bold">đ</span>
+                            <div className="text-[32px] md:text-[44px] font-black tracking-tight tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-[#26D0CE] to-[#33A1FD] leading-none drop-shadow-sm">
+                                {formatCurrency(yearlyTotal)}<span className="text-[16px] text-[#33A1FD]/60 ml-1.5 font-bold">đ</span>
                             </div>
-                            <div className="text-[11px] text-white/40 font-semibold mt-2 bg-white/5 inline-block px-2.5 py-1.5 rounded-lg border border-white/5">
-                                TỔNG TẤT CẢ (ALL-TIME): <span className="text-white/80">{formatCurrency(dashboardProfit)}đ</span>
+                            <div className="text-[11px] font-semibold mt-2 bg-[#FF9500]/10 text-[#FF9500] inline-block px-2.5 py-1.5 rounded-lg border border-[#FF9500]/20">
+                                TỔNG TẤT CẢ (ALL-TIME): <span className="font-bold">{formatCurrency(dashboardProfit)}đ</span>
                             </div>
                         </div>
 
-                        {/* Nút lật qua lật lại giữa các năm */}
+                        {/* Nút lật qua lật lại */}
                         {availableYears.length > 1 && (
-                            <div className="flex items-center gap-1 bg-white/10 rounded-full p-1 backdrop-blur-md border border-white/10 shadow-inner">
-                                <button onClick={handlePrevYear} disabled={selectedYear === availableYears[availableYears.length - 1]} className="p-1.5 hover:bg-white/20 rounded-full disabled:opacity-20 transition-all active:scale-95"><ChevronLeft size={16}/></button>
-                                <span className="font-bold text-[13px] w-[40px] text-center tabular-nums text-white drop-shadow-sm">{selectedYear}</span>
-                                <button onClick={handleNextYear} disabled={selectedYear === availableYears[0]} className="p-1.5 hover:bg-white/20 rounded-full disabled:opacity-20 transition-all active:scale-95"><ChevronRight size={16}/></button>
+                            <div className="flex items-center gap-1 bg-gray-50/80 rounded-full p-1 border border-gray-200 shadow-inner">
+                                <button onClick={handlePrevYear} disabled={selectedYear === availableYears[availableYears.length - 1]} className="p-1.5 hover:bg-white rounded-full disabled:opacity-30 transition-all active:scale-95 shadow-sm text-[#5c5c5c]"><ChevronLeft size={16}/></button>
+                                <span className="font-bold text-[13px] w-[40px] text-center tabular-nums text-[#1D1D1F]">{selectedYear}</span>
+                                <button onClick={handleNextYear} disabled={selectedYear === availableYears[0]} className="p-1.5 hover:bg-white rounded-full disabled:opacity-30 transition-all active:scale-95 shadow-sm text-[#5c5c5c]"><ChevronRight size={16}/></button>
                             </div>
                         )}
                     </div>
 
-                    {/* Vùng Vẽ Biểu Đồ (Đã thêm Gradient & Animation) */}
+                    {/* Vùng Vẽ Biểu Đồ */}
                     <div className="flex-1 w-full mt-4 z-10 relative min-h-[220px]">
                         {currentChartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={currentChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                                     <defs>
-                                        {/* Tạo màu Gradient cho cột Xanh (Lời) */}
                                         <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="#33A1FD" stopOpacity={1}/>
                                             <stop offset="100%" stopColor="#26D0CE" stopOpacity={0.8}/>
                                         </linearGradient>
-                                        {/* Tạo màu Gradient cho cột Đỏ (Lỗ) */}
                                         <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="#FF6B60" stopOpacity={1}/>
                                             <stop offset="100%" stopColor="#D70015" stopOpacity={0.8}/>
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} fontWeight="600" tickLine={false} axisLine={false} dy={10} />
+                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#8E8E93" fontSize={11} fontWeight="600" tickLine={false} axisLine={false} dy={10} />
                                     
-                                    {/* Nền xám nhạt bo tròn khi rê chuột vào cột */}
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.06)', radius: 8 }} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 8 }} />
                                     
-                                    {/* Khai báo cột với hiệu ứng Animation mọc lên */}
                                     <Bar dataKey="profit" radius={[8, 8, 8, 8]} maxBarSize={45} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
                                         {currentChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
@@ -146,7 +142,7 @@ export default function DashboardView({
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-white/30 text-[13px] font-medium border-2 border-dashed border-white/10 rounded-2xl bg-white/5">
+                            <div className="h-full flex flex-col items-center justify-center text-[#8E8E93] text-[13px] font-medium border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
                                 <Calendar size={32} className="mb-2 opacity-50" />
                                 Chưa có dữ liệu đợt bán nào trong năm {selectedYear}
                             </div>
@@ -154,7 +150,7 @@ export default function DashboardView({
                     </div>
                 </div>
 
-                {/* ---------- CỘT PHẢI: KHO & THUẾ ---------- */}
+                {/* Cột Phải: Các chỉ số khác */}
                 <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
                     <div className="liquid-glass rounded-[28px] p-6 md:p-8 flex-1 flex flex-col justify-center border border-white/60 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-4">
@@ -174,7 +170,6 @@ export default function DashboardView({
                         <div className="text-[24px] md:text-[28px] font-black text-[#1D1D1F] tabular-nums tracking-tight relative z-10">
                             {formatCurrency(taxAmount)} <span className="text-[14px] text-[#8E8E93] font-semibold">đ</span>
                         </div>
-                        {/* Hiệu ứng thanh chạy thuế */}
                         <div className="absolute bottom-0 left-0 h-1.5 bg-[#FF3B30] transition-all duration-1000 group-hover:h-2 opacity-80" style={{ width: `${Math.min((totalRevenueForTax / 500000000) * 100, 100)}%` }}></div>
                     </div>
                 </div>
