@@ -1,47 +1,159 @@
-import React from 'react';
-import { Calendar, Wallet, Pencil, Trash2, ChevronRight, TrendingUp, Package, Percent } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, Wallet, Pencil, Trash2, ChevronRight, TrendingUp, Package, Percent, ChevronLeft } from 'lucide-react';
 import { formatCurrency, formatInput, getSessionName } from '../utils';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+
+// Custom hiển thị số tiền khi rê chuột vào cột biểu đồ
+const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="bg-[#1D1D1F]/90 backdrop-blur-md border border-white/20 p-3.5 rounded-2xl shadow-xl">
+                <p className="text-white/70 text-[12px] mb-1 font-bold">{data.name}</p>
+                <p className={`text-[16px] font-black ${data.profit >= 0 ? 'text-[#26D0CE]' : 'text-[#FF453A]'}`}>
+                    {formatCurrency(data.profit)}đ
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function DashboardView({
     dashboardProfit, globalTongCon, globalTongNhap, globalVonTon, showTax, taxAmount, displayRevenueTr, totalRevenueForTax, 
     safeSessions, enrichedSessions, fetchDetail, isAdmin, canEdit, canDelete, canPay, 
     setSalarySession, setShowSalaryModal, handleStartEditSession, handleDeleteSession
 }) {
+
+    // Logic xử lý gom nhóm dữ liệu biểu đồ theo Từng Năm
+    const chartDataByYear = useMemo(() => {
+        const data = {};
+        enrichedSessions.forEach(ss => {
+            const dateStr = ss.actual_start_date || ss.start_date;
+            if (!dateStr) return;
+            const year = new Date(dateStr).getFullYear();
+            if (!data[year]) data[year] = [];
+
+            // Rút gọn tên đợt cho đỡ dài trên trục X
+            let shortName = ss.name;
+            if (!shortName || shortName === 'Thống kê tự động' || shortName.toLowerCase().includes('sale')) {
+                 shortName = `${new Date(dateStr).getDate()}/${new Date(dateStr).getMonth() + 1}`;
+            }
+
+            data[year].push({
+                name: shortName,
+                profit: ss.realProfit,
+                fullDate: dateStr
+            });
+        });
+
+        // Sắp xếp các đợt trong năm theo thứ tự thời gian từ trái qua phải
+        Object.keys(data).forEach(year => {
+            data[year].sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate));
+        });
+        return data;
+    }, [enrichedSessions]);
+
+    // Lấy ra danh sách các năm có dữ liệu (Sắp xếp từ mới nhất xuống cũ nhất)
+    const availableYears = useMemo(() => {
+        return Object.keys(chartDataByYear).map(Number).sort((a, b) => b - a);
+    }, [chartDataByYear]);
+
+    // Trạng thái lưu năm đang được chọn xem
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+    // Tự động chọn năm gần nhất nếu năm hiện tại chưa có đợt bán nào
+    useEffect(() => {
+        if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+            setSelectedYear(availableYears[0]);
+        }
+    }, [availableYears, selectedYear]);
+
+    const currentChartData = chartDataByYear[selectedYear] || [];
+    const yearlyTotal = currentChartData.reduce((sum, item) => sum + item.profit, 0);
+
+    const handlePrevYear = () => {
+        const currentIndex = availableYears.indexOf(selectedYear);
+        if (currentIndex < availableYears.length - 1) setSelectedYear(availableYears[currentIndex + 1]);
+    };
+
+    const handleNextYear = () => {
+        const currentIndex = availableYears.indexOf(selectedYear);
+        if (currentIndex > 0) setSelectedYear(availableYears[currentIndex - 1]);
+    };
+
     return (
         <div className="space-y-6 md:space-y-8 animate-fade-in-up pb-10">
             
-            {/* BẢNG THỐNG KÊ TỔNG QUAN */}
+            {/* BẢNG THỐNG KÊ TỔNG QUAN & BIỂU ĐỒ */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
-                {/* Cột Trái: Lợi nhuận ròng */}
-                <div className="lg:col-span-7 bg-gradient-to-br from-[#475569] to-[#334155] rounded-[32px] p-6 md:p-8 text-white relative overflow-hidden shadow-lg border border-white/10">
-                    <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-1/4 translate-y-1/4">
-                        <TrendingUp size={160} strokeWidth={1} />
-                    </div>
-                    <h3 className="text-[12px] md:text-[14px] font-bold text-white/70 uppercase tracking-widest mb-6 flex items-center gap-2">Lợi nhuận ròng</h3>
-                    <div className="mt-auto pt-10 md:pt-20">
-                        <div className="text-[40px] md:text-[56px] font-black tracking-tight leading-none mb-2 tabular-nums">
-                            {formatCurrency(dashboardProfit)}
+                
+                {/* CỘT TRÁI: BIỂU ĐỒ LỢI NHUẬN */}
+                <div className="lg:col-span-7 bg-gradient-to-br from-[#475569] to-[#334155] rounded-[32px] p-5 md:p-8 text-white relative shadow-lg border border-white/10 flex flex-col min-h-[350px]">
+                    
+                    {/* Tiêu đề & Điều hướng Năm */}
+                    <div className="flex justify-between items-start mb-6 z-10 relative">
+                        <div>
+                            <h3 className="text-[12px] md:text-[13px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                Lợi nhuận năm {selectedYear}
+                            </h3>
+                            <div className="text-[32px] md:text-[44px] font-black tracking-tight tabular-nums text-[#26D0CE] leading-none">
+                                {formatCurrency(yearlyTotal)}<span className="text-[16px] text-white/50 ml-1.5 font-bold">đ</span>
+                            </div>
+                            <div className="text-[11px] text-white/40 font-semibold mt-2 bg-white/5 inline-block px-2 py-1 rounded-md">
+                                TỔNG TẤT CẢ (ALL-TIME): {formatCurrency(dashboardProfit)}đ
+                            </div>
                         </div>
-                        <div className="text-[12px] md:text-[14px] font-bold text-[#26D0CE] uppercase tracking-widest">Việt Nam Đồng</div>
+
+                        {/* Nút lật qua lật lại giữa các năm */}
+                        {availableYears.length > 1 && (
+                            <div className="flex items-center gap-1 bg-white/10 rounded-full p-1 backdrop-blur-md border border-white/20 shadow-inner">
+                                <button onClick={handlePrevYear} disabled={selectedYear === availableYears[availableYears.length - 1]} className="p-1.5 hover:bg-white/20 rounded-full disabled:opacity-20 transition-colors"><ChevronLeft size={16}/></button>
+                                <span className="font-bold text-[13px] w-[40px] text-center tabular-nums text-white">{selectedYear}</span>
+                                <button onClick={handleNextYear} disabled={selectedYear === availableYears[0]} className="p-1.5 hover:bg-white/20 rounded-full disabled:opacity-20 transition-colors"><ChevronRight size={16}/></button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Vùng Vẽ Biểu Đồ */}
+                    <div className="flex-1 w-full mt-2 z-10 relative min-h-[200px]">
+                        {currentChartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={currentChartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" fontSize={10} tickLine={false} axisLine={false} dy={10} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                                    <Bar dataKey="profit" radius={[6, 6, 6, 6]} maxBarSize={45}>
+                                        {currentChartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#26D0CE' : '#FF453A'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-white/30 text-[13px] font-medium border-2 border-dashed border-white/10 rounded-2xl">
+                                Chưa có dữ liệu đợt bán nào trong năm {selectedYear}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Cột Phải: Các chỉ số khác */}
+                {/* Cột Phải: Các chỉ số khác giữ nguyên như sếp đã chốt */}
                 <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
-                    <div className="liquid-glass rounded-[28px] p-6 md:p-8 flex-1 flex flex-col justify-center">
+                    <div className="liquid-glass rounded-[28px] p-6 md:p-8 flex-1 flex flex-col justify-center border border-white/60 shadow-sm">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2 text-[12px] font-bold text-[#5c5c5c] uppercase tracking-wider"><Package size={16}/> Kho & Vốn</div>
-                            <div className="text-[11px] font-bold text-[#8E8E93] bg-white/50 px-2 py-1 rounded-lg border border-white/60">{formatInput(globalTongCon)} / {formatInput(globalTongNhap)}</div>
+                            <div className="text-[11px] font-bold text-[#8E8E93] bg-white/50 px-2 py-1 rounded-lg border border-white/60 shadow-sm">{formatInput(globalTongCon)} / {formatInput(globalTongNhap)}</div>
                         </div>
                         <div className="text-[24px] md:text-[28px] font-black text-[#1D1D1F] tabular-nums tracking-tight">
                             {formatCurrency(globalVonTon)} <span className="text-[14px] text-[#8E8E93] font-semibold">đ</span>
                         </div>
                     </div>
 
-                    <div className="liquid-glass rounded-[28px] p-6 md:p-8 flex-1 flex flex-col justify-center relative overflow-hidden">
+                    <div className="liquid-glass rounded-[28px] p-6 md:p-8 flex-1 flex flex-col justify-center relative overflow-hidden border border-white/60 shadow-sm">
                         <div className="flex justify-between items-start mb-4 relative z-10">
                             <div className="flex items-center gap-2 text-[12px] font-bold text-[#FF3B30] uppercase tracking-wider"><Percent size={16}/> Ước tính thuế</div>
-                            <div className="text-[11px] font-bold text-[#8E8E93] bg-white/50 px-2 py-1 rounded-lg tabular-nums border border-white/60">{displayRevenueTr} / 500M</div>
+                            <div className="text-[11px] font-bold text-[#8E8E93] bg-white/50 px-2 py-1 rounded-lg tabular-nums border border-white/60 shadow-sm">{displayRevenueTr} / 500M</div>
                         </div>
                         <div className="text-[24px] md:text-[28px] font-black text-[#1D1D1F] tabular-nums tracking-tight relative z-10">
                             {formatCurrency(taxAmount)} <span className="text-[14px] text-[#8E8E93] font-semibold">đ</span>
@@ -51,14 +163,13 @@ export default function DashboardView({
                 </div>
             </div>
 
-            {/* DANH SÁCH ĐỢT BÁN (ĐÃ PHÂN TÁCH CARD RÕ RÀNG) */}
-            <div className="liquid-glass rounded-[32px] p-3 sm:p-6 md:p-8">
+            {/* DANH SÁCH ĐỢT BÁN */}
+            <div className="liquid-glass rounded-[32px] p-3 sm:p-6 md:p-8 border border-white/60 shadow-sm">
                 <div className="flex justify-between items-center mb-6 px-2 md:px-0">
                     <h2 className="text-[20px] md:text-[22px] font-bold text-[#1D1D1F] tracking-tight">Danh sách đợt bán</h2>
                     <span className="text-[13px] font-bold bg-white/60 border border-white/80 text-[#1D1D1F] px-3 py-1 rounded-full shadow-sm">{enrichedSessions.length}</span>
                 </div>
 
-                {/* SỬA CHỖ NÀY: Dùng gap-4 thay vì divide-y để tách rời từng đợt thành các thẻ (card) */}
                 <div className="flex flex-col gap-4 md:gap-5">
                     {enrichedSessions.map((session, index) => {
                         const isLoss = session.realProfit < 0;
