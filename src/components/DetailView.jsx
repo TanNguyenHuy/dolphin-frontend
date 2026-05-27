@@ -2,7 +2,6 @@ import React from 'react';
 import { ChevronLeft, Download, Box, Package, Plus, X, Crown, Link as LinkIcon, Pencil, Trash2, RefreshCw, Calendar, Clock } from 'lucide-react';
 import { formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, AnimatedNumber } from '../utils';
 
-// Hàm bọc lỗi thời gian
 const formatDateTime = (dateString) => {
     try {
         if (!dateString) return '---';
@@ -81,10 +80,11 @@ export default function DetailView({
                         <div className="px-5 py-4 border-b border-white/40 flex items-center gap-2 bg-white/20"><Box size={18} className="text-[#1A5B82]" /><h3 className="text-[15px] font-bold text-[#1D1D1F] tracking-tight whitespace-nowrap">Chi phí Vốn</h3></div>
                         <div className="p-5 flex-1 flex flex-col space-y-5 min-w-0">
                             
-                            <div className="bg-white border border-gray-100 shadow-[0_8px_20px_rgba(0,0,0,0.04)] p-5 rounded-[20px] relative overflow-hidden min-w-0">
-                                <div className="absolute right-0 top-0 opacity-[0.03] pointer-events-none"><Package size={100} className="transform translate-x-1/4 -translate-y-1/4 text-[#1D1D1F]" /></div>
-                                <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-widest block mb-1 whitespace-nowrap relative z-10">Tổng Vốn Nhập</span>
-                                <div className="font-black text-[#1D1D1F] text-[28px] md:text-[30px] tabular-nums tracking-tight drop-shadow-sm whitespace-nowrap relative z-10">{formatCurrency((detailData?.so_tien_cua_kien || 0) + (detailData?.so_tien_giat_ui || 0) + detailAutoAdCost)}<span className="text-[14px] text-[#5c5c5c] ml-1 font-semibold">đ</span></div>
+                            {/* KHỐI TỔNG VỐN NHẬP (ĐÃ ĐỔI THEME VÀNG KEM SANG TRỌNG) */}
+                            <div className="bg-gradient-to-br from-[#FFFDE7] to-[#FFECB3] border border-[#FFE0B2] shadow-[0_8px_24px_rgba(255,140,0,0.12)] p-5 rounded-[24px] relative overflow-hidden min-w-0">
+                                <div className="absolute right-0 top-0 opacity-[0.12] pointer-events-none"><Package size={100} className="transform translate-x-1/4 -translate-y-1/4 text-[#FFB300]" /></div>
+                                <span className="text-[10px] font-bold text-[#E65100] uppercase tracking-widest block mb-1 whitespace-nowrap relative z-10">Tổng Vốn Nhập</span>
+                                <div className="font-black text-[#3E2723] text-[28px] md:text-[30px] tabular-nums tracking-tight drop-shadow-sm whitespace-nowrap relative z-10">{formatCurrency((detailData?.so_tien_cua_kien || 0) + (detailData?.so_tien_giat_ui || 0) + detailAutoAdCost)}<span className="text-[14px] text-[#D84315] ml-1 font-semibold">đ</span></div>
                             </div>
                             
                             {canEdit && (
@@ -154,7 +154,7 @@ export default function DetailView({
                         </form>
                     )}
 
-                    {/* BẢNG CHI TIẾT SẢN PHẨM HOÀN TOÀN MỚI */}
+                    {/* BẢNG CHI TIẾT SẢN PHẨM */}
                     <div className="liquid-glass rounded-[32px] p-3 sm:p-6 md:p-8 min-w-0 shadow-sm border border-white/60">
                         <div className="flex justify-between items-center mb-6 px-2 md:px-0">
                             <h2 className="text-[18px] md:text-[20px] font-bold text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
@@ -172,7 +172,6 @@ export default function DetailView({
                                         key={row.id || index} 
                                         className={`bg-white hover:bg-gray-50 border shadow-sm rounded-[24px] p-4 transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-4 xl:gap-6 w-full min-w-0 ${isMVP ? 'border-[#FF9500]/40 shadow-[#FF9500]/10' : 'border-gray-200'}`}
                                     >
-                                        {/* PHẦN 1: TÊN SẢN PHẨM VÀ CẬP NHẬT GỌN GÀNG */}
                                         <div className="flex items-center gap-4 w-full xl:w-[40%] min-w-0">
                                             <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-[14px] shrink-0 tabular-nums ${isMVP ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-gray-100 text-gray-700'}`}>
                                                 {row.stt || 0}
@@ -190,7 +189,6 @@ export default function DetailView({
                                                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-gray-500">
                                                     <span className="flex items-center gap-1"><Calendar size={10} /> {formatDateDisplay(row.ngay_ban)}</span>
                                                     <span className="text-gray-300">|</span>
-                                                    {/* ĐÂY LÀ CHỖ CẬP NHẬT LẦN CUỐI ĐƯỢC THU GỌN LẠI THÀNH HUY HIỆU */}
                                                     <span className="flex items-center gap-1 text-[#1A5B82] bg-blue-50/80 px-1.5 py-0.5 rounded-md border border-blue-100/50 truncate">
                                                         <Clock size={10} /> Cập nhật: {formatDateTime(row.updatedAt || row.ngay_ban)}
                                                     </span>
@@ -198,7 +196,6 @@ export default function DetailView({
                                             </div>
                                         </div>
 
-                                        {/* PHẦN 2: NHẬP / BÁN / CÒN */}
                                         <div className="flex justify-between gap-2 xl:w-[25%] shrink-0 pl-14 xl:pl-0">
                                             <div className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl py-2 text-center">
                                                 <div className="text-[9px] font-bold text-gray-500 uppercase mb-0.5 whitespace-nowrap">Nhập</div>
@@ -214,7 +211,6 @@ export default function DetailView({
                                             </div>
                                         </div>
 
-                                        {/* PHẦN 3: TÀI CHÍNH & NÚT */}
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between xl:justify-end gap-3 xl:gap-5 w-full xl:w-[35%] pl-14 xl:pl-0 border-t xl:border-none border-gray-100 pt-4 xl:pt-0 mt-2 xl:mt-0 shrink-0">
                                             
                                             <div className="flex flex-row sm:flex-col justify-between sm:justify-center text-left sm:text-right shrink-0">
