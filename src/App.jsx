@@ -157,9 +157,6 @@ export default function App() {
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
-    // =========================================================================
-    // TRÍ TUỆ NHÂN TẠO VER 2.0: ĐỌC SẠCH MỌI LOẠI JSON TỪ TOOL IG
-    // =========================================================================
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) {
             setSyncManualQty(''); setSyncManualRev(''); return;
@@ -167,7 +164,6 @@ export default function App() {
         
         let q = 0; let r = 0;
         
-        // Kịch bản 1: Sếp dán chuỗi chữ "Đã quét: X món. Tổng: Y k"
         let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
         let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
         
@@ -178,12 +174,10 @@ export default function App() {
             else if (syncText.toLowerCase().includes('k')) num *= 1000;
             r = num;
         } else {
-            // Kịch bản 2: Sếp dán CỤC JSON siêu phức tạp từ Tool
             try {
                 let parsed = JSON.parse(syncText);
                 let dataArray = [];
                 
-                // Móc lấy cái mảng chứa sản phẩm ra (dù nó nằm chìm trong Object)
                 if (Array.isArray(parsed)) {
                     dataArray = parsed;
                 } else if (parsed && typeof parsed === 'object') {
@@ -196,7 +190,6 @@ export default function App() {
                     dataArray.forEach(item => {
                         let itemPrice = 0;
                         
-                        // CÁCH 1: Tìm key được định sẵn là "price", "gia"... (chống bắt nhầm sđt)
                         if (typeof item === 'object' && item !== null) {
                             for (let key in item) {
                                 let k = key.toLowerCase();
@@ -204,7 +197,7 @@ export default function App() {
                                     let val = item[key];
                                     if (typeof val === 'number') {
                                         itemPrice = val;
-                                        if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000; // Đổi 175 thành 175000
+                                        if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000; 
                                         break;
                                     } else if (typeof val === 'string') {
                                         let p = Number(val.replace(/[^\d]/g, ''));
@@ -218,15 +211,10 @@ export default function App() {
                             }
                         }
 
-                        // CÁCH 2: Quét Regex hạng nặng (Nếu Cách 1 không thấy)
                         if (itemPrice === 0 && typeof item === 'object' && item !== null) {
-                            // Đập dẹp toàn bộ object thành 1 chuỗi chữ dài ngoằng
                             let itemStr = JSON.stringify(item).toLowerCase().replace(/\\[nr]/g, ' ');
-                            
-                            // Tẩy sạch các đường link rác (URL) để Regex không bắt nhầm số trong link
                             itemStr = itemStr.replace(/https?:\/\/[^\s]+/g, '');
 
-                            // Đi săn cụm từ "giá 175k", "sale 150.000", ...
                             let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
                             if (matches.length > 0) {
                                 for (let m of matches) {
@@ -234,10 +222,9 @@ export default function App() {
                                     let unit = m[2] ? m[2].trim() : '';
                                     if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
                                     else if (p > 0 && p < 10000) p *= 1000; 
-                                    if (p > itemPrice && p < 10000000) itemPrice = p; // Chốt giá cao nhất
+                                    if (p > itemPrice && p < 10000000) itemPrice = p; 
                                 }
                             } else {
-                                // Cứu cánh cuối cùng: Lấy những con số có dính chữ 'k' (VD: 150k)
                                 let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
                                 for (let m of fallbackMatches) {
                                     let p = Number(m[1].replace(/[^\d]/g, ''));
@@ -248,7 +235,7 @@ export default function App() {
                                 }
                             }
                         }
-                        r += itemPrice; // Cộng tiền vào giỏ
+                        r += itemPrice; 
                     });
                 }
             } catch (e) { console.error("Lỗi đọc JSON:", e); }
@@ -295,9 +282,36 @@ export default function App() {
     const taxBase = totalRevenueForTax - 500000000; const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0; const showTax = taxAmount > 0;
     const displayRevenueTr = (totalRevenueForTax / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
     
-    let globalTongNhap = 0; let globalTongBan = 0; let globalVonTon = 0;
-    enrichedSessions.forEach(ss => { if (!String(ss?.name || '').toLowerCase().includes('sale')) { globalTongNhap += (ss?.tong_sl_nhap || 0); globalVonTon += (ss?.tong_tien_ton_computed || 0); } globalTongBan += (ss?.tong_sl_ban || 0); });
-    const globalTongCon = Math.max(0, globalTongNhap - globalTongBan);
+    // ============================================================================
+    // BỘ MÁY TÍNH TOÁN KHO TỒN MỚI: NHẬN DIỆN "ĐĂNG LẠI" VÀ "SALE"
+    // ============================================================================
+    let globalTongNhap = 0; 
+    let globalTongBan = 0; 
+    let globalVonTon = 0;
+    let hangBiLoai = 0; // Hàng đem đi Sale (Bị loại hoàn toàn khỏi kho)
+
+    enrichedSessions.forEach(ss => { 
+        const nameLower = String(ss?.name || '').toLowerCase();
+        const isSale = nameLower.includes('sale');
+        const isDangLai = nameLower.includes('đăng lại') || nameLower.includes('dang lai');
+
+        if (isSale) {
+            // SALE: Không tính nhập mới, loại toàn bộ hàng nhập của đợt này khỏi kho
+            hangBiLoai += (ss?.tong_sl_nhap || 0);
+        } else if (isDangLai) {
+            // ĐĂNG LẠI: Không tính nhập mới, chỉ lấy số hàng đã bán để trừ kho
+            globalTongBan += (ss?.tong_sl_ban || 0);
+        } else {
+            // BÌNH THƯỜNG: Cộng bình thường vào nhập, bán, vốn tồn
+            globalTongNhap += (ss?.tong_sl_nhap || 0); 
+            globalTongBan += (ss?.tong_sl_ban || 0);
+            globalVonTon += (ss?.tong_tien_ton_computed || 0); 
+        }
+    });
+
+    // Kho Tồn = (Hàng Nhập Mới) - (Hàng Đã Bán) - (Hàng Rút Ra Đi Sale)
+    const globalTongCon = Math.max(0, globalTongNhap - globalTongBan - hangBiLoai);
+    // ============================================================================
 
     let detailProfit = 0; let mvpRowId = null; let enrichedDaily = []; let exactTotalVonTon = 0; let detailAutoAdCost = 0;
     let actualStartDate = detailData?.start_date; let actualEndDate = detailData?.start_date;
