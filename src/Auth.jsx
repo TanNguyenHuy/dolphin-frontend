@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-// ĐÃ FIX: Thêm đầy đủ ArrowRight, ChevronLeft, ChevronRight vào đây
 import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, UploadCloud, ArrowRight } from 'lucide-react';
 import { API_URL } from './utils';
 
@@ -72,7 +71,7 @@ export default function Auth({ onLoginSuccess }) {
             setOtpStep(2); 
         } catch (err) {
             setError(err.response?.data?.error || 'Lỗi gửi mail!');
-        } finally { setLoading(false); }
+        } font-bold { setLoading(false); }
     };
 
     const handleAuth = async (e) => {
@@ -86,8 +85,10 @@ export default function Auth({ onLoginSuccess }) {
             }
             else {
                 const user = res.data.user;
-                if (user.role !== 'admin' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
-                    setRegisteredEmail(user.email); setStep('pricing'); alert("⚠️ Gói đã hết hạn!");
+                
+                // ĐÃ FIX: Nếu không phải admin và KHÔNG PHẢI GÓI PREMIUM mới check hết hạn
+                if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
+                    setRegisteredEmail(user.email); setStep('pricing'); alert("⚠️ Gói của bạn đã hết hạn!");
                 } else {
                     if (rememberMe) {
                         localStorage.setItem('rememberedEmail', formData.email);
@@ -127,7 +128,6 @@ export default function Auth({ onLoginSuccess }) {
                 
                 {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
                 <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out bg-white ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
-                    
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
                         <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <h1 className="font-extrabold text-[28px] md:text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
@@ -173,7 +173,7 @@ export default function Auth({ onLoginSuccess }) {
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
                         <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <div className="w-[65px] h-[65px] rounded-full flex items-center justify-center mb-3 shadow-sm border border-gray-100 overflow-hidden bg-white">
-                                <img src="/logo.png" alt="Dolphin Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
+                                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
                             </div>
                             <h1 className="font-extrabold text-[28px] md:text-[32px] mb-1 text-[#222]">
                                 {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
@@ -257,9 +257,7 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* =========================================================
-                    LỚP 2: MÀN HÌNH CHỌN GÓI (HIỆU ỨNG THẺ CAO CẤP)
-                ========================================================= */}
+                {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
                 <div className={`absolute inset-0 bg-gray-50/90 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="text-center mb-10 mt-10 md:mt-0">
                         <h2 className="text-[28px] md:text-[34px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
@@ -303,9 +301,7 @@ export default function Auth({ onLoginSuccess }) {
                     </button>
                 </div>
 
-                {/* =========================================================
-                    LỚP 3: QUÉT QR & TẢI BILL 
-                ========================================================= */}
+                {/* LỚP 3: QUÉT QR & TẢI BILL */}
                 <div className={`absolute inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
                         <div className="text-center lg:text-left flex-1 w-full mt-10 lg:mt-0">
@@ -337,9 +333,7 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* =========================================================
-                    LỚP 4: THÀNH CÔNG & CHỜ DUYỆT
-                ========================================================= */}
+                {/* LỚP 4: THÀNH CÔNG */}
                 <div className={`absolute inset-0 bg-green-50/80 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
                     <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
