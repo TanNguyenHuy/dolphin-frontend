@@ -349,7 +349,7 @@ export default function App() {
             } catch (e) { console.error("Lỗi đọc JSON:", e); }
         }
         setSyncManualQty(q > 0 ? q.toString() : '');
-        setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : ''));
+        setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : '0'));
     }, [syncText]);
 
     const handleConfirmSync = async () => {
@@ -567,16 +567,16 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* TRẢ LẠI MÀU GỐC TRÊN HEADER */}
+                    {/* ĐÃ FIX: Đồng bộ nhãn w-[95px] h-[26px], xóa chữ GÓI, giữ nguyên màu gradient gốc */}
                     {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
                         <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md">
                             <Crown size={12}/> PREMIUM
                         </div>
                     ) : (
-                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
-                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
-                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
-                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
+                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-md text-white ${
+                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 border-yellow-500' : 
+                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-400 to-slate-500 border-slate-400' : 
+                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] border-[#8D6E63]' 
                         }`}>
                             {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                         </div>
