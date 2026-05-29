@@ -567,16 +567,16 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* ĐÃ FIX: Nhãn Header cùng kích cỡ (w-24/w-[100px]), màu Satin nhẹ nhàng */}
+                    {/* ĐÃ FIX: Nhãn Header cùng kích cỡ (w-24), Gradient gốc đẹp mắt */}
                     {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <div className="mt-2 md:ml-14 w-[100px] h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-violet-200 shadow-sm bg-gradient-to-r from-violet-400 to-fuchsia-400">
+                        <div className="mt-2 md:ml-14 w-24 h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/20 shadow-md bg-gradient-to-r from-purple-500 to-blue-500">
                             <Crown size={12}/> PREMIUM
                         </div>
                     ) : (
-                        <div className={`mt-2 md:ml-14 w-24 h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
-                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 border-yellow-300' : 
-                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-200 to-gray-300 text-slate-800 border-slate-300' : 
-                            'bg-gradient-to-r from-orange-200 to-amber-300 text-orange-900 border-orange-300'
+                        <div className={`mt-2 md:ml-14 w-24 h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md ${
+                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' : 
+                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800' : 
+                            'bg-gradient-to-r from-stone-300 to-stone-400 text-stone-800'
                         }`}>
                             {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                         </div>
@@ -611,6 +611,7 @@ export default function App() {
                 </div>
             </div>
 
+            {/* MODAL CẬP NHẬT THAY THẾ JSON */}
             {syncRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -653,6 +654,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL SỬA BẢN GHI */}
             {editingRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -696,6 +698,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
             {editingSession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative shadow-2xl border border-white">
@@ -724,6 +727,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL XÓA ĐỢT BÁN */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -740,6 +744,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL XÓA SẢN PHẨM */}
             {showDeleteRowModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -758,6 +763,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL PHÁT LƯƠNG */}
             {showSalaryModal && salarySession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center shadow-2xl border border-white">
