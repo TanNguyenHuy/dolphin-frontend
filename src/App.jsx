@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle, Star, Eye } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -67,7 +67,6 @@ export default function App() {
     const [isExpiredState, setIsExpiredState] = useState(false);
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
 
-    // ĐÃ THÊM: HỆ THỐNG THÔNG BÁO XỊN (TOAST) CHO APP.JSX
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
@@ -192,7 +191,6 @@ export default function App() {
         } catch (err) {} 
     };
 
-    // ĐÃ FIX: CHẶN VÀ HIỆN TOAST THAY VÌ ALERT
     const fetchDetail = async (id) => { 
         if (!canViewDetail) {
             showToast("Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!", "error");
@@ -489,7 +487,6 @@ export default function App() {
         else { setShowFireworks(false); }
     }, [view, isTargetReached, currentId]);
 
-    // ĐÃ FIX: CHẶN VÀ HIỆN TOAST THAY VÌ ALERT
     const handleExport = () => { 
         if (!canExportExcel) {
             showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error");
@@ -517,7 +514,6 @@ export default function App() {
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
 
-            {/* TOAST THÔNG BÁO CHUNG CỦA HỆ THỐNG APP */}
             <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
                 <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
                     {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
@@ -571,9 +567,24 @@ export default function App() {
                         </div>
                     </a>
                     
+                    {/* ĐÃ FIX: Áp dụng dải màu kim loại đồng bộ lên Header */}
+                    {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
+                        <div className="mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-[#D8B4FE]/50 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_10px_rgba(109,40,217,0.4)] bg-[linear-gradient(135deg,#6D28D9,#D8B4FE,#3B82F6)]">
+                            <Crown size={12}/> Gói Premium
+                        </div>
+                    ) : (
+                        <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border shadow-[inset_0_1px_2px_rgba(255,255,255,0.8)] ${
+                            authUser?.plan === '100k' ? 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728,#FBF5B7,#AA771C)] text-yellow-900 border-[#FCF6BA] shadow-[0_2px_10px_rgba(179,135,40,0.4)]' : 
+                            authUser?.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8,#F8FAFC,#94A3B8)] text-slate-800 border-white shadow-[0_2px_10px_rgba(148,163,184,0.4)]' : 
+                            'bg-[linear-gradient(135deg,#A0522D,#E3A869,#A0522D)] text-white border-[#E3A869]/50 shadow-[0_2px_10px_rgba(160,82,45,0.4)]'
+                        }`}>
+                            {authUser?.plan === '100k' ? <><Crown size={12}/> Gói VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> Gói VIP</> : <><Eye size={12}/> Gói Cơ Bản</>}
+                        </div>
+                    )}
+                    
                     {authUser?.role !== 'admin' && authUser?.plan !== 'premium' && authUser?.planExpiry && (
                         <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-sm transition-all ${timeLeftDisplay.includes('giây') || timeLeftDisplay.includes('phút') ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-                            <Clock size={12} /> Hạn sử dụng: {timeLeftDisplay}
+                            <Clock size={12} /> Hạn dùng: {timeLeftDisplay}
                         </div>
                     )}
                 </div>
@@ -600,7 +611,6 @@ export default function App() {
                 </div>
             </div>
 
-            {/* MODAL CẬP NHẬT THAY THẾ JSON */}
             {syncRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -643,7 +653,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL SỬA BẢN GHI */}
             {editingRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -687,7 +696,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
             {editingSession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative shadow-2xl border border-white">
@@ -716,7 +724,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL XÓA ĐỢT BÁN */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -733,7 +740,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL XÓA SẢN PHẨM */}
             {showDeleteRowModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -752,7 +758,6 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL PHÁT LƯƠNG */}
             {showSalaryModal && salarySession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center shadow-2xl border border-white">
