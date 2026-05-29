@@ -118,9 +118,16 @@ export default function DetailView({
                             )}
 
                             <div className="mt-auto space-y-4 pt-4 border-t border-white/50 min-w-0">
+                                {/* KHÓA Ô CHI PHÍ GIẶT ỦI (CHỈ HIỂN THỊ TỰ ĐỘNG 4%) */}
                                 <div className="min-w-0">
-                                    <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1.5 block pl-1 whitespace-nowrap">Chi phí Giặt ủi / Khác</label>
-                                    <input disabled={!canEdit} className="w-full min-w-0 liquid-input rounded-[16px] px-4 py-3 font-bold text-right text-[#1D1D1F] text-[18px] focus:border-[#33A1FD] outline-none transition-all tabular-nums shadow-sm disabled:opacity-70 disabled:cursor-not-allowed border-white/60 bg-white/50" value={formatInput(detailData?.so_tien_giat_ui || 0)} onFocus={e => e.target.select()} onChange={e => updateSessionField('so_tien_giat_ui', parseInput(e.target.value))} />
+                                    <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1.5 block pl-1 whitespace-nowrap">Chi phí Giặt ủi / Khác (Auto 4%)</label>
+                                    <input 
+                                        disabled 
+                                        readOnly 
+                                        className="w-full min-w-0 liquid-input rounded-[16px] px-4 py-3 font-bold text-right text-[#1D1D1F] text-[18px] outline-none transition-all tabular-nums shadow-sm opacity-60 cursor-not-allowed border-white/60 bg-gray-100/50" 
+                                        value={formatInput(detailData?.so_tien_giat_ui || 0)} 
+                                        title="Chi phí này được hệ thống tự động tính bằng 4% tiền vốn nhập"
+                                    />
                                 </div>
                                 <div className="bg-white/40 border border-white/60 p-4 rounded-[20px] space-y-2.5 text-[13px] backdrop-blur-md min-w-0 shadow-sm">
                                     <div className="flex justify-between gap-2 text-[#5c5c5c]"><span className="whitespace-nowrap">Tổng Hàng Nhập</span><span className="font-bold text-[#1D1D1F] tabular-nums shrink-0 whitespace-nowrap">{formatInput(detailData?.computed?.tong_sl_nhap || 0)}</span></div>
