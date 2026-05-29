@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle, Star, Eye } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -567,18 +567,18 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* ĐÃ FIX: Nhãn Header cùng kích cỡ (w-24), Gradient gốc đẹp mắt */}
+                    {/* TRẢ LẠI NGUYÊN BẢN GIAO DIỆN HEADER NHƯ HÌNH CHUẨN */}
                     {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <div className="mt-2 md:ml-14 w-24 h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/20 shadow-md bg-gradient-to-r from-purple-500 to-blue-500">
-                            <Crown size={12}/> PREMIUM
+                        <div className="mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md">
+                            <Crown size={12}/> GÓI PREMIUM
                         </div>
                     ) : (
-                        <div className={`mt-2 md:ml-14 w-24 h-7 inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md ${
-                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' : 
-                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800' : 
-                            'bg-gradient-to-r from-stone-300 to-stone-400 text-stone-800'
+                        <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-md ${
+                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
+                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
+                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
                         }`}>
-                            {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
+                            {authUser?.plan === '100k' ? 'GÓI VVIP' : authUser?.plan === '50k' ? 'GÓI VIP' : 'GÓI CƠ BẢN'}
                         </div>
                     )}
                     
