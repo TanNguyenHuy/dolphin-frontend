@@ -107,7 +107,16 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     onLoginSuccess(user, true);
                 }
             }
-        } catch (err) { showToast(err.response?.data?.error || "Sai thông tin đăng nhập!", 'error'); }
+        } catch (err) { 
+            // ĐÃ FIX: Bắt lệnh từ Backend, nếu là khách bỏ dở đăng ký -> Ép nhảy sang Chọn Gói
+            if (err.response?.data?.error === 'INCOMPLETE_REGISTRATION') {
+                setRegisteredEmail(err.response.data.email);
+                setStep('pricing');
+                showToast("Vui lòng hoàn tất việc chọn gói và nạp Bill!", 'error');
+            } else {
+                showToast(err.response?.data?.error || "Sai thông tin đăng nhập!", 'error'); 
+            }
+        }
         finally { setLoading(false); }
     };
 
