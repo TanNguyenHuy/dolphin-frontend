@@ -52,9 +52,9 @@ export default function AdminPanel({ setView, authUser }) {
     };
 
     const handleChangePlan = (id, newPlan, currentPermissions) => {
-        const planName = newPlan === 'premium' ? '💎 GÓI PREMIUM' : newPlan === '100k' ? '🥇 GÓI VVIP' : newPlan === '50k' ? '🥈 GÓI VIP' : '🥉 GÓI CƠ BẢN';
+        const planName = newPlan === 'premium' ? '💎 PREMIUM' : newPlan === '100k' ? '🥇 VVIP' : newPlan === '50k' ? '🥈 VIP' : '🥉 CƠ BẢN';
         
-        confirmAction("Xác Nhận Đổi Gói", `Sếp có chắc chắn đổi khách hàng này sang ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`, async () => {
+        confirmAction("Xác Nhận Đổi Gói", `Sếp có chắc chắn đổi khách hàng này sang gói ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`, async () => {
             let canViewDetail = currentPermissions?.canViewDetail || false;
             if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') canViewDetail = true;
             else canViewDetail = false;
@@ -225,17 +225,18 @@ export default function AdminPanel({ setView, authUser }) {
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
+                                    {/* ĐÃ FIX: Chỉnh kích thước đồng nhất w-[95px] h-[26px], bỏ chữ "GÓI", giữ nguyên màu sắc gốc */}
                                     {isAbandoned ? (
-                                        <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">Chưa Chọn Gói</span>
+                                        <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">CHƯA CHỌN</span>
                                     ) : u.plan === 'premium' || u.role === 'admin' ? (
-                                        <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-[#D8B4FE]/50 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_10px_rgba(109,40,217,0.4)] bg-[linear-gradient(135deg,#6D28D9,#D8B4FE,#3B82F6)] text-white flex items-center gap-1"><Crown size={12}/> Gói Premium</span>
+                                        <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md"><Crown size={12}/> PREMIUM</span>
                                     ) : (
-                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border shadow-sm ${
-                                            u.plan === '100k' ? 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728,#FBF5B7,#AA771C)] text-yellow-900 border-[#FCF6BA] shadow-[0_2px_10px_rgba(179,135,40,0.4)]' : 
-                                            u.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8,#F8FAFC,#94A3B8)] text-slate-800 border-white shadow-[0_2px_10px_rgba(148,163,184,0.4)]' : 
-                                            'bg-[linear-gradient(135deg,#A0522D,#E3A869,#A0522D)] text-white border-[#E3A869]/50 shadow-[0_2px_10px_rgba(160,82,45,0.4)]' 
+                                        <span className={`w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+                                            u.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
+                                            u.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
+                                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
                                         }`}>
-                                            {u.plan === '100k' ? 'Gói VVIP' : u.plan === '50k' ? 'Gói VIP' : 'Gói Cơ Bản'}
+                                            {u.plan === '100k' ? 'VVIP' : u.plan === '50k' ? 'VIP' : 'CƠ BẢN'}
                                         </span>
                                     )}
                                 </div>
@@ -294,23 +295,15 @@ export default function AdminPanel({ setView, authUser }) {
                                             </button>
 
                                             <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canPay ? 'text-gray-700' : 'text-gray-400 opacity-60'}>P.Lương</span>
-                                                </label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canEdit ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Sửa</span>
-                                                </label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canDelete ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Xóa</span>
-                                                </label>
-                                                <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canViewDetail ? 'text-orange-600' : 'text-orange-300 opacity-60'}>Xem Chi Tiết</span>
-                                                </label>
+                                                {u.plan === 'premium' && (
+                                                    <>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
+                                                        <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                                    </>
+                                                )}
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
                                             </div>
                                             
                                             <div className="relative group">
@@ -318,12 +311,11 @@ export default function AdminPanel({ setView, authUser }) {
                                                     className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
                                                     value={u.plan || '10k'}
                                                     onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
-                                                    title="Đổi gói - Thời gian sẽ được tính lại từ đầu"
                                                 >
-                                                    <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
-                                                    <option value="50k">🥈 GÓI VIP (50k)</option>
-                                                    <option value="100k">🥇 GÓI VVIP (100k)</option>
-                                                    <option value="premium">💎 GÓI PREMIUM</option>
+                                                    <option value="10k">🥉 CƠ BẢN (10k)</option>
+                                                    <option value="50k">🥈 VIP (50k)</option>
+                                                    <option value="100k">🥇 VVIP (100k)</option>
+                                                    <option value="premium">💎 PREMIUM</option>
                                                 </select>
                                                 <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
                                             </div>
@@ -354,7 +346,6 @@ export default function AdminPanel({ setView, authUser }) {
                                                     <button 
                                                         onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
                                                         className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-2xl border-2 border-pink-100 bg-pink-50 text-pink-600 hover:border-pink-300 transition-all shadow-sm active:scale-95"
-                                                        title="Sửa hạn sử dụng tùy ý"
                                                     >
                                                         <TimerReset size={15} /> Sửa Hạn
                                                     </button>
@@ -367,7 +358,6 @@ export default function AdminPanel({ setView, authUser }) {
                                                         className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${chatRestrictStatus !== '0' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
                                                         onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
                                                         value={chatRestrictStatus}
-                                                        title="Quản lý quyền Chat của tài khoản này"
                                                     >
                                                         <option value="0">Chat Bình thường</option>
                                                         <option value="1">Cấm Chat 1 ngày</option>
