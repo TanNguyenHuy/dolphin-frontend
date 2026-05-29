@@ -29,12 +29,10 @@ export default function AdminPanel({ setView, authUser }) {
         fetchUsers();
     };
 
-    // HÀM MỚI: ADMIN TỰ ĐỔI GÓI CHO KHÁCH
     const handleChangePlan = async (id, newPlan, currentPermissions) => {
         const planName = newPlan === 'premium' ? '💎 GÓI PREMIUM' : newPlan === '100k' ? '🥇 GÓI VVIP' : newPlan === '50k' ? '🥈 GÓI VIP' : '🥉 GÓI CƠ BẢN';
         if (!window.confirm(`Sếp có chắc chắn muốn nâng/hạ tài khoản này thành ${planName}?`)) return;
 
-        // Tự động mở/khóa quyền Xem Chi Tiết dựa theo gói sếp chọn
         let canViewDetail = currentPermissions?.canViewDetail || false;
         if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') {
             canViewDetail = true;
@@ -44,15 +42,17 @@ export default function AdminPanel({ setView, authUser }) {
 
         const updatedPermissions = { ...currentPermissions, canViewDetail };
 
-        try {
-            await axios.put(`${API_URL}/users/${id}`, { 
-                plan: newPlan, 
-                permissions: updatedPermissions 
-            });
-            fetchUsers();
-        } catch (e) {
-            alert("Lỗi khi cập nhật gói!");
+        // ĐÃ FIX: Nếu nâng lên Premium bằng tay thì xóa hạn sử dụng (planExpiry = null) và auto duyệt vào
+        const updatePayload = { plan: newPlan, permissions: updatedPermissions };
+        if (newPlan === 'premium') {
+            updatePayload.planExpiry = null;
+            updatePayload.isApproved = true;
         }
+
+        try {
+            await axios.put(`${API_URL}/users/${id}`, updatePayload);
+            fetchUsers();
+        } catch (e) { alert("Lỗi khi cập nhật gói!"); }
     };
 
     const handleRestrict = async (id, days) => {
@@ -100,12 +100,11 @@ export default function AdminPanel({ setView, authUser }) {
                     const isRestricted = restrictStatus !== '0';
 
                     return (
-                        <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-[3px] transition-all shadow-sm ${!u.isApproved && u.role !== 'admin' ? 'border-orange-300 bg-orange-50/50' : 'border-transparent hover:border-gray-200'}`}>
+                        <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-[3px] transition-all shadow-sm ${!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300 bg-orange-50/50' : 'border-transparent hover:border-gray-200'}`}>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
-                                    {/* BADGE TÊN GÓI MÀU ĐỒNG - BẠC - VÀNG - PREMIUM */}
                                     {u.plan === 'premium' || u.role === 'admin' ? (
                                         <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md flex items-center gap-1"><Crown size={12}/> Gói Premium</span>
                                     ) : (
@@ -121,8 +120,13 @@ export default function AdminPanel({ setView, authUser }) {
                                 
                                 <p className="text-gray-400 text-[13px] mb-3 flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
                                 
+                                {/* ĐÃ FIX: GÓI PREMIUM HIỂN THỊ VÔ THỜI HẠN */}
                                 {u.role !== 'admin' ? (
-                                    u.isApproved ? (
+                                    u.plan === 'premium' ? (
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border border-purple-200 bg-purple-50 text-purple-700">
+                                            <Clock size={14}/> Hạn sử dụng: Vô thời hạn
+                                        </div>
+                                    ) : u.isApproved ? (
                                         <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
                                             <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
                                         </div>
@@ -159,13 +163,11 @@ export default function AdminPanel({ setView, authUser }) {
                                         <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer border-l pl-3 ml-1 border-gray-200"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
                                     </div>
                                     
-                                    {/* MENU ĐỔI GÓI CHO ADMIN */}
                                     <div className="relative group">
                                         <select 
                                             className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
                                             value={u.plan || '10k'}
                                             onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
-                                            title="Đổi hạng gói cho khách hàng này"
                                         >
                                             <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
                                             <option value="50k">🥈 GÓI VIP (50k)</option>
