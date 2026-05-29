@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, CheckCircle2 } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
     const [users, setUsers] = useState([]);
+    const [selectedBill, setSelectedBill] = useState(null);
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -12,7 +13,14 @@ export default function AdminPanel({ setView, authUser }) {
         try {
             const res = await axios.get(`${API_URL}/users`);
             setUsers(res.data);
-        } catch (error) { console.error("Lỗi fetch users:", error); }
+        } catch (error) { console.error(error); }
+    };
+
+    const handleApprove = async (id) => {
+        try {
+            await axios.put(`${API_URL}/users/${id}/approve`);
+            fetchUsers();
+        } catch (e) { alert("Lỗi duyệt!"); }
     };
 
     const togglePermission = async (id, currentPermissions, field) => {
@@ -21,149 +29,77 @@ export default function AdminPanel({ setView, authUser }) {
         fetchUsers();
     };
 
-    const handleApprove = async (id, isApproved) => {
-        await axios.put(`${API_URL}/users/${id}`, { isApproved: !isApproved });
-        fetchUsers();
-    };
-
-    const handleRestrict = async (id, days) => {
-        let restrictedUntil = null;
-        let isBanned = false;
-
-        if (days === 'forever') {
-            isBanned = true; 
-        } else if (days !== '0' && days !== 'restricted') {
-            restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
-        }
-
-        await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
-        fetchUsers();
-    };
-
-    const handleDelete = async (id) => {
-        if (window.confirm("Xóa vĩnh viễn người dùng này? Hành động không thể hoàn tác!")) {
-            await axios.delete(`${API_URL}/users/${id}`);
-            fetchUsers();
-        }
-    };
-
-    const getRestrictStatus = (u) => {
-        if (u.isBanned) return 'forever';
-        if (u.restrictedUntil && new Date(u.restrictedUntil) > new Date()) return 'restricted';
-        return '0';
-    };
-
-    // HÀM TÍNH ĐỒNG HỒ ĐẾM NGƯỢC NGÀY HẾT HẠN
     const getRemainingTime = (expiryDate) => {
-        if (!expiryDate) return "Chưa kích hoạt";
-        const now = new Date();
-        const exp = new Date(expiryDate);
-        
+        if (!expiryDate) return null;
+        const now = new Date(); const exp = new Date(expiryDate);
         if (now > exp) return "Đã hết hạn";
-        
-        const diffTime = Math.abs(exp - now);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
-        if (diffDays === 0) return `Còn ${diffHours} giờ`;
-        return `Còn ${diffDays} ngày ${diffHours} giờ`;
+        const diff = Math.abs(exp - now);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        return `Còn ${days} ngày ${hours} giờ`;
     };
 
     return (
-        <div className="animate-fade-in-up">
+        <div className="animate-fade-in-up pb-20">
+            {/* MODAL XEM ẢNH BILL */}
+            {selectedBill && (
+                <div className="fixed inset-0 z-[999] bg-black/90 flex flex-col items-center justify-center p-4">
+                    <button onClick={() => setSelectedBill(null)} className="absolute top-10 right-10 text-white bg-white/10 p-4 rounded-full"><X size={30}/></button>
+                    <img src={selectedBill} className="max-w-full max-h-[85vh] object-contain border-4 border-white rounded-xl shadow-2xl" alt="Bill" />
+                </div>
+            )}
+
             <div className="flex items-center justify-between mb-8">
-                <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-2 text-[#5c5c5c] hover:text-[#1DB2A0] font-semibold bg-white/50 px-4 py-2 rounded-full shadow-sm transition-colors active:scale-95 border border-white/60">
-                    <ArrowLeft size={16} /> Về Dashboard
-                </button>
-                <h2 className="text-[24px] md:text-[28px] font-black text-[#1D1D1F] tracking-tight">Quản lý Tài Khoản</h2>
+                <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-2 text-gray-500 font-bold bg-white px-6 py-3 rounded-full shadow-sm border"><ArrowLeft size={18} /> Dashboard</button>
+                <h2 className="text-3xl font-black text-gray-800">Cài Đặt Hệ Thống</h2>
             </div>
 
             <div className="space-y-4">
-                {users.map(u => {
-                    const restrictStatus = getRestrictStatus(u);
-                    const isRestricted = restrictStatus !== '0';
-
-                    return (
-                        <div key={u._id} className="liquid-glass rounded-[24px] p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all hover:bg-white/60 shadow-sm border border-white/50">
-                            
-                            {/* THÔNG TIN NGƯỜI DÙNG & TÊN GÓI & ĐẾM NGƯỢC HẾT HẠN */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-bold text-[16px] text-[#1D1D1F] truncate">{u.name}</h3>
-                                    {u.role === 'admin' && <Crown size={16} className="text-[#FF9500] shrink-0"/>}
-                                    
-                                    {u.role !== 'admin' && (
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                            u.plan === '100k' ? 'bg-[#FF9500]/10 text-[#FF9500] border border-[#FF9500]/20' : 
-                                            u.plan === '50k' ? 'bg-[#26D0CE]/10 text-[#26D0CE] border border-[#26D0CE]/20' : 
-                                            'bg-gray-100 text-gray-500 border border-gray-200'
-                                        }`}>
-                                            {u.plan === '100k' ? 'Gói V.I.P' : u.plan === '50k' ? 'Gói Tiêu Chuẩn' : 'Gói Cơ Bản'}
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-[13px] text-[#5c5c5c] truncate flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
-                                
-                                {/* HIỂN THỊ ĐỒNG HỒ ĐẾM NGƯỢC HẠN SỬ DỤNG CHO NGƯỜI DÙNG */}
-                                {u.role !== 'admin' && (
-                                    <p className={`text-[12px] mt-1.5 flex items-center gap-1 font-semibold ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'text-[#FF3B30]' : 'text-[#1DB2A0]'}`}>
-                                        <Clock size={12}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
-                                    </p>
-                                )}
-
-                                {restrictStatus === 'restricted' && u.restrictedUntil && (
-                                    <p className="text-[12px] text-[#FF3B30] mt-1 flex items-center gap-1 font-semibold">
-                                        <Clock size={12}/> Hạn chế đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
-                                    </p>
-                                )}
+                {users.map(u => (
+                    <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-2 transition-all ${!u.isApproved ? 'border-orange-200 bg-orange-50/30' : 'border-white'}`}>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-1">
+                                <h3 className="font-extrabold text-xl text-gray-800">{u.name}</h3>
+                                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border ${u.plan === '100k' ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>Gói {u.plan === '100k' ? 'V.I.P' : u.plan === '50k' ? 'Tiêu Chuẩn' : 'Cơ Bản'}</span>
+                                {u.role === 'admin' && <Crown size={18} className="text-orange-400" />}
                             </div>
-
-                            {/* KHU VỰC CÁC NÚT BẤM VÀ QUYỀN */}
-                            {u.role !== 'admin' ? (
-                                <div className="flex flex-wrap items-center gap-3 shrink-0 mt-3 xl:mt-0">
-                                    <button onClick={() => handleApprove(u._id, u.isApproved)} className={`px-4 py-2.5 text-[13px] font-bold rounded-xl transition-all shadow-sm active:scale-95 ${u.isApproved ? 'text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200' : 'text-white bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] hover:opacity-90 border border-transparent'}`}>
-                                        {u.isApproved ? 'Hủy Duyệt' : 'Duyệt Vào'}
-                                    </button>
-                                    
-                                    <div className="flex flex-wrap items-center gap-4 bg-white/70 border border-gray-200 rounded-xl px-4 py-2.5 shadow-inner">
-                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#1DB2A0] transition-colors">
-                                            <input type="checkbox" checked={u.permissions?.canPay || false} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-[#1DB2A0] w-4 h-4 cursor-pointer"/> P.Lương
-                                        </label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#33A1FD] transition-colors">
-                                            <input type="checkbox" checked={u.permissions?.canEdit || false} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-[#33A1FD] w-4 h-4 cursor-pointer"/> Sửa
-                                        </label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF3B30] transition-colors">
-                                            <input type="checkbox" checked={u.permissions?.canDelete || false} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-[#FF3B30] w-4 h-4 cursor-pointer"/> Xóa
-                                        </label>
-                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF9500] transition-colors border-l pl-3 ml-1 border-gray-300">
-                                            <input type="checkbox" checked={u.permissions?.canViewDetail || false} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-[#FF9500] w-4 h-4 cursor-pointer"/> Xem Chi Tiết
-                                        </label>
-                                    </div>
-
-                                    <select 
-                                        className={`text-[13px] font-bold px-3 py-2.5 rounded-xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-[#FF3B30]/10 text-[#FF3B30] border-[#FF3B30]/30' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-                                        onChange={(e) => handleRestrict(u._id, e.target.value)}
-                                        value={restrictStatus}
-                                    >
-                                        <option value="0">Bình thường</option>
-                                        <option value="1">Hạn chế 1 ngày</option>
-                                        <option value="2">Hạn chế 2 ngày</option>
-                                        <option value="3">Hạn chế 3 ngày</option>
-                                        <option value="7">Hạn chế 7 ngày</option>
-                                        <option value="forever">Cấm vĩnh viễn</option>
-                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị hạn chế...</option>}
-                                    </select>
-
-                                    <button onClick={() => handleDelete(u._id)} className="w-[40px] h-[40px] flex items-center justify-center bg-white border border-gray-200 text-[#FF3B30] rounded-xl hover:bg-[#FF3B30] hover:text-white transition-all shadow-sm active:scale-95" title="Xóa tài khoản"><Trash2 size={16}/></button>
-                                </div>
-                            ) : (
-                                <div className="px-4 py-2.5 bg-[#FF9500]/10 text-[#FF9500] text-[13px] font-bold rounded-xl border border-[#FF9500]/20 flex items-center gap-2 shrink-0 shadow-sm mt-3 xl:mt-0">
-                                    <ShieldAlert size={16}/> Quyền Tối Cao
+                            <p className="text-gray-400 text-sm mb-3">{u.email}</p>
+                            
+                            {/* CHỈ HIỆN HẠN SỬ DỤNG KHI ĐÃ DUYỆT */}
+                            {u.isApproved && u.role !== 'admin' && (
+                                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-black shadow-sm">
+                                    <Clock size={14}/> {getRemainingTime(u.planExpiry)}
                                 </div>
                             )}
                         </div>
-                    )
-                })}
+
+                        {/* CỘT DUYỆT BILL & QUYỀN */}
+                        {u.role !== 'admin' && (
+                            <div className="flex flex-wrap items-center gap-4">
+                                {/* NÚT XEM BILL */}
+                                {u.paymentImage ? (
+                                    <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-xs hover:bg-blue-50 transition-all shadow-md"><Eye size={16}/> XEM BILL</button>
+                                ) : (
+                                    <span className="text-gray-400 text-[10px] italic">Chưa có Bill</span>
+                                )}
+
+                                {/* NÚT DUYỆT VÀO */}
+                                <button onClick={() => handleApprove(u._id)} className={`px-8 py-3 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${u.isApproved ? 'bg-gray-100 text-gray-400 border cursor-not-allowed' : 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:shadow-green-200'}`}>
+                                    {u.isApproved ? 'ĐÃ DUYỆT VÀO' : 'DUYỆT VÀO'}
+                                </button>
+
+                                {/* PHÂN QUYỀN NHANH */}
+                                <div className="flex gap-4 bg-white/80 p-3 rounded-2xl border shadow-inner">
+                                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
+                                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
+                                    <label className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-blue-500 w-4 h-4"/> Xem Chi Tiết</label>
+                                </div>
+                                
+                                <button onClick={async () => { if(window.confirm("Xóa vĩnh viễn?")) { await axios.delete(`${API_URL}/users/${u._id}`); fetchUsers(); } }} className="p-3 text-red-400 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm"><Trash2 size={20}/></button>
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     );
