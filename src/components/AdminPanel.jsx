@@ -125,20 +125,15 @@ export default function AdminPanel({ setView, authUser }) {
             await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
             fetchUsers();
             showToast(days === '0' ? "Đã gỡ bỏ hạn chế!" : "Đã cập nhật trạng thái hạn chế!", "success");
-        } catch (error) {
-            showToast("Lỗi cập nhật trạng thái!", "error");
-        }
+        } catch (error) { showToast("Lỗi cập nhật trạng thái!", "error"); }
     };
 
-    // ĐÃ THÊM: HÀM XỬ LÝ CẤM CHAT CHO ADMIN
     const handleRestrictChat = async (id, days) => {
         try {
             await axios.put(`${API_URL}/users/${id}/restrict-chat`, { days });
             fetchUsers();
             showToast(days === '0' ? "Đã gỡ lệnh cấm chat!" : "Đã cấm chat thành công!", "success");
-        } catch (error) {
-            showToast("Lỗi cập nhật cấm chat!", "error");
-        }
+        } catch (error) { showToast("Lỗi cập nhật cấm chat!", "error"); }
     };
 
     const getRestrictStatus = (u) => {
@@ -222,13 +217,18 @@ export default function AdminPanel({ setView, authUser }) {
                     const isRestricted = restrictStatus !== '0';
                     const isChatRestricted = chatRestrictStatus !== '0';
 
+                    // ĐÃ FIX: NHẬN DIỆN KHÁCH BỎ DỞ ĐĂNG KÝ
+                    const isAbandoned = !u.isApproved && !u.paymentImage && u.role !== 'admin';
+
                     return (
-                        <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-[3px] transition-all shadow-sm ${!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300 bg-orange-50/50' : 'border-transparent hover:border-gray-200'}`}>
+                        <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-[3px] transition-all shadow-sm ${isAbandoned ? 'border-gray-200 bg-gray-50/50 opacity-80' : (!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300 bg-orange-50/50' : 'border-transparent hover:border-gray-200')}`}>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
-                                    {u.plan === 'premium' || u.role === 'admin' ? (
+                                    {isAbandoned ? (
+                                        <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">Chưa Chọn Gói</span>
+                                    ) : u.plan === 'premium' || u.role === 'admin' ? (
                                         <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md flex items-center gap-1"><Crown size={12}/> Gói Premium</span>
                                     ) : (
                                         <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border shadow-sm ${
@@ -245,7 +245,11 @@ export default function AdminPanel({ setView, authUser }) {
                                 
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {u.role !== 'admin' ? (
-                                        u.plan === 'premium' ? (
+                                        isAbandoned ? (
+                                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-gray-100 text-gray-500 border border-gray-200">
+                                                <Clock size={14}/> Khách chưa hoàn tất đăng ký...
+                                            </div>
+                                        ) : u.plan === 'premium' ? (
                                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border border-purple-200 bg-purple-50 text-purple-700">
                                                 <Clock size={14}/> Hạn sử dụng: Vô thời hạn
                                             </div>
@@ -276,111 +280,116 @@ export default function AdminPanel({ setView, authUser }) {
 
                             {u.role !== 'admin' && (
                                 <div className="flex flex-wrap items-center gap-3 xl:gap-4 mt-4 xl:mt-0">
-                                    {u.paymentImage ? (
-                                        <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95 animate-pulse"><Eye size={16}/> XEM BILL</button>
+                                    {isAbandoned ? (
+                                        // ĐÃ FIX: CHỈ HIỂN THỊ NÚT XÓA CHO TÀI KHOẢN BỎ DỞ
+                                        <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
                                     ) : (
-                                        <span className="text-gray-400 text-[11px] italic bg-gray-100 px-4 py-2 rounded-xl">Chưa có Bill</span>
-                                    )}
+                                        <>
+                                            {u.paymentImage ? (
+                                                <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95 animate-pulse"><Eye size={16}/> XEM BILL</button>
+                                            ) : (
+                                                <span className="text-gray-400 text-[11px] italic bg-gray-100 px-4 py-2 rounded-xl">Chưa có Bill</span>
+                                            )}
 
-                                    <button onClick={() => handleApprove(u._id)} className={`px-6 xl:px-8 py-2.5 xl:py-3 rounded-2xl font-black text-[13px] shadow-lg transition-all active:scale-95 ${u.isApproved ? 'bg-gray-100 text-gray-400 border border-gray-200 shadow-none' : 'bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] text-white hover:opacity-90'}`}>
-                                        {u.isApproved ? 'ĐÃ DUYỆT' : 'DUYỆT VÀO'}
-                                    </button>
-
-                                    {/* ĐÃ FIX: CHỈ HIỂN THỊ CÁC CHECKBOX SỬA/XÓA NẾU LÀ GÓI PREMIUM */}
-                                    <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                                        {u.plan === 'premium' && (
-                                            <>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
-                                                <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-                                            </>
-                                        )}
-                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
-                                    </div>
-                                    
-                                    <div className="relative group">
-                                        <select 
-                                            className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
-                                            value={u.plan || '10k'}
-                                            onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
-                                            title="Đổi gói - Thời gian sẽ được tính lại từ đầu"
-                                        >
-                                            <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
-                                            <option value="50k">🥈 GÓI VIP (50k)</option>
-                                            <option value="100k">🥇 GÓI VVIP (100k)</option>
-                                            <option value="premium">💎 GÓI PREMIUM</option>
-                                        </select>
-                                        <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
-                                    </div>
-
-                                    {u.plan !== 'premium' && (
-                                        editExpiryId === u._id ? (
-                                            <div className="flex items-center gap-1 bg-pink-50 p-1 rounded-2xl border border-pink-200 shadow-inner animate-fade-in">
-                                                <input 
-                                                    type="number" min="1" 
-                                                    value={expiryVal} 
-                                                    onChange={e => setExpiryVal(e.target.value)} 
-                                                    className="w-14 px-2 py-1.5 text-[12px] font-black text-center rounded-xl border border-pink-200 outline-none focus:border-pink-400" 
-                                                />
-                                                <select 
-                                                    value={expiryUnit} 
-                                                    onChange={e => setExpiryUnit(e.target.value)} 
-                                                    className="text-[12px] font-bold px-2 py-1.5 rounded-xl outline-none border border-pink-200 text-pink-700 bg-white cursor-pointer"
-                                                >
-                                                    <option value="seconds">Giây</option>
-                                                    <option value="minutes">Phút</option>
-                                                    <option value="hours">Giờ</option>
-                                                    <option value="days">Ngày</option>
-                                                </select>
-                                                <button onClick={() => submitCustomExpiry(u._id)} className="bg-pink-500 text-white p-1.5 rounded-xl hover:bg-pink-600 transition-colors shadow-sm"><Check size={16}/></button>
-                                                <button onClick={() => setEditExpiryId(null)} className="bg-white text-gray-500 border border-gray-200 p-1.5 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"><X size={16}/></button>
-                                            </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
-                                                className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-2xl border-2 border-pink-100 bg-pink-50 text-pink-600 hover:border-pink-300 transition-all shadow-sm active:scale-95"
-                                                title="Sửa hạn sử dụng tùy ý"
-                                            >
-                                                <TimerReset size={15} /> Sửa Hạn
+                                            <button onClick={() => handleApprove(u._id)} className={`px-6 xl:px-8 py-2.5 xl:py-3 rounded-2xl font-black text-[13px] shadow-lg transition-all active:scale-95 ${u.isApproved ? 'bg-gray-100 text-gray-400 border border-gray-200 shadow-none' : 'bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] text-white hover:opacity-90'}`}>
+                                                {u.isApproved ? 'ĐÃ DUYỆT' : 'DUYỆT VÀO'}
                                             </button>
-                                        )
-                                    )}
 
-                                    {/* MENU CẤM CHAT CHO ADMIN */}
-                                    {(u.plan === '100k' || u.plan === 'premium') && (
-                                        <div className="relative group">
+                                            <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
+                                                {u.plan === 'premium' && (
+                                                    <>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
+                                                        <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                                    </>
+                                                )}
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
+                                            </div>
+                                            
+                                            <div className="relative group">
+                                                <select 
+                                                    className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
+                                                    value={u.plan || '10k'}
+                                                    onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
+                                                    title="Đổi gói - Thời gian sẽ được tính lại từ đầu"
+                                                >
+                                                    <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
+                                                    <option value="50k">🥈 GÓI VIP (50k)</option>
+                                                    <option value="100k">🥇 GÓI VVIP (100k)</option>
+                                                    <option value="premium">💎 GÓI PREMIUM</option>
+                                                </select>
+                                                <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
+                                            </div>
+
+                                            {u.plan !== 'premium' && (
+                                                editExpiryId === u._id ? (
+                                                    <div className="flex items-center gap-1 bg-pink-50 p-1 rounded-2xl border border-pink-200 shadow-inner animate-fade-in">
+                                                        <input 
+                                                            type="number" min="1" 
+                                                            value={expiryVal} 
+                                                            onChange={e => setExpiryVal(e.target.value)} 
+                                                            className="w-14 px-2 py-1.5 text-[12px] font-black text-center rounded-xl border border-pink-200 outline-none focus:border-pink-400" 
+                                                        />
+                                                        <select 
+                                                            value={expiryUnit} 
+                                                            onChange={e => setExpiryUnit(e.target.value)} 
+                                                            className="text-[12px] font-bold px-2 py-1.5 rounded-xl outline-none border border-pink-200 text-pink-700 bg-white cursor-pointer"
+                                                        >
+                                                            <option value="seconds">Giây</option>
+                                                            <option value="minutes">Phút</option>
+                                                            <option value="hours">Giờ</option>
+                                                            <option value="days">Ngày</option>
+                                                        </select>
+                                                        <button onClick={() => submitCustomExpiry(u._id)} className="bg-pink-500 text-white p-1.5 rounded-xl hover:bg-pink-600 transition-colors shadow-sm"><Check size={16}/></button>
+                                                        <button onClick={() => setEditExpiryId(null)} className="bg-white text-gray-500 border border-gray-200 p-1.5 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"><X size={16}/></button>
+                                                    </div>
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
+                                                        className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-2xl border-2 border-pink-100 bg-pink-50 text-pink-600 hover:border-pink-300 transition-all shadow-sm active:scale-95"
+                                                        title="Sửa hạn sử dụng tùy ý"
+                                                    >
+                                                        <TimerReset size={15} /> Sửa Hạn
+                                                    </button>
+                                                )
+                                            )}
+
+                                            {(u.plan === '100k' || u.plan === 'premium') && (
+                                                <div className="relative group">
+                                                    <select 
+                                                        className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${chatRestrictStatus !== '0' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
+                                                        onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
+                                                        value={chatRestrictStatus}
+                                                        title="Quản lý quyền Chat của tài khoản này"
+                                                    >
+                                                        <option value="0">Chat Bình thường</option>
+                                                        <option value="1">Cấm Chat 1 ngày</option>
+                                                        <option value="3">Cấm Chat 3 ngày</option>
+                                                        <option value="7">Cấm Chat 7 ngày</option>
+                                                        <option value="forever">Cấm Chat Vĩnh viễn</option>
+                                                        {chatRestrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị cấm chat...</option>}
+                                                    </select>
+                                                    <MessageSquareOff size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${chatRestrictStatus !== '0' ? 'text-orange-500' : 'text-gray-400'}`} />
+                                                </div>
+                                            )}
+
                                             <select 
-                                                className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${chatRestrictStatus !== '0' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
-                                                onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
-                                                value={chatRestrictStatus}
-                                                title="Quản lý quyền Chat của tài khoản này"
+                                                className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
+                                                onChange={(e) => handleRestrict(u._id, e.target.value)} 
+                                                value={restrictStatus}
                                             >
-                                                <option value="0">Chat Bình thường</option>
-                                                <option value="1">Cấm Chat 1 ngày</option>
-                                                <option value="3">Cấm Chat 3 ngày</option>
-                                                <option value="7">Cấm Chat 7 ngày</option>
-                                                <option value="forever">Cấm Chat Vĩnh viễn</option>
-                                                {chatRestrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị cấm chat...</option>}
+                                                <option value="0">Web Bình thường</option>
+                                                <option value="1">Khóa Web 1 ngày</option>
+                                                <option value="2">Khóa Web 2 ngày</option>
+                                                <option value="7">Khóa Web 7 ngày</option>
+                                                <option value="forever">Khóa Web Vĩnh viễn</option>
+                                                {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
                                             </select>
-                                            <MessageSquareOff size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${chatRestrictStatus !== '0' ? 'text-orange-500' : 'text-gray-400'}`} />
-                                        </div>
+                                            
+                                            <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
+                                        </>
                                     )}
-
-                                    <select 
-                                        className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
-                                        onChange={(e) => handleRestrict(u._id, e.target.value)} 
-                                        value={restrictStatus}
-                                    >
-                                        <option value="0">Web Bình thường</option>
-                                        <option value="1">Khóa Web 1 ngày</option>
-                                        <option value="2">Khóa Web 2 ngày</option>
-                                        <option value="7">Khóa Web 7 ngày</option>
-                                        <option value="forever">Khóa Web Vĩnh viễn</option>
-                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
-                                    </select>
-                                    
-                                    <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
                                 </div>
                             )}
                         </div>
