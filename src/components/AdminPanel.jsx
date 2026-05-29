@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, CheckCircle2, AlertCircle, HelpCircle, MessageSquareOff } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, CheckCircle2, AlertCircle, HelpCircle, MessageSquareOff, Star } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
@@ -207,7 +207,7 @@ export default function AdminPanel({ setView, authUser }) {
 
             <div className="flex items-center justify-between mb-8">
                 <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-2 text-gray-500 font-bold bg-white px-6 py-3 rounded-full shadow-sm border hover:text-[#26D0CE] transition-all"><ArrowLeft size={18} /> Dashboard</button>
-                <h2 className="text-[28px] font-black text-gray-800">Cài Đặt Hệ Thống</h2>
+                <h2 className="text-[28px] font-black text-gray-800">Quản Lý Thành Viên</h2>
             </div>
 
             <div className="space-y-4">
@@ -225,9 +225,9 @@ export default function AdminPanel({ setView, authUser }) {
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
-                                    {/* ĐÃ FIX: Chỉnh kích thước đồng nhất w-[95px] h-[26px], bỏ chữ "GÓI", giữ nguyên màu sắc gốc */}
+                                    {/* ĐÃ KHÔI PHỤC CHÍNH XÁC MÃ MÀU GRADIENT VÀ CHỮ TRẮNG, CHỈ XÓA CHỮ "GÓI" VÀ ĐỒNG BỘ SIZE */}
                                     {isAbandoned ? (
-                                        <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">CHƯA CHỌN</span>
+                                        <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">CHƯA CHỌN</span>
                                     ) : u.plan === 'premium' || u.role === 'admin' ? (
                                         <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md"><Crown size={12}/> PREMIUM</span>
                                     ) : (
@@ -236,7 +236,7 @@ export default function AdminPanel({ setView, authUser }) {
                                             u.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
                                             'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
                                         }`}>
-                                            {u.plan === '100k' ? 'VVIP' : u.plan === '50k' ? 'VIP' : 'CƠ BẢN'}
+                                            {u.plan === '100k' ? <><Crown size={12}/> VVIP</> : u.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                                         </span>
                                     )}
                                 </div>
