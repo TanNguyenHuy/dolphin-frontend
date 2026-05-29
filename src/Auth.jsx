@@ -167,135 +167,135 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 </div>
             </div>
 
-            {/* ĐÃ KHÔI PHỤC KÍCH THƯỚC GỐC TRÊN PC: max-w-[850px] min-h-[550px] */}
-            <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[20px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
+            {/* ĐÃ FIX: TRÊN PC LÀ 1050x700, RỘNG RÃI VÀ KHÔNG CUỘN */}
+            <div className={`relative w-full max-w-[1050px] min-h-[600px] md:min-h-[700px] bg-white rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
                 
                 {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
                 <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out bg-white ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
-                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
+                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
                         <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
-                            <h1 className="font-extrabold text-[28px] md:text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
-                            <p className="text-[13px] text-gray-500 mb-6 font-medium">Tài khoản đầu tiên sẽ là Admin</p>
+                            <h1 className="font-extrabold text-[28px] md:text-[34px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
+                            <p className="text-[14px] text-gray-500 mb-8 font-medium">Tài khoản đầu tiên sẽ là Admin</p>
 
                             {otpStep === 1 ? (
                                 <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-3">
-                                        <User size={18} className="text-gray-400" />
-                                        <input required type="text" placeholder="Tên hiển thị" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-gray-700" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
+                                        <User size={20} className="text-gray-400" />
+                                        <input required type="text" placeholder="Tên hiển thị" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                                     </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-3">
-                                        <Mail size={18} className="text-gray-400" />
-                                        <input required type="email" placeholder="Email đăng nhập" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
+                                        <Mail size={20} className="text-gray-400" />
+                                        <input required type="email" placeholder="Email đăng nhập" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                                     </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-6 relative">
-                                        <Lock size={18} className="text-gray-400" />
-                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-8 relative">
+                                        <Lock size={20} className="text-gray-400" />
+                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md">
-                                        {loading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐĂNG KÝ NGAY'}
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md tracking-wider">
+                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐĂNG KÝ NGAY'}
                                     </button>
                                 </>
                             ) : (
                                 <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-5">
-                                        <KeyRound size={18} className="text-[#26D0CE]" />
-                                        <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[16px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6">
+                                        <KeyRound size={20} className="text-[#26D0CE]" />
+                                        <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[18px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4">
-                                        {loading ? <RefreshCw size={18} className="animate-spin" /> : 'XÁC NHẬN MÃ OTP'}
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4 tracking-wider">
+                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'XÁC NHẬN MÃ OTP'}
                                     </button>
                                 </>
                             )}
-                            <button type="button" onClick={() => togglePanel(false)} className="md:hidden mt-6 text-[#26D0CE] text-[13px] font-bold underline">Đã có tài khoản? Đăng nhập</button>
+                            <button type="button" onClick={() => togglePanel(false)} className="md:hidden mt-8 text-[#26D0CE] text-[14px] font-bold underline">Đã có tài khoản? Đăng nhập</button>
                         </form>
                     </div>
 
-                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
+                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
                         <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
-                            <div className="w-[65px] h-[65px] rounded-full flex items-center justify-center mb-3 shadow-sm border border-gray-100 overflow-hidden bg-white">
+                            <div className="w-[75px] h-[75px] rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-100 overflow-hidden bg-white">
                                 <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
                             </div>
-                            <h1 className="font-extrabold text-[28px] md:text-[32px] mb-1 text-[#222]">
+                            <h1 className="font-extrabold text-[28px] md:text-[34px] mb-2 text-[#222]">
                                 {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
                             </h1>
-                            <p className="text-[13px] text-gray-500 mb-6 font-medium">
+                            <p className="text-[14px] text-gray-500 mb-8 font-medium">
                                 {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : 'Nhập email để nhận mã khôi phục'}
                             </p>
 
                             {view === 'LOGIN' ? (
                                 <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-3">
-                                        <Mail size={18} className="text-gray-400" />
-                                        <input required type="email" placeholder="Email" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
+                                        <Mail size={20} className="text-gray-400" />
+                                        <input required type="email" placeholder="Email" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                                     </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-4 relative">
-                                        <Lock size={18} className="text-gray-400" />
-                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-5 relative">
+                                        <Lock size={20} className="text-gray-400" />
+                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                                     </div>
-                                    <div className="flex items-center justify-between w-full px-2 mb-6">
+                                    <div className="flex items-center justify-between w-full px-2 mb-8">
                                         <label className="flex items-center cursor-pointer group">
-                                            <input type="checkbox" className="mr-2 cursor-pointer w-[15px] h-[15px] accent-[#26D0CE]" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                                            <span className="text-[13px] text-gray-500 group-hover:text-gray-800 transition-colors font-medium">Ghi nhớ tài khoản</span>
+                                            <input type="checkbox" className="mr-2 cursor-pointer w-[16px] h-[16px] accent-[#26D0CE]" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                                            <span className="text-[14px] text-gray-500 group-hover:text-gray-800 transition-colors font-medium">Ghi nhớ tài khoản</span>
                                         </label>
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md">
-                                        {loading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐĂNG NHẬP'}
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md tracking-wider">
+                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐĂNG NHẬP'}
                                     </button>
-                                    <button type="button" onClick={() => { setView('FORGOT'); setOtpStep(1); }} className="mt-5 text-[13px] text-[#21C8F6] hover:text-[#26D0CE] font-semibold transition-colors">Quên mật khẩu?</button>
+                                    <button type="button" onClick={() => { setView('FORGOT'); setOtpStep(1); }} className="mt-6 text-[14px] text-[#21C8F6] hover:text-[#26D0CE] font-semibold transition-colors">Quên mật khẩu?</button>
                                 </>
                             ) : (
                                 otpStep === 1 ? (
                                     <>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-5">
-                                            <Mail size={18} className="text-gray-400" />
-                                            <input required type="email" placeholder="Email của bạn" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6">
+                                            <Mail size={20} className="text-gray-400" />
+                                            <input required type="email" placeholder="Email của bạn" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                                         </div>
-                                        <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4">
-                                            {loading ? <RefreshCw size={18} className="animate-spin" /> : 'NHẬN MÃ OTP'}
+                                        <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4 tracking-wider">
+                                            {loading ? <RefreshCw size={20} className="animate-spin" /> : 'NHẬN MÃ OTP'}
                                         </button>
-                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[13px] text-gray-500 hover:text-[#26D0CE] font-semibold">Quay lại đăng nhập</button>
+                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[14px] text-gray-500 hover:text-[#26D0CE] font-semibold">Quay lại đăng nhập</button>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-3">
-                                            <KeyRound size={18} className="text-[#26D0CE]" />
-                                            <input required type="text" placeholder="Mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] text-center tracking-widest font-bold text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
+                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
+                                            <KeyRound size={20} className="text-[#26D0CE]" />
+                                            <input required type="text" placeholder="Mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-center tracking-widest font-bold text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
                                         </div>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-3.5 mb-5 relative">
-                                            <Lock size={18} className="text-gray-400" />
-                                            <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="bg-transparent outline-none border-none w-full ml-3 text-[14px] pr-8 text-gray-700" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} />
-                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6 relative">
+                                            <Lock size={20} className="text-gray-400" />
+                                            <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
                                         </div>
-                                        <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4">
-                                            {loading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐỔI MẬT KHẨU'}
+                                        <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4 tracking-wider">
+                                            {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐỔI MẬT KHẨU'}
                                         </button>
-                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[13px] text-gray-500 hover:text-[#26D0CE] font-semibold">Hủy</button>
+                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[14px] text-gray-500 hover:text-[#26D0CE] font-semibold">Hủy</button>
                                     </>
                                 )
                             )}
-                            <button type="button" onClick={() => togglePanel(true)} className="md:hidden mt-6 text-[#26D0CE] text-[13px] font-bold underline">Chưa có tài khoản? Tạo ngay</button>
+                            <button type="button" onClick={() => togglePanel(true)} className="md:hidden mt-8 text-[#26D0CE] text-[14px] font-bold underline">Chưa có tài khoản? Tạo ngay</button>
                         </form>
                     </div>
 
                     <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : 'translate-x-0'}`}>
                         <div className={`bg-gradient-to-r from-[#26D0CE] to-[#21C8F6] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
-                            <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
-                                <h1 className="font-extrabold text-[36px] mb-4">Mừng Trở Lại!</h1>
-                                <p className="text-[15px] font-medium tracking-wide leading-relaxed mb-8 opacity-95">Đăng nhập ngay để tiếp tục quản lý dòng tiền của bạn.</p>
-                                <button onClick={() => togglePanel(false)} className="rounded-full border-[1.5px] border-white bg-transparent text-white text-[13px] font-bold py-3.5 px-12 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">ĐĂNG NHẬP</button>
+                            <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-14 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
+                                <h1 className="font-extrabold text-[40px] mb-4">Mừng Trở Lại!</h1>
+                                <p className="text-[16px] font-medium tracking-wide leading-relaxed mb-10 opacity-95">Đăng nhập ngay để tiếp tục quản lý dòng tiền của bạn.</p>
+                                <button onClick={() => togglePanel(false)} className="rounded-full border-[2px] border-white bg-transparent text-white text-[14px] font-bold py-4 px-14 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">ĐĂNG NHẬP</button>
                             </div>
-                            <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
-                                <h1 className="font-extrabold text-[36px] mb-4">Chào Người Mới!</h1>
-                                <p className="text-[15px] font-medium tracking-wide leading-relaxed mb-8 opacity-95">Đăng ký để sử dụng không gian quản lý tài chính thông minh nhất.</p>
-                                <button onClick={() => togglePanel(true)} className="rounded-full border-[1.5px] border-white bg-transparent text-white text-[13px] font-bold py-3.5 px-12 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">TẠO TÀI KHOẢN</button>
+                            <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-14 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
+                                <h1 className="font-extrabold text-[40px] mb-4">Chào Người Mới!</h1>
+                                <p className="text-[16px] font-medium tracking-wide leading-relaxed mb-10 opacity-95">Đăng ký để sử dụng không gian quản lý tài chính thông minh nhất.</p>
+                                <button onClick={() => togglePanel(true)} className="rounded-full border-[2px] border-white bg-transparent text-white text-[14px] font-bold py-4 px-14 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">TẠO TÀI KHOẢN</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ĐÃ FIX: CHỈ CUỘN TRÊN ĐIỆN THOẠI (md:overflow-hidden) CÒN TRÊN PC VỪA KHÍT */}
+                {/* ĐÃ FIX: CHỈ CUỘN TRÊN ĐIỆN THOẠI (md:overflow-hidden) CÒN TRÊN PC VỪA KHÍT BỞI SIZE 1050x700 */}
                 {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
                 <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] overflow-y-auto md:overflow-hidden custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="flex flex-col items-center justify-start md:justify-center min-h-full w-full p-4 py-8 md:p-0">
@@ -304,22 +304,22 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                             <p className="text-gray-500 font-medium text-[13px] md:text-[14px] max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng.</p>
                         </div>
                         
-                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-[800px]">
+                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-[950px]">
                             {plans.map((p, i) => (
                                 <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[2px] rounded-[32px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `bg-gradient-to-br ${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
-                                    <div className="bg-white rounded-[30px] p-5 md:p-6 h-full flex flex-col relative overflow-hidden">
-                                        {planIndex === i && <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
+                                    <div className="bg-white rounded-[30px] p-5 md:p-8 h-full flex flex-col relative overflow-hidden">
+                                        {planIndex === i && <div className={`absolute -top-10 -right-10 w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
                                         
-                                        <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-12 h-12 md:w-14 md:h-14 mx-auto rounded-[16px] flex items-center justify-center mb-4 md:mb-5 relative z-10 shadow-sm"><p.icon size={24} strokeWidth={2.5}/></div>
+                                        <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-12 h-12 md:w-14 md:h-14 mx-auto rounded-[16px] md:rounded-[18px] flex items-center justify-center mb-4 md:mb-5 relative z-10 shadow-sm"><p.icon size={24} strokeWidth={2.5}/></div>
                                         <h3 className="font-extrabold text-[15px] md:text-[16px] mb-2 text-center tracking-wide" style={{ color: p.theme.text }}>{p.title}</h3>
                                         
-                                        <div className="text-[30px] md:text-[34px] font-black text-center mb-5 md:mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
+                                        <div className="text-[30px] md:text-[36px] font-black text-center mb-5 md:mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
                                             {p.price}<span className="text-[12px] md:text-[13px] font-bold text-gray-400 ml-1">/ {p.period}</span>
                                         </div>
                                         
                                         <ul className="text-left space-y-3 md:space-y-4 mb-6 md:mb-8 flex-1 relative z-10 px-1">
                                             {p.features.map((f, idx) => (
-                                                <li key={idx} className="flex items-start gap-2.5 text-[12px] md:text-[13px] text-gray-600 font-semibold leading-relaxed">
+                                                <li key={idx} className="flex items-start gap-2.5 text-[12px] md:text-[14px] text-gray-600 font-semibold leading-relaxed">
                                                     <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}><Check size={12} style={{ color: p.theme.text }} strokeWidth={3}/></div>
                                                     {f}
                                                 </li>
@@ -370,8 +370,8 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                                 </div>
                             </div>
 
-                            <div className={`p-[4px] md:p-[5px] rounded-[36px] md:rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[280px] sm:w-[360px] shrink-0`}>
-                                <div className="bg-white rounded-[32px] md:rounded-[40px] p-3 md:p-4 h-[360px] sm:h-[460px] flex items-center justify-center overflow-hidden relative">
+                            <div className={`p-[4px] md:p-[5px] rounded-[36px] md:rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[280px] sm:w-[420px] shrink-0`}>
+                                <div className="bg-white rounded-[32px] md:rounded-[40px] p-3 md:p-4 h-[360px] sm:h-[500px] flex items-center justify-center overflow-hidden relative">
                                     <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[20px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
                                     <div className="hidden text-gray-400 text-sm italic text-center px-4 absolute">Ảnh mã QR chưa có trong thư mục public</div>
                                 </div>
