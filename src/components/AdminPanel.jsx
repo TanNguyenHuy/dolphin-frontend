@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, CheckCircle2, AlertCircle, HelpCircle, MessageSquareOff } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
@@ -23,10 +23,9 @@ export default function AdminPanel({ setView, authUser }) {
         setConfirmModal({ show: true, title, message, onConfirm, isDanger });
     };
 
-    // ĐÃ FIX: LẮP RADAR TỰ ĐỘNG QUÉT BILL CHO TRANG ADMIN
     useEffect(() => { 
         fetchUsers(); 
-        const adminRadar = setInterval(fetchUsers, 5000); // 5 giây tự động cập nhật 1 lần
+        const adminRadar = setInterval(fetchUsers, 5000); 
         return () => clearInterval(adminRadar);
     }, []);
 
@@ -131,9 +130,26 @@ export default function AdminPanel({ setView, authUser }) {
         }
     };
 
+    // ĐÃ THÊM: HÀM XỬ LÝ CẤM CHAT CHO ADMIN
+    const handleRestrictChat = async (id, days) => {
+        try {
+            await axios.put(`${API_URL}/users/${id}/restrict-chat`, { days });
+            fetchUsers();
+            showToast(days === '0' ? "Đã gỡ lệnh cấm chat!" : "Đã cấm chat thành công!", "success");
+        } catch (error) {
+            showToast("Lỗi cập nhật cấm chat!", "error");
+        }
+    };
+
     const getRestrictStatus = (u) => {
         if (u.isBanned) return 'forever';
         if (u.restrictedUntil && new Date(u.restrictedUntil) > new Date()) return 'restricted';
+        return '0';
+    };
+
+    const getChatRestrictStatus = (u) => {
+        if (u.isChatBanned) return 'forever';
+        if (u.chatRestrictedUntil && new Date(u.chatRestrictedUntil) > new Date()) return 'restricted';
         return '0';
     };
 
@@ -162,7 +178,6 @@ export default function AdminPanel({ setView, authUser }) {
 
     return (
         <div className="animate-fade-in-up pb-20">
-            {/* THÔNG BÁO TOAST XỊN */}
             <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
                 <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
                     {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
@@ -170,7 +185,6 @@ export default function AdminPanel({ setView, authUser }) {
                 </div>
             </div>
 
-            {/* MODAL XÁC NHẬN CUSTOM */}
             {confirmModal.show && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up text-center shadow-2xl border border-white">
@@ -189,7 +203,6 @@ export default function AdminPanel({ setView, authUser }) {
                 </div>
             )}
 
-            {/* MODAL XEM ẢNH BILL */}
             {selectedBill && (
                 <div className="fixed inset-0 z-[999] bg-black/90 flex flex-col items-center justify-center p-4 animate-fade-in">
                     <button onClick={() => setSelectedBill(null)} className="absolute top-10 right-10 text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all"><X size={30}/></button>
@@ -205,7 +218,9 @@ export default function AdminPanel({ setView, authUser }) {
             <div className="space-y-4">
                 {users.map(u => {
                     const restrictStatus = getRestrictStatus(u);
+                    const chatRestrictStatus = getChatRestrictStatus(u);
                     const isRestricted = restrictStatus !== '0';
+                    const isChatRestricted = chatRestrictStatus !== '0';
 
                     return (
                         <div key={u._id} className={`liquid-glass rounded-[30px] p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-[3px] transition-all shadow-sm ${!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300 bg-orange-50/50' : 'border-transparent hover:border-gray-200'}`}>
@@ -228,27 +243,35 @@ export default function AdminPanel({ setView, authUser }) {
                                 
                                 <p className="text-gray-400 text-[13px] mb-3 flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
                                 
-                                {u.role !== 'admin' ? (
-                                    u.plan === 'premium' ? (
-                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border border-purple-200 bg-purple-50 text-purple-700">
-                                            <Clock size={14}/> Hạn sử dụng: Vô thời hạn
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {u.role !== 'admin' ? (
+                                        u.plan === 'premium' ? (
+                                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border border-purple-200 bg-purple-50 text-purple-700">
+                                                <Clock size={14}/> Hạn sử dụng: Vô thời hạn
+                                            </div>
+                                        ) : u.isApproved ? (
+                                            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                                                <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
+                                            </div>
+                                        ) : (
+                                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-orange-100 text-orange-600 border border-orange-200">
+                                                <Clock size={14}/> Đang chờ duyệt Bill...
+                                            </div>
+                                        )
+                                    ) : null}
+                                    
+                                    {isRestricted && u.restrictedUntil && (
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-red-50 text-red-600 border border-red-200">
+                                            <ShieldAlert size={14}/> Hạn chế web đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
                                         </div>
-                                    ) : u.isApproved ? (
-                                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                                            <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
+                                    )}
+
+                                    {isChatRestricted && (
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-orange-50 text-orange-600 border border-orange-200">
+                                            <MessageSquareOff size={14}/> Cấm Chat: {chatRestrictStatus === 'forever' ? 'Vĩnh viễn' : (u.chatRestrictedUntil ? new Date(u.chatRestrictedUntil).toLocaleString('vi-VN') : '')}
                                         </div>
-                                    ) : (
-                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-orange-100 text-orange-600 border border-orange-200">
-                                            <Clock size={14}/> Đang chờ duyệt Bill...
-                                        </div>
-                                    )
-                                ) : null}
-                                
-                                {isRestricted && u.restrictedUntil && (
-                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-red-50 text-red-600 border border-red-200 mt-2 ml-2">
-                                        <ShieldAlert size={14}/> Hạn chế đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
 
                             {u.role !== 'admin' && (
@@ -263,11 +286,17 @@ export default function AdminPanel({ setView, authUser }) {
                                         {u.isApproved ? 'ĐÃ DUYỆT' : 'DUYỆT VÀO'}
                                     </button>
 
+                                    {/* ĐÃ FIX: CHỈ HIỂN THỊ CÁC CHECKBOX SỬA/XÓA NẾU LÀ GÓI PREMIUM */}
                                     <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
-                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
-                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
-                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer border-l pl-3 ml-1 border-gray-200"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
+                                        {u.plan === 'premium' && (
+                                            <>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
+                                                <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                            </>
+                                        )}
+                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
                                     </div>
                                     
                                     <div className="relative group">
@@ -318,17 +347,37 @@ export default function AdminPanel({ setView, authUser }) {
                                         )
                                     )}
 
+                                    {/* MENU CẤM CHAT CHO ADMIN */}
+                                    {(u.plan === '100k' || u.plan === 'premium') && (
+                                        <div className="relative group">
+                                            <select 
+                                                className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${chatRestrictStatus !== '0' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
+                                                onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
+                                                value={chatRestrictStatus}
+                                                title="Quản lý quyền Chat của tài khoản này"
+                                            >
+                                                <option value="0">Chat Bình thường</option>
+                                                <option value="1">Cấm Chat 1 ngày</option>
+                                                <option value="3">Cấm Chat 3 ngày</option>
+                                                <option value="7">Cấm Chat 7 ngày</option>
+                                                <option value="forever">Cấm Chat Vĩnh viễn</option>
+                                                {chatRestrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị cấm chat...</option>}
+                                            </select>
+                                            <MessageSquareOff size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${chatRestrictStatus !== '0' ? 'text-orange-500' : 'text-gray-400'}`} />
+                                        </div>
+                                    )}
+
                                     <select 
                                         className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
                                         onChange={(e) => handleRestrict(u._id, e.target.value)} 
                                         value={restrictStatus}
                                     >
-                                        <option value="0">Bình thường</option>
-                                        <option value="1">Hạn chế 1 ngày</option>
-                                        <option value="2">Hạn chế 2 ngày</option>
-                                        <option value="7">Hạn chế 7 ngày</option>
-                                        <option value="forever">Cấm vĩnh viễn</option>
-                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị hạn chế...</option>}
+                                        <option value="0">Web Bình thường</option>
+                                        <option value="1">Khóa Web 1 ngày</option>
+                                        <option value="2">Khóa Web 2 ngày</option>
+                                        <option value="7">Khóa Web 7 ngày</option>
+                                        <option value="forever">Khóa Web Vĩnh viễn</option>
+                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
                                     </select>
                                     
                                     <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
