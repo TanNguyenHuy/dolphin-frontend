@@ -109,7 +109,6 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
             }
         } catch (err) { 
             const errorMsg = err.response?.data?.error;
-            // ĐÃ FIX TẠI ĐÂY: Nhận diện mã khách bỏ dở và chuyển sang trang Bảng Giá
             if (errorMsg === 'INCOMPLETE_REGISTRATION') {
                 setRegisteredEmail(err.response?.data?.email || formData.email);
                 setStep('pricing');
@@ -295,111 +294,117 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     </div>
                 </div>
 
+                {/* ĐÃ FIX: CHỈNH LẠI CẤU TRÚC KẾT HỢP OVERFLOW-Y-AUTO TRÊN MOBILE VÀ MIN-H-FULL */}
                 {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
-                <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-4 sm:p-8 transition-transform duration-700 ease-in-out overflow-hidden ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    
-                    <div className="text-center mb-8 mt-4 md:mt-0">
-                        <h2 className="text-[30px] md:text-[36px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
-                        <p className="text-gray-500 font-medium text-[14px] max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng.</p>
-                    </div>
-                    
-                    <div className="flex flex-col md:flex-row gap-5 md:gap-8 w-full max-w-[950px]">
-                        {plans.map((p, i) => (
-                            <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[3px] rounded-[36px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `bg-gradient-to-br ${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
-                                <div className="bg-white rounded-[32px] p-6 md:p-8 h-full flex flex-col relative overflow-hidden">
-                                    {planIndex === i && <div className={`absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
-                                    
-                                    <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-14 h-14 mx-auto rounded-[18px] flex items-center justify-center mb-5 relative z-10 shadow-sm"><p.icon size={28} strokeWidth={2.5}/></div>
-                                    <h3 className="font-extrabold text-[16px] mb-2 text-center tracking-wide" style={{ color: p.theme.text }}>{p.title}</h3>
-                                    
-                                    <div className="text-[32px] md:text-[36px] font-black text-center mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
-                                        {p.price}<span className="text-[13px] font-bold text-gray-400 ml-1">/ {p.period}</span>
-                                    </div>
-                                    
-                                    <ul className="text-left space-y-4 mb-8 flex-1 relative z-10 px-1">
-                                        {p.features.map((f, idx) => (
-                                            <li key={idx} className="flex items-start gap-3 text-[13px] md:text-[14px] text-gray-600 font-semibold leading-relaxed">
-                                                <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}><Check size={14} style={{ color: p.theme.text }} strokeWidth={3}/></div>
-                                                {f}
-                                            </li>
-                                        ))}
-                                    </ul>
+                <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] overflow-y-auto custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col items-center justify-center min-h-full w-full p-6 py-12 md:py-8">
+                        <div className="text-center mb-8">
+                            <h2 className="text-[30px] md:text-[36px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
+                            <p className="text-gray-500 font-medium text-[14px] max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng.</p>
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row gap-5 md:gap-8 w-full max-w-[950px]">
+                            {plans.map((p, i) => (
+                                <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[3px] rounded-[36px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `bg-gradient-to-br ${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
+                                    <div className="bg-white rounded-[32px] p-6 md:p-8 h-full flex flex-col relative overflow-hidden">
+                                        {planIndex === i && <div className={`absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
+                                        
+                                        <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-14 h-14 mx-auto rounded-[18px] flex items-center justify-center mb-5 relative z-10 shadow-sm"><p.icon size={28} strokeWidth={2.5}/></div>
+                                        <h3 className="font-extrabold text-[16px] mb-2 text-center tracking-wide" style={{ color: p.theme.text }}>{p.title}</h3>
+                                        
+                                        <div className="text-[32px] md:text-[36px] font-black text-center mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
+                                            {p.price}<span className="text-[13px] font-bold text-gray-400 ml-1">/ {p.period}</span>
+                                        </div>
+                                        
+                                        <ul className="text-left space-y-4 mb-8 flex-1 relative z-10 px-1">
+                                            {p.features.map((f, idx) => (
+                                                <li key={idx} className="flex items-start gap-3 text-[13px] md:text-[14px] text-gray-600 font-semibold leading-relaxed">
+                                                    <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}><Check size={14} style={{ color: p.theme.text }} strokeWidth={3}/></div>
+                                                    {f}
+                                                </li>
+                                            ))}
+                                        </ul>
 
-                                    <div className="mt-auto relative z-10">
-                                        <button className={`w-full py-3.5 rounded-[16px] font-bold text-white text-[13px] tracking-widest shadow-md transition-all ${planIndex === i ? p.theme.btn : 'bg-gray-300 text-gray-500'}`}>
-                                            {planIndex === i ? 'ĐANG CHỌN' : 'CHỌN GÓI NÀY'}
-                                        </button>
+                                        <div className="mt-auto relative z-10">
+                                            <button className={`w-full py-3.5 rounded-[16px] font-bold text-white text-[13px] tracking-widest shadow-md transition-all ${planIndex === i ? p.theme.btn : 'bg-gray-300 text-gray-500'}`}>
+                                                {planIndex === i ? 'ĐANG CHỌN' : 'CHỌN GÓI NÀY'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
 
-                    <button onClick={handleSelectPlan} className="mt-10 bg-gray-900 text-white px-14 py-4 rounded-full font-black text-[14px] shadow-xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
-                        TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
-                    </button>
-                    
-                    <button onClick={forceLogoutAndReset} className="mt-5 text-gray-500 font-bold text-[13px] underline hover:text-red-500 transition-colors">
-                        Trở về Đăng Nhập / Dùng tài khoản khác
-                    </button>
+                        <button onClick={handleSelectPlan} className="mt-10 bg-gray-900 text-white px-14 py-4 rounded-full font-black text-[14px] shadow-xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
+                            TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
+                        </button>
+                        
+                        <button onClick={forceLogoutAndReset} className="mt-5 text-gray-500 font-bold text-[13px] underline hover:text-red-500 transition-colors">
+                            Trở về Đăng Nhập / Dùng tài khoản khác
+                        </button>
+                    </div>
                 </div>
 
                 {/* LỚP 3: QUÉT QR & TẢI BILL */}
-                <div className={`absolute inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
-                        <div className="text-center lg:text-left flex-1 w-full mt-6 lg:mt-0">
-                            <h2 className="text-[28px] md:text-[36px] font-black text-gray-800 mb-2 leading-tight">Hoàn tất<br className="hidden lg:block"/>Thanh toán</h2>
-                            <p className="text-gray-500 mb-8 font-medium text-[15px] leading-relaxed">Bạn đang chọn <strong style={{ color: plans[planIndex].theme.text }}>{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã và tải ảnh xác nhận lệnh chuyển tiền lên hệ thống.</p>
-                            
-                            <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-3xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all mb-6">
-                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    {billBase64 ? <Check className="text-green-500 mb-3" size={36}/> : <UploadCloud className="text-gray-400 mb-3" size={36}/>}
-                                    <p className="text-[13px] text-gray-600 font-bold tracking-wide">{billBase64 ? "ĐÃ CHỌN ẢNH THÀNH CÔNG" : "BẤM VÀO ĐỂ TẢI ẢNH BILL"}</p>
+                <div className={`absolute inset-0 bg-white z-[60] overflow-y-auto custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col items-center justify-center min-h-full w-full p-6 sm:p-10 py-12">
+                        <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
+                            <div className="text-center lg:text-left flex-1 w-full">
+                                <h2 className="text-[28px] md:text-[36px] font-black text-gray-800 mb-2 leading-tight">Hoàn tất<br className="hidden lg:block"/>Thanh toán</h2>
+                                <p className="text-gray-500 mb-8 font-medium text-[15px] leading-relaxed">Bạn đang chọn <strong style={{ color: plans[planIndex].theme.text }}>{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã và tải ảnh xác nhận lệnh chuyển tiền lên hệ thống.</p>
+                                
+                                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-3xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all mb-6">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        {billBase64 ? <Check className="text-green-500 mb-3" size={36}/> : <UploadCloud className="text-gray-400 mb-3" size={36}/>}
+                                        <p className="text-[13px] text-gray-600 font-bold tracking-wide">{billBase64 ? "ĐÃ CHỌN ẢNH THÀNH CÔNG" : "BẤM VÀO ĐỂ TẢI ẢNH BILL"}</p>
+                                    </div>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                                </label>
+
+                                <button onClick={handleConfirmPayment} disabled={loading || !billBase64} className={`w-full text-white py-4 rounded-full font-black text-[14px] uppercase tracking-widest shadow-xl disabled:bg-gray-300 disabled:shadow-none active:scale-95 transition-all ${plans[planIndex].theme.btn}`}>
+                                    {loading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN ĐÃ CHUYỂN'}
+                                </button>
+                                <div className="text-center mt-6">
+                                    <button type="button" onClick={() => setStep('pricing')} className="text-gray-400 hover:text-gray-600 font-bold text-[13px] underline transition-colors">Quay lại chọn gói</button>
                                 </div>
-                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                            </label>
-
-                            <button onClick={handleConfirmPayment} disabled={loading || !billBase64} className={`w-full text-white py-4 rounded-full font-black text-[14px] uppercase tracking-widest shadow-xl disabled:bg-gray-300 disabled:shadow-none active:scale-95 transition-all ${plans[planIndex].theme.btn}`}>
-                                {loading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN ĐÃ CHUYỂN'}
-                            </button>
-                            <div className="text-center mt-6">
-                                <button type="button" onClick={() => setStep('pricing')} className="text-gray-400 hover:text-gray-600 font-bold text-[13px] underline transition-colors">Quay lại chọn gói</button>
                             </div>
-                        </div>
 
-                        <div className={`p-[5px] rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[320px] sm:w-[420px] shrink-0`}>
-                            <div className="bg-white rounded-[40px] p-4 h-[400px] sm:h-[500px] flex items-center justify-center overflow-hidden relative">
-                                <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[24px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                                <div className="hidden text-gray-400 text-sm italic text-center px-4 absolute">Ảnh mã QR chưa có trong thư mục public</div>
+                            <div className={`p-[5px] rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[320px] sm:w-[420px] shrink-0`}>
+                                <div className="bg-white rounded-[40px] p-4 h-[400px] sm:h-[500px] flex items-center justify-center overflow-hidden relative">
+                                    <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[24px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                                    <div className="hidden text-gray-400 text-sm italic text-center px-4 absolute">Ảnh mã QR chưa có trong thư mục public</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
-                <div className={`absolute inset-0 bg-green-50/90 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
-                    <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
-                    
-                    {expiredEmail ? (
-                        <>
-                            <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                                Hệ thống đã nhận được Bill thanh toán gia hạn của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
-                            </p>
-                            <button onClick={forceLogoutAndReset} className="text-gray-500 font-bold text-[14px] underline hover:text-red-500 transition-colors">
-                                Đăng Xuất
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                                Tài khoản của bạn đã được tạo và Bill thanh toán đã gửi thành công! Vui lòng đợi Admin kiểm tra. Sau khi được duyệt, bạn có thể Đăng nhập để sử dụng.
-                            </p>
-                            <button onClick={handleBackToLogin} className="text-[#1DB2A0] font-bold text-[14px] underline hover:text-[#159a8a] transition-colors">
-                                Trở về màn hình Đăng Nhập
-                            </button>
-                        </>
-                    )}
+                <div className={`absolute inset-0 bg-green-50/90 backdrop-blur-md z-[70] overflow-y-auto custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col items-center justify-center min-h-full w-full p-8 py-12">
+                        <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
+                        <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
+                        
+                        {expiredEmail ? (
+                            <>
+                                <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
+                                    Hệ thống đã nhận được Bill thanh toán gia hạn của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
+                                </p>
+                                <button onClick={forceLogoutAndReset} className="text-gray-500 font-bold text-[14px] underline hover:text-red-500 transition-colors">
+                                    Đăng Xuất
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
+                                    Tài khoản của bạn đã được tạo và Bill thanh toán đã gửi thành công! Vui lòng đợi Admin kiểm tra. Sau khi được duyệt, bạn có thể Đăng nhập để sử dụng.
+                                </p>
+                                <button onClick={handleBackToLogin} className="text-[#1DB2A0] font-bold text-[14px] underline hover:text-[#159a8a] transition-colors">
+                                    Trở về màn hình Đăng Nhập
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
             </div>
