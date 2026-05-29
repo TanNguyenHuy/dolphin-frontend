@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, UploadCloud, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, UploadCloud, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { API_URL } from './utils';
 
 export default function Auth({ onLoginSuccess }) {
@@ -16,6 +16,14 @@ export default function Auth({ onLoginSuccess }) {
     const [successMsg, setSuccessMsg] = useState('');
     const [registeredEmail, setRegisteredEmail] = useState(''); 
     const [billBase64, setBillBase64] = useState(null); 
+
+    // HỆ THỐNG THÔNG BÁO XỊN (TOAST)
+    const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+
+    const showToast = (message, type = 'error') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
+    };
 
     const plans = [
         { 
@@ -67,11 +75,11 @@ export default function Auth({ onLoginSuccess }) {
         try {
             const type = view === 'REGISTER' ? 'register' : 'forgot';
             const res = await axios.post(`${API_URL}/send-otp`, { email: formData.email, type });
-            setSuccessMsg(res.data.message);
+            showToast(res.data.message, 'success');
             setOtpStep(2); 
         } catch (err) {
-            setError(err.response?.data?.error || 'Lỗi gửi mail!');
-        } finally { setLoading(false); }
+            showToast(err.response?.data?.error || 'Lỗi gửi mail!', 'error');
+        } finally { setLoading(false); } 
     };
 
     const handleAuth = async (e) => {
@@ -85,8 +93,11 @@ export default function Auth({ onLoginSuccess }) {
             }
             else {
                 const user = res.data.user;
+                
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
-                    setRegisteredEmail(user.email); setStep('pricing'); alert("⚠️ Gói của bạn đã hết hạn!");
+                    setRegisteredEmail(user.email); 
+                    setStep('pricing'); 
+                    showToast("⏳ Gói của bạn đã hết hạn, vui lòng gia hạn!", 'error');
                 } else {
                     if (rememberMe) {
                         localStorage.setItem('rememberedEmail', formData.email);
@@ -98,29 +109,28 @@ export default function Auth({ onLoginSuccess }) {
                     onLoginSuccess(user, true);
                 }
             }
-        } catch (err) { setError(err.response?.data?.error || "Lỗi thông tin!"); }
+        } catch (err) { showToast(err.response?.data?.error || "Lỗi thông tin!", 'error'); }
         finally { setLoading(false); }
     };
 
     const handleSelectPlan = () => setStep('qr');
 
     const handleConfirmPayment = async () => {
-        if (!billBase64) return alert("Vui lòng tải ảnh màn hình đã chuyển khoản!");
+        if (!billBase64) return showToast("Vui lòng tải ảnh màn hình đã chuyển khoản!", 'error');
         setLoading(true);
         try {
             await axios.put(`${API_URL}/update-plan`, { email: registeredEmail, plan: plans[planIndex].id, paymentImage: billBase64 });
             setStep('success');
-        } catch (e) { alert("Lỗi gửi Bill!"); }
+        } catch (e) { showToast("Lỗi gửi Bill!", 'error'); }
         finally { setLoading(false); }
     };
 
     const handleFinishAndLogin = () => {
         setStep('auth');
         togglePanel(false); 
-        setSuccessMsg('Đã gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.');
+        showToast('Đã gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.', 'success');
     };
 
-    // HÀM MỚI: Khách không mua thì đăng xuất
     const handleLogoutFromPricing = () => {
         setRegisteredEmail('');
         setStep('auth');
@@ -129,6 +139,15 @@ export default function Auth({ onLoginSuccess }) {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
+            
+            {/* TOAST THÔNG BÁO XỊN (Thay thế alert) */}
+            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+                <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
+                    {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
+                    <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
+                </div>
+            </div>
+
             <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[20px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
                 
                 {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
@@ -137,9 +156,6 @@ export default function Auth({ onLoginSuccess }) {
                         <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <h1 className="font-extrabold text-[28px] md:text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
                             <p className="text-[13px] text-gray-500 mb-6 font-medium">Tài khoản đầu tiên sẽ là Admin</p>
-                            
-                            {error && <span className="text-[#FF3B30] text-[13px] mb-3 font-semibold">{error}</span>}
-                            {successMsg && <span className="text-[#1DB2A0] text-[13px] mb-3 font-semibold">{successMsg}</span>}
 
                             {otpStep === 1 ? (
                                 <>
@@ -186,9 +202,6 @@ export default function Auth({ onLoginSuccess }) {
                             <p className="text-[13px] text-gray-500 mb-6 font-medium">
                                 {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : 'Nhập email để nhận mã khôi phục'}
                             </p>
-
-                            {error && <span className="text-[#FF3B30] text-[13px] mb-3 font-semibold">{error}</span>}
-                            {successMsg && <span className="text-[#1DB2A0] text-[13px] mb-3 font-semibold">{successMsg}</span>}
 
                             {view === 'LOGIN' ? (
                                 <>
@@ -246,7 +259,7 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : ''}`}>
+                    <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : 'translate-x-0'}`}>
                         <div className={`bg-gradient-to-r from-[#26D0CE] to-[#21C8F6] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
                             <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
                                 <h1 className="font-extrabold text-[36px] mb-4">Mừng Trở Lại!</h1>
@@ -301,11 +314,10 @@ export default function Auth({ onLoginSuccess }) {
                         ))}
                     </div>
 
-                    <button onClick={handleSelectPlan} className="mt-8 bg-gray-900 text-white px-12 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
+                    <button onClick={handleSelectPlan} className="mt-12 bg-gray-900 text-white px-12 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
                         TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
                     </button>
                     
-                    {/* NÚT ĐĂNG XUẤT CHO KHÁCH */}
                     <button onClick={handleLogoutFromPricing} className="mt-6 text-gray-500 font-bold text-[13px] underline hover:text-gray-800 transition-colors">
                         Trở về Đăng Nhập / Dùng tài khoản khác
                     </button>
