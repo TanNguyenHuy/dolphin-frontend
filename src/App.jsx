@@ -567,18 +567,18 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* ĐÃ FIX: Áp dụng dải màu kim loại đồng bộ lên Header */}
+                    {/* TRẢ LẠI MÀU GỐC TRÊN HEADER */}
                     {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <div className="mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest text-white border border-[#D8B4FE]/50 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_10px_rgba(109,40,217,0.4)] bg-[linear-gradient(135deg,#6D28D9,#D8B4FE,#3B82F6)]">
-                            <Crown size={12}/> Gói Premium
+                        <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md">
+                            <Crown size={12}/> PREMIUM
                         </div>
                     ) : (
-                        <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest border shadow-[inset_0_1px_2px_rgba(255,255,255,0.8)] ${
-                            authUser?.plan === '100k' ? 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728,#FBF5B7,#AA771C)] text-yellow-900 border-[#FCF6BA] shadow-[0_2px_10px_rgba(179,135,40,0.4)]' : 
-                            authUser?.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8,#F8FAFC,#94A3B8)] text-slate-800 border-white shadow-[0_2px_10px_rgba(148,163,184,0.4)]' : 
-                            'bg-[linear-gradient(135deg,#A0522D,#E3A869,#A0522D)] text-white border-[#E3A869]/50 shadow-[0_2px_10px_rgba(160,82,45,0.4)]'
+                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
+                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
+                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
                         }`}>
-                            {authUser?.plan === '100k' ? <><Crown size={12}/> Gói VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> Gói VIP</> : <><Eye size={12}/> Gói Cơ Bản</>}
+                            {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                         </div>
                     )}
                     
@@ -611,6 +611,7 @@ export default function App() {
                 </div>
             </div>
 
+            {/* MODAL CẬP NHẬT THAY THẾ JSON */}
             {syncRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -653,6 +654,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL SỬA BẢN GHI */}
             {editingRow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
@@ -696,6 +698,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
             {editingSession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative shadow-2xl border border-white">
@@ -724,6 +727,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL XÓA ĐỢT BÁN */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -740,6 +744,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL XÓA SẢN PHẨM */}
             {showDeleteRowModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -758,6 +763,7 @@ export default function App() {
                 </div>
             )}
 
+            {/* MODAL PHÁT LƯƠNG */}
             {showSalaryModal && salarySession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center shadow-2xl border border-white">
