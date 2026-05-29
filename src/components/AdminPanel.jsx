@@ -105,17 +105,27 @@ export default function AdminPanel({ setView, authUser }) {
                 setConfirmModal({ show: false });
                 showToast("Đã xóa tài khoản thành công!", "success");
             } catch (e) { showToast("Lỗi xóa tài khoản!", "error"); setConfirmModal({ show: false }); }
-        }, true); // isDanger = true (Nút xác nhận sẽ màu đỏ)
+        }, true);
     };
 
+    // ĐÃ FIX: Chỉnh sửa lại logic khóa/mở khóa để nhận diện chính xác
     const handleRestrict = async (id, days) => {
         let restrictedUntil = null;
         let isBanned = false;
-        if (days === 'forever') isBanned = true; 
-        else if (days !== '0' && days !== 'restricted') restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
-        await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
-        fetchUsers();
-        showToast("Đã cập nhật trạng thái hạn chế!", "success");
+        
+        if (days === 'forever') {
+            isBanned = true;
+        } else if (days !== '0' && days !== 'restricted') {
+            restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
+        }
+
+        try {
+            await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
+            fetchUsers();
+            showToast(days === '0' ? "Đã gỡ bỏ hạn chế!" : "Đã cập nhật trạng thái hạn chế!", "success");
+        } catch (error) {
+            showToast("Lỗi cập nhật trạng thái!", "error");
+        }
     };
 
     const getRestrictStatus = (u) => {
@@ -305,12 +315,18 @@ export default function AdminPanel({ setView, authUser }) {
                                         )
                                     )}
 
-                                    <select className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} onChange={(e) => handleRestrict(u._id, e.target.value)} value={restrictStatus}>
+                                    {/* ĐÃ FIX: Thêm option ẩn "Đang bị hạn chế..." để sửa lỗi nhảy trạng thái */}
+                                    <select 
+                                        className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
+                                        onChange={(e) => handleRestrict(u._id, e.target.value)} 
+                                        value={restrictStatus}
+                                    >
                                         <option value="0">Bình thường</option>
                                         <option value="1">Hạn chế 1 ngày</option>
                                         <option value="2">Hạn chế 2 ngày</option>
                                         <option value="7">Hạn chế 7 ngày</option>
                                         <option value="forever">Cấm vĩnh viễn</option>
+                                        {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị hạn chế...</option>}
                                     </select>
                                     
                                     <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
