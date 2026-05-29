@@ -11,8 +11,6 @@ export default function Auth({ onLoginSuccess }) {
     
     const [planIndex, setPlanIndex] = useState(1); 
     const [loading, setLoading] = useState(false);
-    
-    // ĐÂY LÀ DÒNG EM LỠ QUÊN KHIẾN WEB BỊ TRẮNG MÀN HÌNH NÈ SẾP:
     const [showPassword, setShowPassword] = useState(false); 
     
     const [rememberMe, setRememberMe] = useState(false);
@@ -154,7 +152,7 @@ export default function Auth({ onLoginSuccess }) {
                                         <KeyRound size={18} className="text-[#26D0CE]" />
                                         <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[16px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md">
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4">
                                         {loading ? <RefreshCw size={18} className="animate-spin" /> : 'XÁC NHẬN VÀ CHỌN GÓI'}
                                     </button>
                                 </>
@@ -285,18 +283,21 @@ export default function Auth({ onLoginSuccess }) {
                     </button>
                 </div>
 
-                {/* LỚP 3: MÀN HÌNH QUÉT MÃ QR */}
-                <div className={`absolute inset-0 w-full h-full bg-white z-[60] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : step === 'success' ? '-translate-x-full' : 'translate-x-full'}`}>
-                    <div className="w-16 h-16 bg-[#E0F7FA] text-[#26D0CE] rounded-full flex items-center justify-center mb-4"><QrCode size={32}/></div>
-                    <h2 className="text-[24px] font-black text-[#1D1D1F] mb-1">Quét mã thanh toán</h2>
-                    <p className="text-gray-500 text-[14px] mb-6 text-center">Bạn đang chọn gói <strong className="text-[#26D0CE]">{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã bên dưới để thanh toán.</p>
+                {/* LỚP 3: MÀN HÌNH QUÉT MÃ QR (ĐÃ FIX PHÓNG TO HÌNH ẢNH) */}
+                <div className={`absolute inset-0 w-full h-full bg-white z-[60] flex flex-col items-center justify-center p-4 sm:p-8 transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : step === 'success' ? '-translate-x-full' : 'translate-x-full'}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#E0F7FA] text-[#26D0CE] rounded-full flex items-center justify-center"><QrCode size={24}/></div>
+                        <h2 className="text-[20px] sm:text-[24px] font-black text-[#1D1D1F]">Quét mã thanh toán</h2>
+                    </div>
+                    <p className="text-gray-500 text-[13px] sm:text-[14px] mb-4 sm:mb-6 text-center">Gói <strong className="text-[#26D0CE]">{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã bên dưới để thanh toán.</p>
                     
-                    <div className="w-[250px] h-[350px] border border-gray-200 rounded-2xl p-2 shadow-sm mb-6 bg-gray-50 flex items-center justify-center overflow-hidden">
-                        <img src={plans[planIndex].qrImage} alt={`QR Thanh toán`} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                    {/* KHUNG CHỨA ẢNH QR ĐƯỢC PHÓNG TO TỐI ĐA */}
+                    <div className="w-[280px] sm:w-[340px] h-[380px] sm:h-[460px] border-2 border-[#26D0CE]/20 rounded-[24px] p-1.5 sm:p-2 shadow-lg mb-6 bg-white flex items-center justify-center overflow-hidden">
+                        <img src={plans[planIndex].qrImage} alt={`QR Thanh toán`} className="w-full h-full object-contain rounded-[16px]" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
                         <div className="hidden text-gray-400 text-sm italic text-center px-4">Sếp chưa thả ảnh qr-10k.jpg, qr-50k.jpg, qr-100k.jpg vào thư mục public</div>
                     </div>
 
-                    <button onClick={handleConfirmPayment} className="rounded-full bg-[#1D1D1F] text-white text-[14px] font-bold py-3.5 px-12 transition-transform active:scale-95 hover:bg-gray-800 shadow-md">
+                    <button onClick={handleConfirmPayment} className="rounded-full bg-[#1D1D1F] text-white text-[14px] font-bold py-3.5 px-12 transition-transform active:scale-95 hover:bg-gray-800 shadow-xl">
                         ĐÃ CHUYỂN KHOẢN XONG
                     </button>
                 </div>
@@ -306,9 +307,9 @@ export default function Auth({ onLoginSuccess }) {
                     <div className="w-20 h-20 bg-white shadow-lg text-[#FF9500] rounded-full flex items-center justify-center mb-6 animate-pulse">
                         <Clock size={40} strokeWidth={2.5}/>
                     </div>
-                    <h2 className="text-[28px] font-black text-[#1D1D1F] mb-3 text-center">Tài khoản đang được xác nhận</h2>
+                    <h2 className="text-[28px] font-black text-[#1D1D1F] mb-3 text-center">Tài khoản đang chờ xác nhận</h2>
                     <p className="text-gray-600 text-[15px] mb-8 text-center max-w-[320px] font-medium leading-relaxed">
-                        Hệ thống đã ghi nhận. Xin vui lòng chờ Admin kích hoạt gói trong giây lát.
+                        Hệ thống đã ghi nhận giao dịch của bạn. Xin vui lòng chờ Admin kiểm tra và kích hoạt gói trong giây lát.
                     </p>
                     <button onClick={handleFinishAndLogin} className="rounded-full border-2 border-[#26D0CE] text-[#26D0CE] bg-white text-[14px] font-bold py-3.5 px-12 transition-all active:scale-95 hover:bg-[#26D0CE] hover:text-white shadow-sm">
                         XÁC NHẬN
