@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -143,7 +143,14 @@ export default function App() {
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
     
-    // TÍNH TOÁN VÀ CẬP NHẬT TỰ ĐỘNG GIẶT ỦI KHI THÊM KIỆN HÀNG
+    // ĐÂY LÀ HÀM CỨU MẠNG MÀ EM ĐÃ LỠ TAY XÓA:
+    const updateSessionField = async (field, value) => { 
+        if(!canEdit || !detailData) return; 
+        const newData = { ...detailData, [field]: value }; 
+        setDetailData(newData); 
+        try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} 
+    };
+
     const handleAddBale = async (e) => { 
         e.preventDefault(); if(!canEdit) return; 
         const cost = parseInput(baleCost); const qty = parseInput(baleQty); 
@@ -163,7 +170,6 @@ export default function App() {
         } catch (err) {} 
     };
 
-    // TÍNH TOÁN VÀ CẬP NHẬT TỰ ĐỘNG GIẶT ỦI KHI XÓA KIỆN HÀNG
     const handleDeleteBale = async (id) => { 
         if(!canDelete) return; 
         try { 
@@ -289,7 +295,6 @@ export default function App() {
 
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
     
-    // TỰ ĐỘNG GỬI 4% KHI SỬA CHUNG ĐỢT BÁN
     const handleSaveSession = async () => { 
         if (!editingSession) return; 
         try { 
@@ -562,7 +567,7 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL THIẾT LẬP ĐỢT BÁN (Sửa input Giặt Ủi thành Disable) */}
+            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
             {editingSession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
                     <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative">
