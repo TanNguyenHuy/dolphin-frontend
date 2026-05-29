@@ -60,26 +60,26 @@ export default function App() {
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
 
-    // HỆ THỐNG THÔNG BÁO XỊN CHO APP.JSX
+    // HỆ THỐNG KIỂM SOÁT HẾT HẠN MƯỢT MÀ (KHÔNG RELOAD LẠI TRANG)
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
-    const [showExpiryToast, setShowExpiryToast] = useState(false);
+    const [isExpiredState, setIsExpiredState] = useState(false);
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
 
     useEffect(() => {
-        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) return;
+        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) {
+            setIsExpiredState(false);
+            return;
+        }
 
         const checkExpiry = () => {
             const now = new Date();
             const exp = new Date(authUser.planExpiry);
             
             if (now >= exp) {
-                setShowExpiryToast(true);
-                setTimeout(() => {
-                    localStorage.removeItem('authUser');
-                    sessionStorage.removeItem('authUser');
-                    window.location.reload();
-                }, 3000); 
+                // KHI HẾT HẠN: Kích hoạt cờ State để chèn màn hình Auth lên ngay lập tức
+                if (!isExpiredState) setIsExpiredState(true);
             } else {
+                if (isExpiredState) setIsExpiredState(false);
                 const diff = Math.abs(exp - now);
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -96,21 +96,23 @@ export default function App() {
         checkExpiry();
         const timer = setInterval(checkExpiry, 1000);
         return () => clearInterval(timer);
-    }, [authUser]);
+    }, [authUser, isExpiredState]);
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
+    // HỆ THỐNG RADAR CHẠY NGẦM: Lắng nghe Admin duyệt gói
     useEffect(() => {
         if (!authUser || !authUser.email) return; 
         const checkRealTimeStatus = async () => {
             try {
                 const res = await axios.post(`${API_URL}/check-status`, { email: authUser.email });
                 const latestData = res.data;
-                
-                // THAY THẾ ALERT BẰNG CUSTOM MODAL KHI BỊ KHÓA
-                if (latestData.isBanned || !latestData.isApproved) {
-                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc bị thu hồi quyền truy cập!' });
+                const isActuallyExpired = latestData.planExpiry && new Date(latestData.planExpiry) <= new Date();
+
+                // Chỉ block quyền nếu bị khóa vĩnh viễn, hoặc nếu Admin hạ quyền (mà không phải do đang hết hạn nạp tiền)
+                if (latestData.isBanned || (!latestData.isApproved && !isActuallyExpired && !latestData.paymentImage)) {
+                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!' });
                     return;
                 }
                 
@@ -118,23 +120,30 @@ export default function App() {
                     JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || 
                     authUser.role !== latestData.role ||
                     authUser.planExpiry !== latestData.planExpiry ||
-                    authUser.plan !== latestData.plan
+                    authUser.plan !== latestData.plan ||
+                    authUser.isApproved !== latestData.isApproved
                 ) {
-                    setAuthUser(prev => ({ 
-                        ...prev, 
-                        permissions: latestData.permissions, 
-                        role: latestData.role,
-                        plan: latestData.plan,
-                        planExpiry: latestData.planExpiry
-                    }));
+                    setAuthUser(prev => {
+                        const updated = { 
+                            ...prev, 
+                            permissions: latestData.permissions, 
+                            role: latestData.role,
+                            plan: latestData.plan,
+                            planExpiry: latestData.planExpiry,
+                            isApproved: latestData.isApproved
+                        };
+                        if (localStorage.getItem('authUser')) localStorage.setItem('authUser', JSON.stringify(updated));
+                        if (sessionStorage.getItem('authUser')) sessionStorage.setItem('authUser', JSON.stringify(updated));
+                        return updated;
+                    });
                 }
             } catch (error) {}
         };
         const radar = setInterval(checkRealTimeStatus, 5000);
         return () => clearInterval(radar); 
-    }, [authUser]);
+    }, [authUser, isExpiredState]);
 
-    const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); setView('DASHBOARD'); setDetailData(null); };
+    const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); setView('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
     const fetchDashboard = async () => { 
         try { 
@@ -185,7 +194,7 @@ export default function App() {
                 setView('DETAIL'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
-        } catch (err) { alert("Lỗi tải dữ liệu. Vui lòng thử lại."); } // Ít khi xảy ra, giữ tạm alert
+        } catch (err) {} 
     };
     
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động' }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
@@ -470,25 +479,22 @@ export default function App() {
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
-    if (!authUser) {
-        return <Auth onLoginSuccess={(u, rememberMe) => { 
-            setAuthUser(u); 
-            if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } 
-            else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); }
-        }} />;
+    // QUYẾT ĐỊNH RENDER: Nếu Chưa Đăng Nhập hoặc Bị Đá Văng Hết Hạn -> Ném ngay màn hình Auth/Nạp Tiền lên che toàn bộ!
+    if (!authUser || isExpiredState) {
+        return <Auth 
+            onLoginSuccess={(u, rememberMe) => { 
+                setAuthUser(u); 
+                if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } 
+                else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); }
+            }} 
+            expiredEmail={isExpiredState ? authUser?.email : null}
+            onLogout={handleLogout}
+        />;
     }
 
     return (
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
-            
-            {/* THÔNG BÁO TOAST KHÁCH HÀNG KHI HẾT HẠN GÓI */}
-            <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${showExpiryToast ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0 pointer-events-none'}`}>
-                <div className="flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl bg-white border border-red-200 text-red-600">
-                    <AlertTriangle size={24}/>
-                    <p className="font-bold text-[15px] tracking-wide">⏳ Gói dịch vụ đã hết hạn! Đang chuyển hướng...</p>
-                </div>
-            </div>
 
             {/* MODAL KHÓA TÀI KHOẢN TỪ ADMIN */}
             {blockModal.show && (
@@ -538,13 +544,13 @@ export default function App() {
                     </a>
                     
                     {authUser?.role !== 'admin' && authUser?.plan !== 'premium' && authUser?.planExpiry && (
-                        <div className="mt-2 ml-14 inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold border border-green-200 shadow-sm animate-fade-in-up">
+                        <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-sm transition-all ${timeLeftDisplay.includes('giây') || timeLeftDisplay.includes('phút') ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border border-green-200'}`}>
                             <Clock size={12} /> Hạn sử dụng: {timeLeftDisplay}
                         </div>
                     )}
                 </div>
                 
-                <div className="flex items-center gap-1.5 md:gap-2 shrink-0 self-center">
+                <div className="flex items-center gap-1.5 md:gap-2 shrink-0 self-center mt-2 md:mt-0">
                     {view === 'DASHBOARD' && (
                         <>
                             {isAdmin && (
@@ -682,7 +688,7 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL XÓA ĐỢT BÁN (ĐÃ CHUYỂN QUA UI XỊN) */}
+            {/* MODAL XÓA ĐỢT BÁN */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
@@ -699,7 +705,7 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL XÓA SẢN PHẨM (ĐÃ CHUYỂN QUA UI XỊN) */}
+            {/* MODAL XÓA SẢN PHẨM */}
             {showDeleteRowModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
