@@ -216,6 +216,7 @@ export default function AdminPanel({ setView, authUser }) {
                     const chatRestrictStatus = getChatRestrictStatus(u);
                     const isRestricted = restrictStatus !== '0';
                     const isChatRestricted = chatRestrictStatus !== '0';
+
                     const isAbandoned = !u.isApproved && !u.paymentImage && u.role !== 'admin';
 
                     return (
@@ -224,18 +225,17 @@ export default function AdminPanel({ setView, authUser }) {
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
-                                    {/* TRẢ LẠI NGUYÊN BẢN GIAO DIỆN THEO ĐÚNG HÌNH YÊU CẦU */}
                                     {isAbandoned ? (
                                         <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">Chưa Chọn Gói</span>
                                     ) : u.plan === 'premium' || u.role === 'admin' ? (
-                                        <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md flex items-center gap-1"><Crown size={12}/> GÓI PREMIUM</span>
+                                        <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-[#D8B4FE]/50 shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_2px_10px_rgba(109,40,217,0.4)] bg-[linear-gradient(135deg,#6D28D9,#D8B4FE,#3B82F6)] text-white flex items-center gap-1"><Crown size={12}/> Gói Premium</span>
                                     ) : (
-                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border shadow-sm flex items-center gap-1 ${
-                                            u.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
-                                            u.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
-                                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
+                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border shadow-sm ${
+                                            u.plan === '100k' ? 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728,#FBF5B7,#AA771C)] text-yellow-900 border-[#FCF6BA] shadow-[0_2px_10px_rgba(179,135,40,0.4)]' : 
+                                            u.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8,#F8FAFC,#94A3B8)] text-slate-800 border-white shadow-[0_2px_10px_rgba(148,163,184,0.4)]' : 
+                                            'bg-[linear-gradient(135deg,#A0522D,#E3A869,#A0522D)] text-white border-[#E3A869]/50 shadow-[0_2px_10px_rgba(160,82,45,0.4)]' 
                                         }`}>
-                                            {u.plan === '100k' ? 'GÓI VVIP' : u.plan === '50k' ? 'GÓI VIP' : 'GÓI CƠ BẢN'}
+                                            {u.plan === '100k' ? 'Gói VVIP' : u.plan === '50k' ? 'Gói VIP' : 'Gói Cơ Bản'}
                                         </span>
                                     )}
                                 </div>
@@ -284,7 +284,7 @@ export default function AdminPanel({ setView, authUser }) {
                                     ) : (
                                         <>
                                             {u.paymentImage ? (
-                                                <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95"><Eye size={16}/> XEM BILL</button>
+                                                <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95 animate-pulse"><Eye size={16}/> XEM BILL</button>
                                             ) : (
                                                 <span className="text-gray-400 text-[11px] italic bg-gray-100 px-4 py-2 rounded-xl">Chưa có Bill</span>
                                             )}
@@ -294,16 +294,23 @@ export default function AdminPanel({ setView, authUser }) {
                                             </button>
 
                                             <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                                                {/* CHECKBOX: Chỉ Gói Premium mới được hiện tất cả */}
-                                                {u.plan === 'premium' && (
-                                                    <>
-                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> P.Lương</label>
-                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
-                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
-                                                        <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
-                                                    </>
-                                                )}
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> Xem Chi Tiết</label>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                    <input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> 
+                                                    <span className={u.permissions?.canPay ? 'text-gray-700' : 'text-gray-400 opacity-60'}>P.Lương</span>
+                                                </label>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                    <input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> 
+                                                    <span className={u.permissions?.canEdit ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Sửa</span>
+                                                </label>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                    <input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> 
+                                                    <span className={u.permissions?.canDelete ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Xóa</span>
+                                                </label>
+                                                <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer">
+                                                    <input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> 
+                                                    <span className={u.permissions?.canViewDetail ? 'text-orange-600' : 'text-orange-300 opacity-60'}>Xem Chi Tiết</span>
+                                                </label>
                                             </div>
                                             
                                             <div className="relative group">
@@ -311,6 +318,7 @@ export default function AdminPanel({ setView, authUser }) {
                                                     className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
                                                     value={u.plan || '10k'}
                                                     onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
+                                                    title="Đổi gói - Thời gian sẽ được tính lại từ đầu"
                                                 >
                                                     <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
                                                     <option value="50k">🥈 GÓI VIP (50k)</option>
@@ -346,6 +354,7 @@ export default function AdminPanel({ setView, authUser }) {
                                                     <button 
                                                         onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
                                                         className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-2xl border-2 border-pink-100 bg-pink-50 text-pink-600 hover:border-pink-300 transition-all shadow-sm active:scale-95"
+                                                        title="Sửa hạn sử dụng tùy ý"
                                                     >
                                                         <TimerReset size={15} /> Sửa Hạn
                                                     </button>
@@ -355,9 +364,10 @@ export default function AdminPanel({ setView, authUser }) {
                                             {(u.plan === '100k' || u.plan === 'premium') && (
                                                 <div className="relative group">
                                                     <select 
-                                                        className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm bg-white text-gray-600 border-gray-200 hover:bg-gray-50`} 
+                                                        className={`appearance-none text-[12px] font-bold pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${chatRestrictStatus !== '0' ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
                                                         onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
                                                         value={chatRestrictStatus}
+                                                        title="Quản lý quyền Chat của tài khoản này"
                                                     >
                                                         <option value="0">Chat Bình thường</option>
                                                         <option value="1">Cấm Chat 1 ngày</option>
@@ -366,7 +376,7 @@ export default function AdminPanel({ setView, authUser }) {
                                                         <option value="forever">Cấm Chat Vĩnh viễn</option>
                                                         {chatRestrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị cấm chat...</option>}
                                                     </select>
-                                                    <MessageSquareOff size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400`} />
+                                                    <MessageSquareOff size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${chatRestrictStatus !== '0' ? 'text-orange-500' : 'text-gray-400'}`} />
                                                 </div>
                                             )}
 
