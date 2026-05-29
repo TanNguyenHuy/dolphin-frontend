@@ -60,9 +60,10 @@ export default function App() {
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
 
-    // HỆ THỐNG ĐẾM NGƯỢC VÀ ĐÁ VĂNG KHÁCH (ĐÃ SỬA LẠI THÔNG BÁO XỊN)
+    // HỆ THỐNG THÔNG BÁO XỊN CHO APP.JSX
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
     const [showExpiryToast, setShowExpiryToast] = useState(false);
+    const [blockModal, setBlockModal] = useState({ show: false, message: '' });
 
     useEffect(() => {
         if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) return;
@@ -72,7 +73,6 @@ export default function App() {
             const exp = new Date(authUser.planExpiry);
             
             if (now >= exp) {
-                // KHI HẾT HẠN: Hiện Toast màu đỏ 3 giây rồi mới đá văng ra ngoài
                 setShowExpiryToast(true);
                 setTimeout(() => {
                     localStorage.removeItem('authUser');
@@ -107,13 +107,13 @@ export default function App() {
             try {
                 const res = await axios.post(`${API_URL}/check-status`, { email: authUser.email });
                 const latestData = res.data;
+                
+                // THAY THẾ ALERT BẰNG CUSTOM MODAL KHI BỊ KHÓA
                 if (latestData.isBanned || !latestData.isApproved) {
-                    alert("Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!");
-                    setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); window.location.reload(); 
+                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc bị thu hồi quyền truy cập!' });
                     return;
                 }
                 
-                // Đồng bộ gói và Hạn sử dụng thời gian thực
                 if (
                     JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || 
                     authUser.role !== latestData.role ||
@@ -185,7 +185,7 @@ export default function App() {
                 setView('DETAIL'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
-        } catch (err) { alert("Lỗi tải dữ liệu. Vui lòng thử lại."); } 
+        } catch (err) { alert("Lỗi tải dữ liệu. Vui lòng thử lại."); } // Ít khi xảy ra, giữ tạm alert
     };
     
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động' }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
@@ -362,7 +362,7 @@ export default function App() {
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
-        const computedGiatUi = Math.round((ss.so_tien_cua_kien || 0) * 0.04); // ÉP 4%
+        const computedGiatUi = Math.round((ss.so_tien_cua_kien || 0) * 0.04); 
         const realProfit = (ss.tong_doanh_thu || 0) - (ss.so_tien_cua_kien || 0) - computedGiatUi - autoAdCost;
         return { ...ss, autoAdCost, realProfit, computedGiatUi };
     });
@@ -405,7 +405,7 @@ export default function App() {
         dynamicTarget = Math.max(1, Math.ceil(itemCount / 4)) * 10000000;
         detailAutoAdCost = itemCount * AD_COST_PER_SALE;
         
-        const computedGiatUi = Math.round((detailData.so_tien_cua_kien || 0) * 0.04); // ÉP 4%
+        const computedGiatUi = Math.round((detailData.so_tien_cua_kien || 0) * 0.04);
         detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - computedGiatUi - detailAutoAdCost;
         isTargetReached = detailProfit >= dynamicTarget && itemCount > 0;
 
@@ -481,6 +481,31 @@ export default function App() {
     return (
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
+            
+            {/* THÔNG BÁO TOAST KHÁCH HÀNG KHI HẾT HẠN GÓI */}
+            <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${showExpiryToast ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0 pointer-events-none'}`}>
+                <div className="flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl bg-white border border-red-200 text-red-600">
+                    <AlertTriangle size={24}/>
+                    <p className="font-bold text-[15px] tracking-wide">⏳ Gói dịch vụ đã hết hạn! Đang chuyển hướng...</p>
+                </div>
+            </div>
+
+            {/* MODAL KHÓA TÀI KHOẢN TỪ ADMIN */}
+            {blockModal.show && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] text-center shadow-2xl animate-scale-up border border-white">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
+                            <AlertTriangle size={32}/>
+                        </div>
+                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Quyền Truy Cập Bị Chặn</h2>
+                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">{blockModal.message}</p>
+                        <button onClick={() => { localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); window.location.reload(); }} className="w-full py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all">
+                            Đã Hiểu và Đăng Xuất
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <style dangerouslySetInnerHTML={{ __html: `
                 html, body, div, span, p, h1, h2, h3, h4, h5, h6 { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
                 .font-sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
@@ -498,13 +523,7 @@ export default function App() {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
             <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
-            {/* TOAST ĐÁ VĂNG KHÁCH (HIỆN LÊN 3 GIÂY TRƯỚC KHI RELOAD) */}
-            <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${showExpiryToast ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0 pointer-events-none'}`}>
-                <div className="flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl bg-white border border-red-200 text-red-600">
-                    <AlertTriangle size={24}/>
-                    <p className="font-bold text-[15px] tracking-wide">⏳ Gói dịch vụ đã hết hạn! Đang chuyển hướng...</p>
-                </div>
-            </div>
+
             <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-[32px] px-5 py-3 md:py-3 flex justify-between items-start md:items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
                 <div className="flex flex-col">
                     <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
@@ -518,7 +537,6 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* HIỂN THỊ ĐỒNG HỒ ĐẾM NGƯỢC (TẠI CHỖ SẾP KHOANH ĐỎ) */}
                     {authUser?.role !== 'admin' && authUser?.plan !== 'premium' && authUser?.planExpiry && (
                         <div className="mt-2 ml-14 inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1 rounded-full text-[11px] font-bold border border-green-200 shadow-sm animate-fade-in-up">
                             <Clock size={12} /> Hạn sử dụng: {timeLeftDisplay}
@@ -550,9 +568,9 @@ export default function App() {
 
             {/* MODAL CẬP NHẬT THAY THẾ JSON */}
             {syncRow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative">
-                        <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
+                        <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
                         
                         <div className="mb-4">
                             <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><RefreshCw className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
@@ -562,29 +580,29 @@ export default function App() {
                         <div className="space-y-4">
                             <div>
                                 <textarea 
-                                    className="w-full px-4 py-3 liquid-input rounded-[16px] text-[12px] font-mono text-[#1D1D1F] outline-none transition-all resize-none h-[80px] custom-scrollbar placeholder-gray-500"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:border-[#26D0CE] focus:bg-white rounded-[16px] text-[12px] font-mono text-[#1D1D1F] outline-none transition-all resize-none h-[80px] custom-scrollbar placeholder-gray-400"
                                     placeholder="Dán mã JSON hoặc copy dòng chữ 'Đã quét: X món...' từ Tool vào đây."
                                     value={syncText}
                                     onChange={e => setSyncText(e.target.value)}
                                 />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-3 w-full border-t border-white/40 pt-4">
+                            <div className="grid grid-cols-2 gap-3 w-full border-t border-gray-100 pt-4">
                                 <div>
                                     <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1">SL Bán Mới</label>
-                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[16px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all focus:border-[#1DB2A0]" value={formatInput(syncManualQty)} onChange={e => setSyncManualQty(e.target.value)} placeholder="0" />
+                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[16px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all focus:border-[#1DB2A0] focus:bg-white" value={formatInput(syncManualQty)} onChange={e => setSyncManualQty(e.target.value)} placeholder="0" />
                                 </div>
                                 <div>
                                     <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1">Tổng thu Mới</label>
-                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[16px] font-bold text-[#33A1FD] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#33A1FD]" value={formatInput(syncManualRev)} onChange={e => setSyncManualRev(e.target.value)} placeholder="0" />
+                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[16px] font-bold text-[#33A1FD] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#33A1FD] focus:bg-white" value={formatInput(syncManualRev)} onChange={e => setSyncManualRev(e.target.value)} placeholder="0" />
                                 </div>
                             </div>
                         </div>
                         
                         <div className="mt-6 flex gap-3">
-                            <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[14px] active:opacity-70">Hủy bỏ</button>
-                            <button onClick={handleConfirmSync} disabled={isProcessingEdit || (!syncManualQty && !syncManualRev)} className="flex-1 bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors disabled:opacity-50 text-[14px] shadow-md active:opacity-70">
-                                {isProcessingEdit ? 'Đang lưu...' : 'Cập nhật thay thế'}
+                            <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[14px]">Hủy bỏ</button>
+                            <button onClick={handleConfirmSync} disabled={isProcessingEdit || (!syncManualQty && !syncManualRev)} className="flex-1 bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all disabled:opacity-50 text-[14px] shadow-lg active:scale-95">
+                                {isProcessingEdit ? 'Đang lưu...' : 'Cập nhật'}
                             </button>
                         </div>
                     </div>
@@ -593,41 +611,41 @@ export default function App() {
 
             {/* MODAL SỬA BẢN GHI */}
             {editingRow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative">
-                        <button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
+                        <button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
                         <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Sửa Bản Ghi</h2></div>
                         <div className="space-y-4">
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Ngày Bán</label>
-                                <input type="date" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ngay_ban} onChange={e => setEditingRow({...editingRow, ngay_ban: e.target.value})} />
+                                <input type="date" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingRow.ngay_ban} onChange={e => setEditingRow({...editingRow, ngay_ban: e.target.value})} />
                             </div>
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên Sản Phẩm</label>
-                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingRow.ten_san_pham} onChange={e => setEditingRow({...editingRow, ten_san_pham: e.target.value})} />
+                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingRow.ten_san_pham} onChange={e => setEditingRow({...editingRow, ten_san_pham: e.target.value})} />
                             </div>
                             <div className="grid grid-cols-2 gap-3 w-full">
                                 <div>
                                     <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Nhập</label>
-                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#33A1FD] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong_nhap)} onChange={e => setEditingRow({...editingRow, so_luong_nhap: e.target.value})} />
+                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-bold text-[#33A1FD] text-center tabular-nums outline-none transition-all focus:border-[#33A1FD] focus:bg-white" value={formatInput(editingRow.so_luong_nhap)} onChange={e => setEditingRow({...editingRow, so_luong_nhap: e.target.value})} />
                                 </div>
                                 <div>
                                     <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Bán</label>
-                                    <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all" value={formatInput(editingRow.so_luong)} onChange={e => setEditingRow({...editingRow, so_luong: e.target.value})} />
+                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all focus:border-[#1DB2A0] focus:bg-white" value={formatInput(editingRow.so_luong)} onChange={e => setEditingRow({...editingRow, so_luong: e.target.value})} />
                                 </div>
                             </div>
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tổng Doanh Thu</label>
-                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} />
+                                <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#26D0CE] focus:bg-white" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} />
                             </div>
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Link (Tùy chọn)</label>
-                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#33A1FD] outline-none transition-all" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} />
+                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#33A1FD] outline-none transition-all focus:border-[#33A1FD] focus:bg-white" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} />
                             </div>
                         </div>
                         <div className="mt-8 flex gap-3">
-                            <button onClick={() => setEditingRow(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button>
-                            <button onClick={handleSaveEdit} disabled={isProcessingEdit} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors disabled:opacity-50 text-[15px] shadow-md active:opacity-70">
+                            <button onClick={() => setEditingRow(null)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[15px]">Hủy</button>
+                            <button onClick={handleSaveEdit} disabled={isProcessingEdit} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all disabled:opacity-50 text-[15px] shadow-lg active:scale-95">
                                 {isProcessingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                             </button>
                         </div>
@@ -637,58 +655,64 @@ export default function App() {
 
             {/* MODAL THIẾT LẬP ĐỢT BÁN */}
             {editingSession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative">
-                        <button onClick={() => setEditingSession(null)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/40 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative shadow-2xl border border-white">
+                        <button onClick={() => setEditingSession(null)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
                         <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Thiết lập đợt bán</h2></div>
                         <div className="space-y-4">
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên hiển thị (Tùy chọn)</label>
-                                <input type="text" className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all" value={editingSession.name === 'Thống kê tự động' ? '' : editingSession.name} placeholder="Để trống hệ thống sẽ lấy Ngày" onChange={e => setEditingSession({...editingSession, name: e.target.value})} />
+                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingSession.name === 'Thống kê tự động' ? '' : editingSession.name} placeholder="Để trống hệ thống sẽ lấy Ngày" onChange={e => setEditingSession({...editingSession, name: e.target.value})} />
                             </div>
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí Nhập Kiện</label>
-                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} />
+                                <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#26D0CE] focus:bg-white" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} />
                             </div>
                             
                             <div>
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi... Tự động 4%)</label>
-                                <input disabled className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight bg-gray-100/50 cursor-not-allowed opacity-70" value={formatInput(Math.round((editingSession.so_tien_cua_kien || 0) * 0.04))} readOnly />
+                                <input disabled className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none cursor-not-allowed opacity-70" value={formatInput(Math.round((editingSession.so_tien_cua_kien || 0) * 0.04))} readOnly />
                             </div>
                         </div>
                         <div className="mt-8 flex gap-3">
-                            <button onClick={() => setEditingSession(null)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy</button>
-                            <button onClick={handleSaveSession} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-full font-semibold hover:opacity-90 transition-colors shadow-md text-[15px] active:opacity-70">Cập nhật</button>
+                            <button onClick={() => setEditingSession(null)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[15px]">Hủy</button>
+                            <button onClick={handleSaveSession} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg text-[15px] active:scale-95">Cập nhật</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL XÓA ĐỢT BÁN */}
+            {/* MODAL XÓA ĐỢT BÁN (ĐÃ CHUYỂN QUA UI XỊN) */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[340px] animate-scale-up relative text-center">
-                        <div className="w-14 h-14 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-5 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><AlertTriangle size={28} /></div>
-                        <h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa đợt thống kê?</h2>
-                        <p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Hành động này <strong className="text-[#FF3B30]">vĩnh viễn</strong> và không thể khôi phục.</p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={confirmDeleteSession} className="w-full bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold hover:bg-[#D70015] transition-colors text-[15px] shadow-md active:opacity-70">Xóa Đợt Bán</button>
-                            <button onClick={() => setShowDeleteModal(false)} className="w-full py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 hover:bg-white border border-white/50 transition-colors text-[15px] active:opacity-70">Hủy thao tác</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
+                            <AlertTriangle size={32}/>
+                        </div>
+                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Xóa đợt thống kê?</h2>
+                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">Hành động này sẽ xóa <strong className="text-red-500">vĩnh viễn</strong> toàn bộ dữ liệu của đợt bán này và không thể khôi phục.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
+                            <button onClick={confirmDeleteSession} className="flex-1 py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all">Xóa Ngay</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL XÓA SẢN PHẨM */}
+            {/* MODAL XÓA SẢN PHẨM (ĐÃ CHUYỂN QUA UI XỊN) */}
             {showDeleteRowModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 w-full max-w-[340px] animate-scale-up relative text-center">
-                        <div className="w-12 h-12 bg-[#FF3B30]/10 rounded-full flex items-center justify-center mb-4 text-[#FF3B30] mx-auto border border-[#FF3B30]/20"><Trash2 size={24} /></div>
-                        <h2 className="text-[20px] font-bold text-[#1D1D1F] mb-2 tracking-tight">Xóa sản phẩm này?</h2>
-                        <p className="text-[14px] text-[#5c5c5c] mb-8 font-medium">Dữ liệu sẽ bị xóa ngay lập tức.</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
+                            <Trash2 size={32}/>
+                        </div>
+                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Xóa sản phẩm này?</h2>
+                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">Dữ liệu của sản phẩm sẽ bị xóa khỏi đợt bán hiện tại.</p>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-full font-semibold text-[#1D1D1F] bg-white/40 border border-white/50 hover:bg-white transition-colors text-[15px] active:opacity-70">Hủy</button>
-                            <button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 bg-[#FF3B30] text-white py-3.5 rounded-full font-semibold text-[15px] hover:bg-[#D70015] transition-colors disabled:opacity-50 shadow-md active:opacity-70">{isProcessingDelete ? '...' : 'Xóa'}</button>
+                            <button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
+                            <button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all disabled:opacity-50">
+                                {isProcessingDelete ? 'Đang Xóa...' : 'Xóa Ngay'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -696,30 +720,30 @@ export default function App() {
 
             {/* MODAL PHÁT LƯƠNG */}
             {showSalaryModal && salarySession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
-                    <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center">
-                        <button onClick={() => setShowSalaryModal(false)} className="absolute top-5 right-5 text-[#5c5c5c] bg-white/60 hover:bg-white p-2 rounded-full transition-colors active:opacity-70"><X size={20}/></button>
-                        <div className="w-14 h-14 bg-[#1DB2A0]/10 rounded-full flex items-center justify-center mb-4 text-[#1DB2A0]"><Wallet size={28} /></div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center shadow-2xl border border-white">
+                        <button onClick={() => setShowSalaryModal(false)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
+                        <div className="w-16 h-16 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mb-4 text-[#1DB2A0]"><Wallet size={32} /></div>
                         <h2 className="text-[22px] font-black text-[#1D1D1F] tracking-tight mb-1">Phát Lương Đợt Bán</h2>
-                        <p className="text-[13px] text-[#5c5c5c] font-medium mb-6">Trích xuất 30% lợi nhuận</p>
+                        <p className="text-[13px] text-gray-500 font-medium mb-6">Trích xuất 30% lợi nhuận</p>
                         {salarySession.realProfit <= 0 ? (
-                            <div className="w-full p-4 bg-[#FF3B30]/10 rounded-2xl text-[#FF3B30] font-bold text-[14px]">Lợi nhuận đợt này đang âm hoặc bằng 0.<br/>Chưa thể phát lương!</div>
+                            <div className="w-full p-4 bg-red-50 rounded-2xl text-red-600 font-bold text-[14px] border border-red-100">Lợi nhuận đợt này đang âm hoặc bằng 0.<br/>Chưa thể phát lương!</div>
                         ) : (
                             <>
-                                <div className="w-full bg-white/40 rounded-[20px] p-4 mb-4 shadow-sm text-left">
-                                    <div className="flex justify-between text-[13px] font-semibold text-[#5c5c5c] mb-2"><span>Tổng lợi nhuận:</span> <span className="text-[#1D1D1F]">{formatCurrency(salarySession.realProfit)}đ</span></div>
-                                    <div className="flex justify-between text-[15px] font-black text-[#1D1D1F] pt-2 border-t border-white/50"><span>Lương (30%):</span> <span className="text-[#1DB2A0]">{formatCurrency(Math.round(salarySession.realProfit * 0.3))}đ</span></div>
+                                <div className="w-full bg-gray-50 rounded-[20px] p-4 mb-4 border border-gray-100 text-left">
+                                    <div className="flex justify-between text-[13px] font-semibold text-gray-500 mb-2"><span>Tổng lợi nhuận:</span> <span className="text-[#1D1D1F]">{formatCurrency(salarySession.realProfit)}đ</span></div>
+                                    <div className="flex justify-between text-[15px] font-black text-[#1D1D1F] pt-2 border-t border-gray-200"><span>Lương (30%):</span> <span className="text-[#1DB2A0]">{formatCurrency(Math.round(salarySession.realProfit * 0.3))}đ</span></div>
                                 </div>
                                 <div className="w-full text-left mb-4">
-                                    <label className="text-[12px] font-bold text-[#5c5c5c] mb-1.5 ml-1 block">SĐT MoMo người nhận:</label>
-                                    <input type="text" className="w-full px-4 py-3 liquid-input rounded-[16px] text-[16px] font-bold text-[#1D1D1F] tracking-wider text-center outline-none transition-all" placeholder="Ví dụ: 0912345678" value={momoPhone} onChange={e => setMomoPhone(e.target.value.replace(/[^0-9]/g, ''))} maxLength={11} />
+                                    <label className="text-[12px] font-bold text-gray-500 mb-1.5 ml-1 block">SĐT MoMo người nhận:</label>
+                                    <input type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:border-[#1DB2A0] focus:bg-white rounded-[16px] text-[16px] font-bold text-[#1D1D1F] tracking-wider text-center outline-none transition-all" placeholder="Ví dụ: 0912345678" value={momoPhone} onChange={e => setMomoPhone(e.target.value.replace(/[^0-9]/g, ''))} maxLength={11} />
                                 </div>
                                 {momoPhone.length >= 10 ? (
-                                    <div className="p-2 bg-white rounded-[20px] shadow-sm mb-2"><img src={`https://img.vietqr.io/image/momo-${momoPhone}-compact2.png?amount=${Math.round(salarySession.realProfit * 0.3)}&addInfo=PhatLuong`} alt="VietQR MoMo" className="w-48 h-48 mx-auto" /></div>
+                                    <div className="p-2 bg-white rounded-[20px] border border-gray-100 shadow-sm mb-2"><img src={`https://img.vietqr.io/image/momo-${momoPhone}-compact2.png?amount=${Math.round(salarySession.realProfit * 0.3)}&addInfo=PhatLuong`} alt="VietQR MoMo" className="w-48 h-48 mx-auto" /></div>
                                 ) : (
-                                    <div className="w-48 h-48 mx-auto bg-white/30 rounded-[20px] border border-white/50 flex items-center justify-center text-[12px] text-[#5c5c5c] font-medium p-4 text-center mb-2">Nhập đủ SĐT MoMo để tạo mã QR</div>
+                                    <div className="w-48 h-48 mx-auto bg-gray-50 rounded-[20px] border border-dashed border-gray-300 flex items-center justify-center text-[12px] text-gray-400 font-medium p-4 text-center mb-2">Nhập đủ SĐT MoMo để tạo mã QR</div>
                                 )}
-                                <span className="text-[11px] font-medium text-[#8E8E93] italic">Quét bằng MoMo, Zalo, hoặc App Ngân hàng</span>
+                                <span className="text-[11px] font-medium text-gray-400 italic">Quét bằng MoMo, Zalo, hoặc App Ngân hàng</span>
                             </>
                         )}
                     </div>
