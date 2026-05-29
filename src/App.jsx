@@ -59,8 +59,11 @@ export default function App() {
     const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
+    
+    // BIẾN CHECK QUYỀN ĐỂ CHẶN XEM VÀ XUẤT EXCEL
+    const canViewDetail = isAdmin || authUser?.permissions?.canViewDetail === true;
+    const canExportExcel = isAdmin || authUser?.plan === '100k' || authUser?.plan === 'premium';
 
-    // HỆ THỐNG KIỂM SOÁT HẾT HẠN MƯỢT MÀ (KHÔNG RELOAD LẠI TRANG)
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
     const [isExpiredState, setIsExpiredState] = useState(false);
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
@@ -76,7 +79,6 @@ export default function App() {
             const exp = new Date(authUser.planExpiry);
             
             if (now >= exp) {
-                // KHI HẾT HẠN: Kích hoạt cờ State để chèn màn hình Auth lên ngay lập tức
                 if (!isExpiredState) setIsExpiredState(true);
             } else {
                 if (isExpiredState) setIsExpiredState(false);
@@ -101,7 +103,6 @@ export default function App() {
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
-    // HỆ THỐNG RADAR CHẠY NGẦM: Lắng nghe Admin duyệt gói
     useEffect(() => {
         if (!authUser || !authUser.email) return; 
         const checkRealTimeStatus = async () => {
@@ -110,7 +111,6 @@ export default function App() {
                 const latestData = res.data;
                 const isActuallyExpired = latestData.planExpiry && new Date(latestData.planExpiry) <= new Date();
 
-                // Chỉ block quyền nếu bị khóa vĩnh viễn, hoặc nếu Admin hạ quyền (mà không phải do đang hết hạn nạp tiền)
                 if (latestData.isBanned || (!latestData.isApproved && !isActuallyExpired && !latestData.paymentImage)) {
                     setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!' });
                     return;
@@ -121,7 +121,9 @@ export default function App() {
                     authUser.role !== latestData.role ||
                     authUser.planExpiry !== latestData.planExpiry ||
                     authUser.plan !== latestData.plan ||
-                    authUser.isApproved !== latestData.isApproved
+                    authUser.isApproved !== latestData.isApproved ||
+                    authUser.isChatBanned !== latestData.isChatBanned ||
+                    authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil
                 ) {
                     setAuthUser(prev => {
                         const updated = { 
@@ -130,7 +132,9 @@ export default function App() {
                             role: latestData.role,
                             plan: latestData.plan,
                             planExpiry: latestData.planExpiry,
-                            isApproved: latestData.isApproved
+                            isApproved: latestData.isApproved,
+                            isChatBanned: latestData.isChatBanned,
+                            chatRestrictedUntil: latestData.chatRestrictedUntil
                         };
                         if (localStorage.getItem('authUser')) localStorage.setItem('authUser', JSON.stringify(updated));
                         if (sessionStorage.getItem('authUser')) sessionStorage.setItem('authUser', JSON.stringify(updated));
@@ -182,7 +186,13 @@ export default function App() {
         } catch (err) {} 
     };
 
+    // ĐÃ FIX: CHẶN ĐỨNG KHÁCH HÀNG BẤM VÀO XEM CHI TIẾT NẾU KHÔNG CÓ QUYỀN
     const fetchDetail = async (id) => { 
+        if (!canViewDetail) {
+            alert("⚠️ Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!");
+            return;
+        }
+
         try { 
             const res = await axios.get(`${API_URL}/data/${id}`); 
             let balesData = []; 
@@ -473,13 +483,18 @@ export default function App() {
         else { setShowFireworks(false); }
     }, [view, isTargetReached, currentId]);
 
+    // ĐÃ FIX: CHẶN XUẤT EXCEL NẾU KHÔNG PHẢI VVIP HOẶC PREMIUM
     const handleExport = () => { 
+        if (!canExportExcel) {
+            alert("⚠️ Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!");
+            return;
+        }
+
         if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
         enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
-    // QUYẾT ĐỊNH RENDER: Nếu Chưa Đăng Nhập hoặc Bị Đá Văng Hết Hạn -> Ném ngay màn hình Auth/Nạp Tiền lên che toàn bộ!
     if (!authUser || isExpiredState) {
         return <Auth 
             onLoginSuccess={(u, rememberMe) => { 
@@ -496,7 +511,6 @@ export default function App() {
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
 
-            {/* MODAL KHÓA TÀI KHOẢN TỪ ADMIN */}
             {blockModal.show && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
                     <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] text-center shadow-2xl animate-scale-up border border-white">
@@ -775,6 +789,7 @@ export default function App() {
                     />
                 )}
             </div>
+            {/* COMPONENT CHAT CŨNG ĐÃ NHẬN AUTHUSER ĐỂ CHẶN THEO GÓI */}
             <ChatBox authUser={authUser} />
         </div>
     );
