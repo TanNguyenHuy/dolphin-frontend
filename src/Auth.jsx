@@ -11,6 +11,11 @@ export default function Auth({ onLoginSuccess }) {
     
     const [planIndex, setPlanIndex] = useState(1); 
     const [loading, setLoading] = useState(false);
+    
+    // ĐÂY LÀ DÒNG EM LỠ QUÊN KHIẾN WEB BỊ TRẮNG MÀN HÌNH NÈ SẾP:
+    const [showPassword, setShowPassword] = useState(false); 
+    
+    const [rememberMe, setRememberMe] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
@@ -22,7 +27,6 @@ export default function Auth({ onLoginSuccess }) {
         { id: '100k', title: 'V.I.P', price: '100k', period: 'Năm', icon: Crown, color: '#FF9500', features: ['Mọi tính năng gói 50k', 'Xuất báo cáo File Excel', 'Ưu tiên trải nghiệm tính năng mới'], qrImage: '/qr-100k.jpg' }
     ];
 
-    const [rememberMe, setRememberMe] = useState(false);
     useEffect(() => {
         const savedEmail = localStorage.getItem('rememberedEmail');
         const savedPass = localStorage.getItem('rememberedPass');
@@ -61,7 +65,6 @@ export default function Auth({ onLoginSuccess }) {
                 if (res.data.user) {
                     const user = res.data.user;
                     
-                    // CHẶN ĐĂNG NHẬP NẾU HẾT HẠN
                     if (user.role !== 'admin' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
                         setRegisteredEmail(user.email);
                         setStep('pricing'); 
