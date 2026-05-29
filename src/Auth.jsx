@@ -71,7 +71,7 @@ export default function Auth({ onLoginSuccess }) {
             setOtpStep(2); 
         } catch (err) {
             setError(err.response?.data?.error || 'Lỗi gửi mail!');
-        } finally { setLoading(false); } // ĐÃ FIX TỪ CHỮ font-bold THÀNH finally
+        } finally { setLoading(false); }
     };
 
     const handleAuth = async (e) => {
@@ -85,7 +85,6 @@ export default function Auth({ onLoginSuccess }) {
             }
             else {
                 const user = res.data.user;
-                
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
                     setRegisteredEmail(user.email); setStep('pricing'); alert("⚠️ Gói của bạn đã hết hạn!");
                 } else {
@@ -119,6 +118,13 @@ export default function Auth({ onLoginSuccess }) {
         setStep('auth');
         togglePanel(false); 
         setSuccessMsg('Đã gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.');
+    };
+
+    // HÀM MỚI: Khách không mua thì đăng xuất
+    const handleLogoutFromPricing = () => {
+        setRegisteredEmail('');
+        setStep('auth');
+        togglePanel(false); 
     };
 
     return (
@@ -240,7 +246,7 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : 'translate-x-0'}`}>
+                    <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : ''}`}>
                         <div className={`bg-gradient-to-r from-[#26D0CE] to-[#21C8F6] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
                             <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
                                 <h1 className="font-extrabold text-[36px] mb-4">Mừng Trở Lại!</h1>
@@ -295,8 +301,13 @@ export default function Auth({ onLoginSuccess }) {
                         ))}
                     </div>
 
-                    <button onClick={handleSelectPlan} className="mt-12 bg-gray-900 text-white px-12 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
+                    <button onClick={handleSelectPlan} className="mt-8 bg-gray-900 text-white px-12 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
                         TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
+                    </button>
+                    
+                    {/* NÚT ĐĂNG XUẤT CHO KHÁCH */}
+                    <button onClick={handleLogoutFromPricing} className="mt-6 text-gray-500 font-bold text-[13px] underline hover:text-gray-800 transition-colors">
+                        Trở về Đăng Nhập / Dùng tài khoản khác
                     </button>
                 </div>
 
