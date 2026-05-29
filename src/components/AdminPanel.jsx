@@ -294,19 +294,24 @@ export default function AdminPanel({ setView, authUser }) {
                                             </button>
 
                                             <div className="flex flex-wrap gap-4 bg-white/90 p-3 rounded-2xl border border-gray-200 shadow-inner">
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canPay ? 'text-gray-700' : 'text-gray-400 opacity-60'}>P.Lương</span>
-                                                </label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canEdit ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Sửa</span>
-                                                </label>
-                                                <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
-                                                    <input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> 
-                                                    <span className={u.permissions?.canDelete ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Xóa</span>
-                                                </label>
-                                                <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                                {/* ĐÃ KHÔI PHỤC: Chỉ gói premium mới hiện các checkbox P.Lương, Sửa, Xóa */}
+                                                {u.plan === 'premium' && (
+                                                    <>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                            <input type="checkbox" checked={u.permissions?.canPay} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-teal-500 w-4 h-4"/> 
+                                                            <span className={u.permissions?.canPay ? 'text-gray-700' : 'text-gray-400 opacity-60'}>P.Lương</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                            <input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> 
+                                                            <span className={u.permissions?.canEdit ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Sửa</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-1.5 text-[12px] font-bold text-gray-600 cursor-pointer">
+                                                            <input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> 
+                                                            <span className={u.permissions?.canDelete ? 'text-gray-700' : 'text-gray-400 opacity-60'}>Xóa</span>
+                                                        </label>
+                                                        <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>
+                                                    </>
+                                                )}
                                                 <label className="flex items-center gap-1.5 text-[12px] font-bold text-orange-600 cursor-pointer">
                                                     <input type="checkbox" checked={u.permissions?.canViewDetail} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-orange-500 w-4 h-4"/> 
                                                     <span className={u.permissions?.canViewDetail ? 'text-orange-600' : 'text-orange-300 opacity-60'}>Xem Chi Tiết</span>
