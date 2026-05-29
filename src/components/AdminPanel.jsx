@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, CheckCircle2 } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
@@ -60,14 +60,27 @@ export default function AdminPanel({ setView, authUser }) {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 mb-1">
                                 <h3 className="font-extrabold text-xl text-gray-800">{u.name}</h3>
-                                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border ${u.plan === '100k' ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-blue-100 text-blue-600 border-blue-200'}`}>Gói {u.plan === '100k' ? 'V.I.P' : u.plan === '50k' ? 'Tiêu Chuẩn' : 'Cơ Bản'}</span>
-                                {u.role === 'admin' && <Crown size={18} className="text-orange-400" />}
+                                
+                                {/* HIỂN THỊ TÊN GÓI THEO MÀU SẮC ĐỒNG/BẠC/VÀNG/PREMIUM */}
+                                {u.role === 'admin' ? (
+                                    <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md flex items-center gap-1">
+                                        <Crown size={12}/> Gói Premium
+                                    </span>
+                                ) : (
+                                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter border ${
+                                        u.plan === '100k' ? 'bg-[#FFF8E1] text-[#F59E0B] border-[#FFD54F]' : // Màu Vàng
+                                        u.plan === '50k' ? 'bg-[#F8FAFC] text-[#64748B] border-[#CBD5E1]' : // Màu Bạc
+                                        'bg-[#EFEBE9] text-[#8D6E63] border-[#D7CCC8]' // Màu Đồng
+                                    }`}>
+                                        {u.plan === '100k' ? 'Gói V.I.P' : u.plan === '50k' ? 'Gói Tiêu Chuẩn' : 'Gói Cơ Bản'}
+                                    </span>
+                                )}
                             </div>
                             <p className="text-gray-400 text-sm mb-3">{u.email}</p>
                             
-                            {/* CHỈ HIỆN HẠN SỬ DỤNG KHI ĐÃ DUYỆT */}
+                            {/* HIỆN HẠN SỬ DỤNG KHI ĐÃ DUYỆT */}
                             {u.isApproved && u.role !== 'admin' && (
-                                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-xs font-black shadow-sm">
+                                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}`}>
                                     <Clock size={14}/> {getRemainingTime(u.planExpiry)}
                                 </div>
                             )}
@@ -76,19 +89,16 @@ export default function AdminPanel({ setView, authUser }) {
                         {/* CỘT DUYỆT BILL & QUYỀN */}
                         {u.role !== 'admin' && (
                             <div className="flex flex-wrap items-center gap-4">
-                                {/* NÚT XEM BILL */}
                                 {u.paymentImage ? (
                                     <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-xs hover:bg-blue-50 transition-all shadow-md"><Eye size={16}/> XEM BILL</button>
                                 ) : (
                                     <span className="text-gray-400 text-[10px] italic">Chưa có Bill</span>
                                 )}
 
-                                {/* NÚT DUYỆT VÀO */}
                                 <button onClick={() => handleApprove(u._id)} className={`px-8 py-3 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${u.isApproved ? 'bg-gray-100 text-gray-400 border cursor-not-allowed' : 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:shadow-green-200'}`}>
                                     {u.isApproved ? 'ĐÃ DUYỆT VÀO' : 'DUYỆT VÀO'}
                                 </button>
 
-                                {/* PHÂN QUYỀN NHANH */}
                                 <div className="flex gap-4 bg-white/80 p-3 rounded-2xl border shadow-inner">
                                     <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canEdit} onChange={() => togglePermission(u._id, u.permissions, 'canEdit')} className="accent-blue-500 w-4 h-4"/> Sửa</label>
                                     <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 cursor-pointer"><input type="checkbox" checked={u.permissions?.canDelete} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-red-500 w-4 h-4"/> Xóa</label>
