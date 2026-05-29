@@ -142,9 +142,43 @@ export default function App() {
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
-    const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
-    const handleAddBale = async (e) => { e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; try { const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); setBaleName(''); setBaleCost(''); setBaleQty(''); } catch (err) {} };
-    const handleDeleteBale = async (id) => { if(!canDelete) return; try { await axios.delete(`${API_URL}/bales/${id}`); const safeBales = Array.isArray(importedBales) ? importedBales : []; const updated = safeBales.filter(b => b.id !== id); setImportedBales(updated); updateSessionField('so_tien_cua_kien', updated.reduce((sum, b) => sum + (b.cost || 0), 0)); } catch (err) {} };
+    
+    // TÍNH TOÁN VÀ CẬP NHẬT TỰ ĐỘNG GIẶT ỦI KHI THÊM KIỆN HÀNG
+    const handleAddBale = async (e) => { 
+        e.preventDefault(); if(!canEdit) return; 
+        const cost = parseInput(baleCost); const qty = parseInput(baleQty); 
+        if(!baleName || cost === 0) return; 
+        try { 
+            const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); 
+            const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; 
+            setImportedBales(updated); 
+            
+            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
+            const newGiatUi = Math.round(newCost * 0.04);
+            
+            await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
+            setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
+            
+            setBaleName(''); setBaleCost(''); setBaleQty(''); 
+        } catch (err) {} 
+    };
+
+    // TÍNH TOÁN VÀ CẬP NHẬT TỰ ĐỘNG GIẶT ỦI KHI XÓA KIỆN HÀNG
+    const handleDeleteBale = async (id) => { 
+        if(!canDelete) return; 
+        try { 
+            await axios.delete(`${API_URL}/bales/${id}`); 
+            const safeBales = Array.isArray(importedBales) ? importedBales : []; 
+            const updated = safeBales.filter(b => b.id !== id); 
+            setImportedBales(updated); 
+            
+            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
+            const newGiatUi = Math.round(newCost * 0.04);
+            
+            await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
+            setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
+        } catch (err) {} 
+    };
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
@@ -163,7 +197,6 @@ export default function App() {
         }
         
         let q = 0; let r = 0;
-        
         let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
         let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
         
@@ -177,10 +210,8 @@ export default function App() {
             try {
                 let parsed = JSON.parse(syncText);
                 let dataArray = [];
-                
-                if (Array.isArray(parsed)) {
-                    dataArray = parsed;
-                } else if (parsed && typeof parsed === 'object') {
+                if (Array.isArray(parsed)) { dataArray = parsed; } 
+                else if (parsed && typeof parsed === 'object') {
                     if (Array.isArray(parsed.data)) dataArray = parsed.data;
                     else if (Array.isArray(parsed.items)) dataArray = parsed.items;
                 }
@@ -189,7 +220,6 @@ export default function App() {
                     q = dataArray.length; 
                     dataArray.forEach(item => {
                         let itemPrice = 0;
-                        
                         if (typeof item === 'object' && item !== null) {
                             for (let key in item) {
                                 let k = key.toLowerCase();
@@ -214,7 +244,6 @@ export default function App() {
                         if (itemPrice === 0 && typeof item === 'object' && item !== null) {
                             let itemStr = JSON.stringify(item).toLowerCase().replace(/\\[nr]/g, ' ');
                             itemStr = itemStr.replace(/https?:\/\/[^\s]+/g, '');
-
                             let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
                             if (matches.length > 0) {
                                 for (let m of matches) {
@@ -240,7 +269,6 @@ export default function App() {
                 }
             } catch (e) { console.error("Lỗi đọc JSON:", e); }
         }
-        
         setSyncManualQty(q > 0 ? q.toString() : '');
         setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : ''));
     }, [syncText]);
@@ -251,13 +279,7 @@ export default function App() {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
             
-            const updatedRow = { 
-                ...syncRow, 
-                so_luong: newQty, 
-                so_tien_ban_duoc: newRev, 
-                updatedAt: new Date().toISOString() 
-            };
-            
+            const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
             if(freshRes.data) setDetailData(freshRes.data); 
@@ -266,15 +288,28 @@ export default function App() {
     };
 
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
-    const handleSaveSession = async () => { if (!editingSession) return; try { await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: parseInput(editingSession.so_tien_cua_kien), so_tien_giat_ui: parseInput(editingSession.so_tien_giat_ui) }); await fetchDashboard(); if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId); setEditingSession(null); } catch (err) {} };
+    
+    // TỰ ĐỘNG GỬI 4% KHI SỬA CHUNG ĐỢT BÁN
+    const handleSaveSession = async () => { 
+        if (!editingSession) return; 
+        try { 
+            const newKien = parseInput(editingSession.so_tien_cua_kien);
+            const newGiatUi = Math.round(newKien * 0.04);
+            await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: newKien, so_tien_giat_ui: newGiatUi }); 
+            await fetchDashboard(); 
+            if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId); 
+            setEditingSession(null); 
+        } catch (err) {} 
+    };
     
     const handleBack = () => { fetchDashboard(); setView('DASHBOARD'); setDetailData(null); setImportedBales([]); };
 
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
-        const realProfit = (ss.tong_doanh_thu || 0) - (ss.so_tien_cua_kien || 0) - (ss.so_tien_giat_ui || 0) - autoAdCost;
-        return { ...ss, autoAdCost, realProfit };
+        const computedGiatUi = Math.round((ss.so_tien_cua_kien || 0) * 0.04); // ÉP 4%
+        const realProfit = (ss.tong_doanh_thu || 0) - (ss.so_tien_cua_kien || 0) - computedGiatUi - autoAdCost;
+        return { ...ss, autoAdCost, realProfit, computedGiatUi };
     });
 
     const dashboardProfit = enrichedSessions.reduce((sum, s) => sum + s.realProfit, 0);
@@ -282,13 +317,10 @@ export default function App() {
     const taxBase = totalRevenueForTax - 500000000; const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0; const showTax = taxAmount > 0;
     const displayRevenueTr = (totalRevenueForTax / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
     
-    // ============================================================================
-    // BỘ MÁY TÍNH TOÁN KHO TỒN MỚI: NHẬN DIỆN "ĐĂNG LẠI" VÀ "SALE"
-    // ============================================================================
     let globalTongNhap = 0; 
     let globalTongBan = 0; 
     let globalVonTon = 0;
-    let hangBiLoai = 0; // Hàng đem đi Sale (Bị loại hoàn toàn khỏi kho)
+    let hangBiLoai = 0; 
 
     enrichedSessions.forEach(ss => { 
         const nameLower = String(ss?.name || '').toLowerCase();
@@ -296,22 +328,17 @@ export default function App() {
         const isDangLai = nameLower.includes('đăng lại') || nameLower.includes('dang lai');
 
         if (isSale) {
-            // SALE: Không tính nhập mới, loại toàn bộ hàng nhập của đợt này khỏi kho
             hangBiLoai += (ss?.tong_sl_nhap || 0);
         } else if (isDangLai) {
-            // ĐĂNG LẠI: Không tính nhập mới, chỉ lấy số hàng đã bán để trừ kho
             globalTongBan += (ss?.tong_sl_ban || 0);
         } else {
-            // BÌNH THƯỜNG: Cộng bình thường vào nhập, bán, vốn tồn
             globalTongNhap += (ss?.tong_sl_nhap || 0); 
             globalTongBan += (ss?.tong_sl_ban || 0);
             globalVonTon += (ss?.tong_tien_ton_computed || 0); 
         }
     });
 
-    // Kho Tồn = (Hàng Nhập Mới) - (Hàng Đã Bán) - (Hàng Rút Ra Đi Sale)
     const globalTongCon = Math.max(0, globalTongNhap - globalTongBan - hangBiLoai);
-    // ============================================================================
 
     let detailProfit = 0; let mvpRowId = null; let enrichedDaily = []; let exactTotalVonTon = 0; let detailAutoAdCost = 0;
     let actualStartDate = detailData?.start_date; let actualEndDate = detailData?.start_date;
@@ -322,7 +349,9 @@ export default function App() {
         const itemCount = dailyList.length;
         dynamicTarget = Math.max(1, Math.ceil(itemCount / 4)) * 10000000;
         detailAutoAdCost = itemCount * AD_COST_PER_SALE;
-        detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - (detailData.so_tien_giat_ui || 0) - detailAutoAdCost;
+        
+        const computedGiatUi = Math.round((detailData.so_tien_cua_kien || 0) * 0.04); // ÉP 4%
+        detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - computedGiatUi - detailAutoAdCost;
         isTargetReached = detailProfit >= dynamicTarget && itemCount > 0;
 
         const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
@@ -533,7 +562,7 @@ export default function App() {
                 </div>
             )}
 
-            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
+            {/* MODAL THIẾT LẬP ĐỢT BÁN (Sửa input Giặt Ủi thành Disable) */}
             {editingSession && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md transition-all">
                     <div className="liquid-glass rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative">
@@ -548,9 +577,11 @@ export default function App() {
                                 <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí Nhập Kiện</label>
                                 <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} />
                             </div>
+                            
+                            {/* KHÓA NHẬP TAY - HIỂN THỊ TỰ ĐỘNG 4% */}
                             <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi...)</label>
-                                <input className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight" value={formatInput(editingSession.so_tien_giat_ui)} onChange={e => setEditingSession({...editingSession, so_tien_giat_ui: e.target.value})} />
+                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi... Tự động 4%)</label>
+                                <input disabled className="w-full px-4 py-3.5 liquid-input rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight bg-gray-100/50 cursor-not-allowed opacity-70" value={formatInput(Math.round((editingSession.so_tien_cua_kien || 0) * 0.04))} readOnly />
                             </div>
                         </div>
                         <div className="mt-8 flex gap-3">
