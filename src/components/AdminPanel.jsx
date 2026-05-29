@@ -11,7 +11,6 @@ export default function AdminPanel({ setView, authUser }) {
     const [expiryVal, setExpiryVal] = useState(1);
     const [expiryUnit, setExpiryUnit] = useState('minutes'); 
 
-    // HỆ THỐNG THÔNG BÁO XỊN (TOAST & MODAL)
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, isDanger: false });
 
@@ -24,7 +23,12 @@ export default function AdminPanel({ setView, authUser }) {
         setConfirmModal({ show: true, title, message, onConfirm, isDanger });
     };
 
-    useEffect(() => { fetchUsers(); }, []);
+    // ĐÃ FIX: LẮP RADAR TỰ ĐỘNG QUÉT BILL CHO TRANG ADMIN
+    useEffect(() => { 
+        fetchUsers(); 
+        const adminRadar = setInterval(fetchUsers, 5000); // 5 giây tự động cập nhật 1 lần
+        return () => clearInterval(adminRadar);
+    }, []);
 
     const fetchUsers = async () => {
         try {
@@ -108,7 +112,6 @@ export default function AdminPanel({ setView, authUser }) {
         }, true);
     };
 
-    // ĐÃ FIX: Chỉnh sửa lại logic khóa/mở khóa để nhận diện chính xác
     const handleRestrict = async (id, days) => {
         let restrictedUntil = null;
         let isBanned = false;
@@ -251,7 +254,7 @@ export default function AdminPanel({ setView, authUser }) {
                             {u.role !== 'admin' && (
                                 <div className="flex flex-wrap items-center gap-3 xl:gap-4 mt-4 xl:mt-0">
                                     {u.paymentImage ? (
-                                        <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95"><Eye size={16}/> XEM BILL</button>
+                                        <button onClick={() => setSelectedBill(u.paymentImage)} className="flex items-center gap-2 bg-white border-2 border-blue-500 text-blue-600 px-5 py-2.5 rounded-2xl font-black text-[12px] hover:bg-blue-50 transition-all shadow-md active:scale-95 animate-pulse"><Eye size={16}/> XEM BILL</button>
                                     ) : (
                                         <span className="text-gray-400 text-[11px] italic bg-gray-100 px-4 py-2 rounded-xl">Chưa có Bill</span>
                                     )}
@@ -315,7 +318,6 @@ export default function AdminPanel({ setView, authUser }) {
                                         )
                                     )}
 
-                                    {/* ĐÃ FIX: Thêm option ẩn "Đang bị hạn chế..." để sửa lỗi nhảy trạng thái */}
                                     <select 
                                         className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} 
                                         onChange={(e) => handleRestrict(u._id, e.target.value)} 
