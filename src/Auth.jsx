@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, QrCode, Clock, UploadCloud } from 'lucide-react';
+// ĐÃ FIX: Thêm đầy đủ ArrowRight, ChevronLeft, ChevronRight vào đây
+import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, UploadCloud, ArrowRight } from 'lucide-react';
 import { API_URL } from './utils';
 
 export default function Auth({ onLoginSuccess }) {
@@ -17,7 +18,6 @@ export default function Auth({ onLoginSuccess }) {
     const [registeredEmail, setRegisteredEmail] = useState(''); 
     const [billBase64, setBillBase64] = useState(null); 
 
-    // BỘ GÓI NÂNG CẤP: ĐỒNG - BẠC - VÀNG
     const plans = [
         { 
             id: '10k', title: 'GÓI CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', 
@@ -125,9 +125,7 @@ export default function Auth({ onLoginSuccess }) {
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
             <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[20px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
                 
-                {/* =========================================================
-                    LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (GIỮ NGUYÊN GỐC CỦA SẾP)
-                ========================================================= */}
+                {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
                 <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out bg-white ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
                     
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
@@ -175,7 +173,7 @@ export default function Auth({ onLoginSuccess }) {
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
                         <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <div className="w-[65px] h-[65px] rounded-full flex items-center justify-center mb-3 shadow-sm border border-gray-100 overflow-hidden bg-white">
-                                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
+                                <img src="/logo.png" alt="Dolphin Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
                             </div>
                             <h1 className="font-extrabold text-[28px] md:text-[32px] mb-1 text-[#222]">
                                 {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
@@ -262,18 +260,16 @@ export default function Auth({ onLoginSuccess }) {
                 {/* =========================================================
                     LỚP 2: MÀN HÌNH CHỌN GÓI (HIỆU ỨNG THẺ CAO CẤP)
                 ========================================================= */}
-                <div className={`absolute inset-0 bg-gray-50/80 backdrop-blur-md z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className={`absolute inset-0 bg-gray-50/90 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="text-center mb-10 mt-10 md:mt-0">
                         <h2 className="text-[28px] md:text-[34px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
-                        <p className="text-gray-500 font-medium max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng của bạn.</p>
+                        <p className="text-gray-500 font-medium max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng.</p>
                     </div>
                     
                     <div className="flex flex-col md:flex-row gap-6 w-full max-w-[900px]">
                         {plans.map((p, i) => (
                             <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[2px] rounded-[32px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `bg-gradient-to-br ${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
                                 <div className="bg-white rounded-[30px] p-6 h-full flex flex-col relative overflow-hidden">
-                                    
-                                    {/* Hiệu ứng Glow mờ bên trong thẻ khi được chọn */}
                                     {planIndex === i && <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
                                     
                                     <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-14 h-14 mx-auto rounded-[18px] flex items-center justify-center mb-5 relative z-10 shadow-sm"><p.icon size={26} strokeWidth={2.5}/></div>
@@ -286,9 +282,7 @@ export default function Auth({ onLoginSuccess }) {
                                     <ul className="text-left space-y-4 mb-8 flex-1 relative z-10 px-2">
                                         {p.features.map((f, idx) => (
                                             <li key={idx} className="flex items-start gap-2.5 text-[13px] text-gray-600 font-semibold leading-relaxed">
-                                                <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}>
-                                                    <Check size={14} style={{ color: p.theme.text }} strokeWidth={3}/>
-                                                </div>
+                                                <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}><Check size={14} style={{ color: p.theme.text }} strokeWidth={3}/></div>
                                                 {f}
                                             </li>
                                         ))}
@@ -310,7 +304,7 @@ export default function Auth({ onLoginSuccess }) {
                 </div>
 
                 {/* =========================================================
-                    LỚP 3: QUÉT QR & TẢI BILL (SỬA LẠI ĐỂ TƯƠNG THÍCH MÀU)
+                    LỚP 3: QUÉT QR & TẢI BILL 
                 ========================================================= */}
                 <div className={`absolute inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
@@ -334,7 +328,6 @@ export default function Auth({ onLoginSuccess }) {
                             </div>
                         </div>
 
-                        {/* MÃ QR SIÊU TO CÓ VIỀN MÀU THEO GÓI */}
                         <div className={`p-[4px] rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[320px] sm:w-[400px] shrink-0`}>
                             <div className="bg-white rounded-[40px] p-4 h-[400px] sm:h-[480px] flex items-center justify-center overflow-hidden relative">
                                 <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[24px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
