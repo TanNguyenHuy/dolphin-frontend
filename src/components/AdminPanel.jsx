@@ -76,6 +76,17 @@ export default function AdminPanel({ setView, authUser }) {
                                 <div className="flex items-center gap-2 mb-1">
                                     <h3 className="font-bold text-[16px] text-[#1D1D1F] truncate">{u.name}</h3>
                                     {u.role === 'admin' && <Crown size={16} className="text-[#FF9500] shrink-0"/>}
+                                    
+                                    {/* HIỂN THỊ TÊN GÓI Ở ĐÂY */}
+                                    {u.role !== 'admin' && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                            u.plan === '100k' ? 'bg-[#FF9500]/10 text-[#FF9500] border border-[#FF9500]/20' : 
+                                            u.plan === '50k' ? 'bg-[#26D0CE]/10 text-[#26D0CE] border border-[#26D0CE]/20' : 
+                                            'bg-gray-100 text-gray-500 border border-gray-200'
+                                        }`}>
+                                            {u.plan === '100k' ? 'Gói V.I.P' : u.plan === '50k' ? 'Gói Tiêu Chuẩn' : 'Gói Cơ Bản'}
+                                        </span>
+                                    )}
                                 </div>
                                 <p className="text-[13px] text-[#5c5c5c] truncate">{u.email}</p>
                                 
@@ -94,7 +105,7 @@ export default function AdminPanel({ setView, authUser }) {
                                         {u.isApproved ? 'Hủy Duyệt' : 'Duyệt Vào'}
                                     </button>
                                     
-                                    <div className="flex items-center gap-4 bg-white/70 border border-gray-200 rounded-xl px-4 py-2.5 shadow-inner">
+                                    <div className="flex flex-wrap items-center gap-4 bg-white/70 border border-gray-200 rounded-xl px-4 py-2.5 shadow-inner">
                                         <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#1DB2A0] transition-colors">
                                             <input type="checkbox" checked={u.permissions?.canPay || false} onChange={() => togglePermission(u._id, u.permissions, 'canPay')} className="accent-[#1DB2A0] w-4 h-4 cursor-pointer"/> P.Lương
                                         </label>
@@ -103,6 +114,10 @@ export default function AdminPanel({ setView, authUser }) {
                                         </label>
                                         <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF3B30] transition-colors">
                                             <input type="checkbox" checked={u.permissions?.canDelete || false} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-[#FF3B30] w-4 h-4 cursor-pointer"/> Xóa
+                                        </label>
+                                        {/* NÚT QUYỀN XEM CHI TIẾT */}
+                                        <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF9500] transition-colors border-l pl-3 ml-1 border-gray-300">
+                                            <input type="checkbox" checked={u.permissions?.canViewDetail || false} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-[#FF9500] w-4 h-4 cursor-pointer"/> Xem Chi Tiết
                                         </label>
                                     </div>
 
