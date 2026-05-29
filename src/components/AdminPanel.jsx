@@ -50,7 +50,7 @@ export default function AdminPanel({ setView, authUser }) {
         } catch (e) { alert("Lỗi khi cập nhật gói!"); }
     };
 
-    // HÀM MỚI: XỬ LÝ LƯU HẠN SỬ DỤNG TÙY CHỈNH
+    // HÀM ÉP NGÀY CHUẨN XÁC THEO MÁY TÍNH CỦA SẾP
     const submitCustomExpiry = async (id) => {
         if (!expiryVal || expiryVal <= 0) return alert("Vui lòng nhập số lượng hợp lệ!");
         
@@ -62,12 +62,15 @@ export default function AdminPanel({ setView, authUser }) {
         if (expiryUnit === 'days') seconds = val * 86400;
 
         const unitName = expiryUnit === 'seconds' ? 'Giây' : expiryUnit === 'minutes' ? 'Phút' : expiryUnit === 'hours' ? 'Giờ' : 'Ngày';
-        if (!window.confirm(`Xác nhận đổi hạn sử dụng còn đúng ${val} ${unitName}?`)) return;
+        if (!window.confirm(`Xác nhận ép hạn sử dụng còn đúng ${val} ${unitName}?`)) return;
 
         try {
-            await axios.put(`${API_URL}/users/${id}/force-expiry`, { seconds });
+            // Tính toán thời điểm hết hạn chính xác tại máy Sếp rồi gửi string lên Server
+            const exactExpiryDate = new Date(Date.now() + seconds * 1000).toISOString();
+            
+            await axios.put(`${API_URL}/users/${id}/force-expiry`, { expiryDate: exactExpiryDate });
             fetchUsers();
-            setEditExpiryId(null); // Đóng form nhập liệu
+            setEditExpiryId(null); 
             alert("Đã cập nhật hạn sử dụng thành công!");
         } catch (e) { alert("Lỗi ép ngày!"); }
     };
@@ -87,7 +90,7 @@ export default function AdminPanel({ setView, authUser }) {
         return '0';
     };
 
-    // NÂNG CẤP ĐỒNG HỒ ĐẾM NGƯỢC (HIỂN THỊ CHI TIẾT TỚI GIÂY)
+    // HIỂN THỊ ĐẾM NGƯỢC CHI TIẾT TỚI TỪNG GIÂY
     const getRemainingTime = (expiryDate) => {
         if (!expiryDate) return null;
         const now = new Date(); const exp = new Date(expiryDate);
