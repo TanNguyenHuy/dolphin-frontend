@@ -71,7 +71,7 @@ export default function Auth({ onLoginSuccess }) {
             setOtpStep(2); 
         } catch (err) {
             setError(err.response?.data?.error || 'Lỗi gửi mail!');
-        } font-bold { setLoading(false); }
+        } finally { setLoading(false); } // ĐÃ FIX TỪ CHỮ font-bold THÀNH finally
     };
 
     const handleAuth = async (e) => {
@@ -86,7 +86,6 @@ export default function Auth({ onLoginSuccess }) {
             else {
                 const user = res.data.user;
                 
-                // ĐÃ FIX: Nếu không phải admin và KHÔNG PHẢI GÓI PREMIUM mới check hết hạn
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
                     setRegisteredEmail(user.email); setStep('pricing'); alert("⚠️ Gói của bạn đã hết hạn!");
                 } else {
@@ -161,7 +160,7 @@ export default function Auth({ onLoginSuccess }) {
                                         <KeyRound size={18} className="text-[#26D0CE]" />
                                         <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[16px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md">
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4">
                                         {loading ? <RefreshCw size={18} className="animate-spin" /> : 'XÁC NHẬN MÃ OTP'}
                                     </button>
                                 </>
@@ -333,7 +332,7 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* LỚP 4: THÀNH CÔNG */}
+                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
                 <div className={`absolute inset-0 bg-green-50/80 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
                     <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
