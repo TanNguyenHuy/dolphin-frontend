@@ -139,6 +139,16 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
         showToast("Đã đăng xuất tài khoản an toàn!", 'success');
     };
 
+    // Hàm riêng cho việc Quay về Đăng Nhập (Đăng ký mới)
+    const handleBackToLogin = () => {
+        setStep('auth');
+        setView('LOGIN');
+        setIsRightPanelActive(false);
+        setRegisteredEmail('');
+        setBillBase64(null);
+        setFormData({...formData, password: '', otp: '', newPassword: ''});
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
             
@@ -149,7 +159,6 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 </div>
             </div>
 
-            {/* ĐÃ FIX: MỞ RỘNG VÀ CAO LÊN ĐỂ KHÔNG BỊ THANH CUỘN (max-w-[1050px] và min-h-[700px]) */}
             <div className={`relative w-full max-w-[1050px] min-h-[600px] md:min-h-[700px] bg-white rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
                 
                 {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
@@ -184,7 +193,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                                         <KeyRound size={20} className="text-[#26D0CE]" />
                                         <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[18px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
                                     </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md tracking-wider mb-4">
+                                    <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md mb-4 tracking-wider">
                                         {loading ? <RefreshCw size={20} className="animate-spin" /> : 'XÁC NHẬN MÃ OTP'}
                                     </button>
                                 </>
@@ -277,7 +286,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     </div>
                 </div>
 
-                {/* LỚP 2: MÀN HÌNH CHỌN GÓI - ĐÃ ĐƯỢC LÀM RỘNG RÃI */}
+                {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
                 <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-hidden ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     
                     <div className="text-center mb-8 mt-4 md:mt-0">
@@ -358,16 +367,30 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     </div>
                 </div>
 
-                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
+                {/* ĐÃ FIX: PHÂN TÁCH MÀN HÌNH THÀNH CÔNG CHO 2 ĐỐI TƯỢNG */}
                 <div className={`absolute inset-0 bg-green-50/90 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
                     <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
-                    <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                        Hệ thống đã nhận được Bill thanh toán của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
-                    </p>
-                    <button onClick={forceLogoutAndReset} className="text-gray-500 font-bold text-[14px] underline hover:text-red-500 transition-colors">
-                        Đăng Xuất
-                    </button>
+                    
+                    {expiredEmail ? (
+                        <>
+                            <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
+                                Hệ thống đã nhận được Bill thanh toán gia hạn của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
+                            </p>
+                            <button onClick={forceLogoutAndReset} className="text-gray-500 font-bold text-[14px] underline hover:text-red-500 transition-colors">
+                                Đăng Xuất
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
+                                Tài khoản của bạn đã được tạo và Bill thanh toán đã gửi thành công! Vui lòng đợi Admin kiểm tra. Sau khi được duyệt, bạn có thể Đăng nhập để sử dụng.
+                            </p>
+                            <button onClick={handleBackToLogin} className="text-[#1DB2A0] font-bold text-[14px] underline hover:text-[#159a8a] transition-colors">
+                                Trở về màn hình Đăng Nhập
+                            </button>
+                        </>
+                    )}
                 </div>
 
             </div>
