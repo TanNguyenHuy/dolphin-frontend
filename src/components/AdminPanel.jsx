@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
     const [users, setUsers] = useState([]);
     const [selectedBill, setSelectedBill] = useState(null);
 
-    // STATE CHO TÍNH NĂNG CHỈNH SỬA HẠN SỬ DỤNG
     const [editExpiryId, setEditExpiryId] = useState(null);
     const [expiryVal, setExpiryVal] = useState(1);
     const [expiryUnit, setExpiryUnit] = useState('minutes'); 
+
+    // HỆ THỐNG THÔNG BÁO XỊN (TOAST & MODAL)
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null, isDanger: false });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
+
+    const confirmAction = (title, message, onConfirm, isDanger = false) => {
+        setConfirmModal({ show: true, title, message, onConfirm, isDanger });
+    };
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -25,34 +37,44 @@ export default function AdminPanel({ setView, authUser }) {
         try {
             await axios.put(`${API_URL}/users/${id}/approve`);
             fetchUsers();
-        } catch (e) { alert("Lỗi duyệt!"); }
+            showToast("Đã duyệt thành công!", "success");
+        } catch (e) { showToast("Lỗi duyệt tài khoản!", "error"); }
     };
 
     const togglePermission = async (id, currentPermissions, field) => {
         const updated = { ...currentPermissions, [field]: !currentPermissions[field] };
         await axios.put(`${API_URL}/users/${id}`, { permissions: updated });
         fetchUsers();
+        showToast("Đã cập nhật quyền!", "success");
     };
 
-    const handleChangePlan = async (id, newPlan, currentPermissions) => {
+    const handleChangePlan = (id, newPlan, currentPermissions) => {
         const planName = newPlan === 'premium' ? '💎 GÓI PREMIUM' : newPlan === '100k' ? '🥇 GÓI VVIP' : newPlan === '50k' ? '🥈 GÓI VIP' : '🥉 GÓI CƠ BẢN';
-        if (!window.confirm(`Sếp có chắc chắn đổi khách hàng này sang ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`)) return;
+        
+        confirmAction("Xác Nhận Đổi Gói", `Sếp có chắc chắn đổi khách hàng này sang ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`, async () => {
+            let canViewDetail = currentPermissions?.canViewDetail || false;
+            if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') canViewDetail = true;
+            else canViewDetail = false;
 
-        let canViewDetail = currentPermissions?.canViewDetail || false;
-        if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') canViewDetail = true;
-        else canViewDetail = false;
+            const updatedPermissions = { ...currentPermissions, canViewDetail };
+            const updatePayload = { plan: newPlan, permissions: updatedPermissions };
 
-        const updatedPermissions = { ...currentPermissions, canViewDetail };
+            if (newPlan === 'premium') {
+                updatePayload.planExpiry = null;
+                updatePayload.isApproved = true;
+            }
 
-        try {
-            await axios.put(`${API_URL}/users/${id}/change-plan`, { plan: newPlan, permissions: updatedPermissions });
-            fetchUsers();
-        } catch (e) { alert("Lỗi khi cập nhật gói!"); }
+            try {
+                await axios.put(`${API_URL}/users/${id}/change-plan`, updatePayload);
+                fetchUsers();
+                setConfirmModal({ show: false });
+                showToast(`Đã nâng cấp lên ${planName}!`, "success");
+            } catch (e) { showToast("Lỗi khi cập nhật gói!", "error"); setConfirmModal({ show: false }); }
+        });
     };
 
-    // HÀM ÉP NGÀY CHUẨN XÁC THEO MÁY TÍNH CỦA SẾP
-    const submitCustomExpiry = async (id) => {
-        if (!expiryVal || expiryVal <= 0) return alert("Vui lòng nhập số lượng hợp lệ!");
+    const submitCustomExpiry = (id) => {
+        if (!expiryVal || expiryVal <= 0) return showToast("Vui lòng nhập số lượng hợp lệ!", "error");
         
         let seconds = 0;
         const val = parseInt(expiryVal);
@@ -62,17 +84,28 @@ export default function AdminPanel({ setView, authUser }) {
         if (expiryUnit === 'days') seconds = val * 86400;
 
         const unitName = expiryUnit === 'seconds' ? 'Giây' : expiryUnit === 'minutes' ? 'Phút' : expiryUnit === 'hours' ? 'Giờ' : 'Ngày';
-        if (!window.confirm(`Xác nhận ép hạn sử dụng còn đúng ${val} ${unitName}?`)) return;
+        
+        confirmAction("Xác Nhận Ép Hạn", `Sếp chắc chắn ép hạn sử dụng còn đúng ${val} ${unitName}?`, async () => {
+            try {
+                const exactExpiryDate = new Date(Date.now() + seconds * 1000).toISOString();
+                await axios.put(`${API_URL}/users/${id}/force-expiry`, { expiryDate: exactExpiryDate });
+                fetchUsers();
+                setEditExpiryId(null); 
+                setConfirmModal({ show: false });
+                showToast("Đã cập nhật hạn sử dụng thành công!", "success");
+            } catch (e) { showToast("Lỗi ép ngày!", "error"); setConfirmModal({ show: false }); }
+        });
+    };
 
-        try {
-            // Tính toán thời điểm hết hạn chính xác tại máy Sếp rồi gửi string lên Server
-            const exactExpiryDate = new Date(Date.now() + seconds * 1000).toISOString();
-            
-            await axios.put(`${API_URL}/users/${id}/force-expiry`, { expiryDate: exactExpiryDate });
-            fetchUsers();
-            setEditExpiryId(null); 
-            alert("Đã cập nhật hạn sử dụng thành công!");
-        } catch (e) { alert("Lỗi ép ngày!"); }
+    const handleDeleteUser = (id) => {
+        confirmAction("Xóa Tài Khoản", "Xóa vĩnh viễn tài khoản này? Hành động không thể hoàn tác!", async () => {
+            try {
+                await axios.delete(`${API_URL}/users/${id}`);
+                fetchUsers();
+                setConfirmModal({ show: false });
+                showToast("Đã xóa tài khoản thành công!", "success");
+            } catch (e) { showToast("Lỗi xóa tài khoản!", "error"); setConfirmModal({ show: false }); }
+        }, true); // isDanger = true (Nút xác nhận sẽ màu đỏ)
     };
 
     const handleRestrict = async (id, days) => {
@@ -82,6 +115,7 @@ export default function AdminPanel({ setView, authUser }) {
         else if (days !== '0' && days !== 'restricted') restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
         await axios.put(`${API_URL}/users/${id}`, { restrictedUntil, isBanned });
         fetchUsers();
+        showToast("Đã cập nhật trạng thái hạn chế!", "success");
     };
 
     const getRestrictStatus = (u) => {
@@ -90,7 +124,6 @@ export default function AdminPanel({ setView, authUser }) {
         return '0';
     };
 
-    // HIỂN THỊ ĐẾM NGƯỢC CHI TIẾT TỚI TỪNG GIÂY
     const getRemainingTime = (expiryDate) => {
         if (!expiryDate) return null;
         const now = new Date(); const exp = new Date(expiryDate);
@@ -116,8 +149,36 @@ export default function AdminPanel({ setView, authUser }) {
 
     return (
         <div className="animate-fade-in-up pb-20">
+            {/* THÔNG BÁO TOAST XỊN */}
+            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
+                <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
+                    {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
+                    <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
+                </div>
+            </div>
+
+            {/* MODAL XÁC NHẬN CUSTOM */}
+            {confirmModal.show && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
+                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up text-center shadow-2xl border border-white">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 ${confirmModal.isDanger ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-indigo-50 text-indigo-500 border border-indigo-100'}`}>
+                            {confirmModal.isDanger ? <AlertCircle size={32}/> : <HelpCircle size={32}/>}
+                        </div>
+                        <h2 className="text-[22px] font-black text-gray-800 mb-2">{confirmModal.title}</h2>
+                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">{confirmModal.message}</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmModal({ show: false })} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
+                            <button onClick={confirmModal.onConfirm} className={`flex-1 py-3.5 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all ${confirmModal.isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90'}`}>
+                                Xác Nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XEM ẢNH BILL */}
             {selectedBill && (
-                <div className="fixed inset-0 z-[999] bg-black/90 flex flex-col items-center justify-center p-4">
+                <div className="fixed inset-0 z-[999] bg-black/90 flex flex-col items-center justify-center p-4 animate-fade-in">
                     <button onClick={() => setSelectedBill(null)} className="absolute top-10 right-10 text-white bg-white/10 hover:bg-white/20 p-4 rounded-full transition-all"><X size={30}/></button>
                     <img src={selectedBill} className="max-w-full max-h-[85vh] object-contain border-4 border-white rounded-[24px] shadow-2xl" alt="Bill" />
                 </div>
@@ -211,7 +272,6 @@ export default function AdminPanel({ setView, authUser }) {
                                         <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
                                     </div>
 
-                                    {/* MENU SỬA HẠN TÙY CHỈNH (INLINE EDIT) */}
                                     {u.plan !== 'premium' && (
                                         editExpiryId === u._id ? (
                                             <div className="flex items-center gap-1 bg-pink-50 p-1 rounded-2xl border border-pink-200 shadow-inner animate-fade-in">
@@ -253,7 +313,7 @@ export default function AdminPanel({ setView, authUser }) {
                                         <option value="forever">Cấm vĩnh viễn</option>
                                     </select>
                                     
-                                    <button onClick={async () => { if(window.confirm("Xóa vĩnh viễn tài khoản này?")) { await axios.delete(`${API_URL}/users/${u._id}`); fetchUsers(); } }} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
+                                    <button onClick={() => handleDeleteUser(u._id)} className="w-[42px] h-[42px] flex items-center justify-center text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm active:scale-95"><Trash2 size={18}/></button>
                                 </div>
                             )}
                         </div>
