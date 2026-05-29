@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
@@ -31,9 +31,8 @@ export default function AdminPanel({ setView, authUser }) {
         let isBanned = false;
 
         if (days === 'forever') {
-            isBanned = true; // Cấm vĩnh viễn
+            isBanned = true; 
         } else if (days !== '0' && days !== 'restricted') {
-            // Cộng thêm số ngày Hạn chế vào thời điểm hiện tại
             restrictedUntil = new Date(Date.now() + parseInt(days) * 24 * 60 * 60 * 1000).toISOString();
         }
 
@@ -54,6 +53,22 @@ export default function AdminPanel({ setView, authUser }) {
         return '0';
     };
 
+    // HÀM TÍNH ĐỒNG HỒ ĐẾM NGƯỢC NGÀY HẾT HẠN
+    const getRemainingTime = (expiryDate) => {
+        if (!expiryDate) return "Chưa kích hoạt";
+        const now = new Date();
+        const exp = new Date(expiryDate);
+        
+        if (now > exp) return "Đã hết hạn";
+        
+        const diffTime = Math.abs(exp - now);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        if (diffDays === 0) return `Còn ${diffHours} giờ`;
+        return `Còn ${diffDays} ngày ${diffHours} giờ`;
+    };
+
     return (
         <div className="animate-fade-in-up">
             <div className="flex items-center justify-between mb-8">
@@ -71,13 +86,12 @@ export default function AdminPanel({ setView, authUser }) {
                     return (
                         <div key={u._id} className="liquid-glass rounded-[24px] p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all hover:bg-white/60 shadow-sm border border-white/50">
                             
-                            {/* THÔNG TIN NGƯỜI DÙNG */}
+                            {/* THÔNG TIN NGƯỜI DÙNG & TÊN GÓI & ĐẾM NGƯỢC HẾT HẠN */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <h3 className="font-bold text-[16px] text-[#1D1D1F] truncate">{u.name}</h3>
                                     {u.role === 'admin' && <Crown size={16} className="text-[#FF9500] shrink-0"/>}
                                     
-                                    {/* HIỂN THỊ TÊN GÓI Ở ĐÂY */}
                                     {u.role !== 'admin' && (
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                                             u.plan === '100k' ? 'bg-[#FF9500]/10 text-[#FF9500] border border-[#FF9500]/20' : 
@@ -88,11 +102,17 @@ export default function AdminPanel({ setView, authUser }) {
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-[13px] text-[#5c5c5c] truncate">{u.email}</p>
+                                <p className="text-[13px] text-[#5c5c5c] truncate flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
                                 
-                                {/* HIỂN THỊ ĐỒNG HỒ ĐẾM NGƯỢC NẾU BỊ HẠN CHẾ */}
+                                {/* HIỂN THỊ ĐỒNG HỒ ĐẾM NGƯỢC HẠN SỬ DỤNG CHO NGƯỜI DÙNG */}
+                                {u.role !== 'admin' && (
+                                    <p className={`text-[12px] mt-1.5 flex items-center gap-1 font-semibold ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'text-[#FF3B30]' : 'text-[#1DB2A0]'}`}>
+                                        <Clock size={12}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
+                                    </p>
+                                )}
+
                                 {restrictStatus === 'restricted' && u.restrictedUntil && (
-                                    <p className="text-[12px] text-[#FF3B30] mt-1.5 flex items-center gap-1 font-semibold">
+                                    <p className="text-[12px] text-[#FF3B30] mt-1 flex items-center gap-1 font-semibold">
                                         <Clock size={12}/> Hạn chế đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
                                     </p>
                                 )}
@@ -100,7 +120,7 @@ export default function AdminPanel({ setView, authUser }) {
 
                             {/* KHU VỰC CÁC NÚT BẤM VÀ QUYỀN */}
                             {u.role !== 'admin' ? (
-                                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                <div className="flex flex-wrap items-center gap-3 shrink-0 mt-3 xl:mt-0">
                                     <button onClick={() => handleApprove(u._id, u.isApproved)} className={`px-4 py-2.5 text-[13px] font-bold rounded-xl transition-all shadow-sm active:scale-95 ${u.isApproved ? 'text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200' : 'text-white bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] hover:opacity-90 border border-transparent'}`}>
                                         {u.isApproved ? 'Hủy Duyệt' : 'Duyệt Vào'}
                                     </button>
@@ -115,13 +135,11 @@ export default function AdminPanel({ setView, authUser }) {
                                         <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF3B30] transition-colors">
                                             <input type="checkbox" checked={u.permissions?.canDelete || false} onChange={() => togglePermission(u._id, u.permissions, 'canDelete')} className="accent-[#FF3B30] w-4 h-4 cursor-pointer"/> Xóa
                                         </label>
-                                        {/* NÚT QUYỀN XEM CHI TIẾT */}
                                         <label className="flex items-center gap-1.5 cursor-pointer text-[13px] font-semibold text-gray-700 hover:text-[#FF9500] transition-colors border-l pl-3 ml-1 border-gray-300">
                                             <input type="checkbox" checked={u.permissions?.canViewDetail || false} onChange={() => togglePermission(u._id, u.permissions, 'canViewDetail')} className="accent-[#FF9500] w-4 h-4 cursor-pointer"/> Xem Chi Tiết
                                         </label>
                                     </div>
 
-                                    {/* MENU CHỌN NGÀY HẠN CHẾ */}
                                     <select 
                                         className={`text-[13px] font-bold px-3 py-2.5 rounded-xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-[#FF3B30]/10 text-[#FF3B30] border-[#FF3B30]/30' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                                         onChange={(e) => handleRestrict(u._id, e.target.value)}
@@ -139,7 +157,7 @@ export default function AdminPanel({ setView, authUser }) {
                                     <button onClick={() => handleDelete(u._id)} className="w-[40px] h-[40px] flex items-center justify-center bg-white border border-gray-200 text-[#FF3B30] rounded-xl hover:bg-[#FF3B30] hover:text-white transition-all shadow-sm active:scale-95" title="Xóa tài khoản"><Trash2 size={16}/></button>
                                 </div>
                             ) : (
-                                <div className="px-4 py-2.5 bg-[#FF9500]/10 text-[#FF9500] text-[13px] font-bold rounded-xl border border-[#FF9500]/20 flex items-center gap-2 shrink-0 shadow-sm">
+                                <div className="px-4 py-2.5 bg-[#FF9500]/10 text-[#FF9500] text-[13px] font-bold rounded-xl border border-[#FF9500]/20 flex items-center gap-2 shrink-0 shadow-sm mt-3 xl:mt-0">
                                     <ShieldAlert size={16}/> Quyền Tối Cao
                                 </div>
                             )}
