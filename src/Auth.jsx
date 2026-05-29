@@ -6,9 +6,6 @@ import { API_URL } from './utils';
 export default function Auth({ onLoginSuccess }) {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [view, setView] = useState('LOGIN'); 
-    
-    // Quản lý các bước sau khi nhấn nút Đăng ký
-    // 'auth' -> 'pricing' (chọn gói) -> 'qr' (quét mã) -> 'success' (chờ duyệt)
     const [step, setStep] = useState('auth'); 
     const [otpStep, setOtpStep] = useState(1); 
     
@@ -17,12 +14,12 @@ export default function Auth({ onLoginSuccess }) {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
-    const [registeredEmail, setRegisteredEmail] = useState(''); // Lưu email vừa đăng ký để update gói
+    const [registeredEmail, setRegisteredEmail] = useState(''); 
 
     const plans = [
-        { id: '10k', title: 'Cơ Bản', price: '10k', period: 'Tháng', icon: Eye, color: '#64748b', features: ['Chỉ xem thống kê tổng quan', 'Không xem được chi tiết lô hàng', 'Hỗ trợ kỹ thuật cơ bản'], qrImage: '/qr-10k.jpg' },
-        { id: '50k', title: 'Tiêu Chuẩn', price: '50k', period: '6 Tháng', icon: Star, color: '#26D0CE', features: ['Xem đầy đủ thống kê tổng quan', 'Xem CHI TIẾT từng đợt bán', 'Hỗ trợ kỹ thuật 24/7'], qrImage: '/qr-50k.jpg' },
-        { id: '100k', title: 'V.I.P', price: '100k', period: 'Năm', icon: Crown, color: '#FF9500', features: ['Mọi tính năng của gói 50k', 'Hỗ trợ xuất báo cáo File Excel', 'Ưu tiên trải nghiệm tính năng mới'], qrImage: '/qr-100k.jpg' }
+        { id: '10k', title: 'Cơ Bản', price: '10k', period: 'Tháng', icon: Eye, color: '#64748b', features: ['Chỉ xem thống kê tổng quan', 'Không xem được chi tiết lô', 'Hỗ trợ cơ bản'], qrImage: '/qr-10k.jpg' },
+        { id: '50k', title: 'Tiêu Chuẩn', price: '50k', period: '6 Tháng', icon: Star, color: '#26D0CE', features: ['Xem đầy đủ thống kê', 'Xem CHI TIẾT đợt bán', 'Hỗ trợ kỹ thuật 24/7'], qrImage: '/qr-50k.jpg' },
+        { id: '100k', title: 'V.I.P', price: '100k', period: 'Năm', icon: Crown, color: '#FF9500', features: ['Mọi tính năng gói 50k', 'Xuất báo cáo File Excel', 'Ưu tiên trải nghiệm tính năng mới'], qrImage: '/qr-100k.jpg' }
     ];
 
     const [rememberMe, setRememberMe] = useState(false);
@@ -62,6 +59,17 @@ export default function Auth({ onLoginSuccess }) {
             if (view === 'LOGIN') {
                 const res = await axios.post(`${API_URL}/login`, { email: formData.email, password: formData.password });
                 if (res.data.user) {
+                    const user = res.data.user;
+                    
+                    // CHẶN ĐĂNG NHẬP NẾU HẾT HẠN
+                    if (user.role !== 'admin' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
+                        setRegisteredEmail(user.email);
+                        setStep('pricing'); 
+                        alert("⚠️ Gói của bạn đã hết hạn, vui lòng gia hạn để được sử dụng lại!");
+                        setLoading(false);
+                        return;
+                    }
+
                     if (rememberMe) {
                         localStorage.setItem('rememberedEmail', formData.email);
                         localStorage.setItem('rememberedPass', formData.password);
@@ -69,13 +77,13 @@ export default function Auth({ onLoginSuccess }) {
                         localStorage.removeItem('rememberedEmail');
                         localStorage.removeItem('rememberedPass');
                     }
-                    onLoginSuccess(res.data.user, true);
+                    onLoginSuccess(user, true);
                 }
             } 
             else if (view === 'REGISTER') {
                 await axios.post(`${API_URL}/register`, formData);
                 setRegisteredEmail(formData.email);
-                setStep('pricing'); // Trượt sang chọn gói
+                setStep('pricing');
             } 
             else if (view === 'FORGOT') {
                 await axios.post(`${API_URL}/reset-password`, { email: formData.email, otp: formData.otp, newPassword: formData.newPassword });
@@ -87,40 +95,29 @@ export default function Auth({ onLoginSuccess }) {
         } finally { setLoading(false); }
     };
 
-    // Khi khách bấm "CHỌN GÓI NÀY"
     const handleSelectPlan = async () => {
         setLoading(true);
         try {
-            // Gửi API cập nhật gói cho user vừa đăng ký (Sếp cần đảm bảo Backend có xử lý lưu trường plan này)
-            await axios.put(`${API_URL}/update-plan`, { email: registeredEmail, plan: plans[planIndex].id }).catch(() => {}); 
-            setStep('qr'); // Trượt sang màn hình Quét mã QR
-        } finally {
-            setLoading(false);
-        }
+            await axios.put(`${API_URL}/update-plan`, { email: registeredEmail, plan: plans[planIndex].id }); 
+            setStep('qr');
+        } catch(e) {} 
+        finally { setLoading(false); }
     };
 
-    // Khi khách quét QR xong bấm "HOÀN TẤT THANH TOÁN"
-    const handleConfirmPayment = () => {
-        setStep('success'); // Trượt sang màn hình chờ duyệt
-    };
+    const handleConfirmPayment = () => { setStep('success'); };
 
-    // Khi khách bấm "XÁC NHẬN" ở màn hình chờ duyệt
     const handleFinishAndLogin = () => {
         setStep('auth');
-        togglePanel(false); // Trượt lại về giao diện Login
-        setSuccessMsg('Đăng ký thành công! Vui lòng đăng nhập.');
+        togglePanel(false);
+        setSuccessMsg('Đăng ký/Gia hạn thành công! Vui lòng đợi Admin duyệt.');
     };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
             <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[20px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out ${isRightPanelActive && step === 'auth' ? 'right-panel-active' : ''}`}>
                 
-                {/* =========================================================
-                    LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (CLASSIC) 
-                ========================================================= */}
+                {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
                 <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out z-10 ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
-                    
-                    {/* FORM ĐĂNG KÝ (BÊN PHẢI) */}
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-[40px] transition-all duration-700 ease-in-out z-10 ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20' : 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto'}`}>
                         <form onSubmit={otpStep === 1 ? handleSendOTP : handleSubmit} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <h1 className="font-extrabold text-[28px] md:text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
@@ -163,14 +160,11 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    {/* FORM ĐĂNG NHẬP / QUÊN MẬT KHẨU (BÊN TRÁI) */}
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-[40px] transition-all duration-700 ease-in-out z-20 bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none' : ''}`}>
                         <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleSubmit} className="flex flex-col items-center justify-center w-full h-full text-center">
-                            
                             <div className="w-[65px] h-[65px] rounded-full flex items-center justify-center mb-3 shadow-sm border border-gray-100 overflow-hidden bg-white">
                                 <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
                             </div>
-                            
                             <h1 className="font-extrabold text-[28px] md:text-[32px] mb-1 text-[#222]">
                                 {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
                             </h1>
@@ -201,9 +195,7 @@ export default function Auth({ onLoginSuccess }) {
                                     <button type="submit" disabled={loading} className="rounded-full bg-gradient-to-r from-[#21C8F6] to-[#26D0CE] text-white text-[14px] font-bold py-3.5 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-md">
                                         {loading ? <RefreshCw size={18} className="animate-spin" /> : 'ĐĂNG NHẬP'}
                                     </button>
-                                    <button type="button" onClick={() => { setView('FORGOT'); setOtpStep(1); setError(''); setSuccessMsg(''); }} className="mt-5 text-[13px] text-[#21C8F6] hover:text-[#26D0CE] font-semibold transition-colors">
-                                        Quên mật khẩu?
-                                    </button>
+                                    <button type="button" onClick={() => { setView('FORGOT'); setOtpStep(1); setError(''); setSuccessMsg(''); }} className="mt-5 text-[13px] text-[#21C8F6] hover:text-[#26D0CE] font-semibold transition-colors">Quên mật khẩu?</button>
                                 </>
                             ) : (
                                 otpStep === 1 ? (
@@ -239,7 +231,6 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    {/* OVERLAY TRƯỢT MÀU XANH */}
                     <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : ''}`}>
                         <div className={`bg-gradient-to-r from-[#26D0CE] to-[#21C8F6] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : ''}`}>
                             <div className={`absolute top-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
@@ -256,12 +247,10 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* =========================================================
-                    LỚP 2: MÀN HÌNH LƯỚT CHỌN GÓI (HIỆN SAU KHI ĐĂNG KÝ)
-                ========================================================= */}
+                {/* LỚP 2: MÀN HÌNH LƯỚT CHỌN GÓI */}
                 <div className={`absolute inset-0 w-full h-full bg-[#f8fafc] z-50 flex flex-col items-center justify-center p-6 transition-transform duration-700 ease-in-out ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <h2 className="text-[26px] font-black text-[#1D1D1F] mb-1">Chọn Gói Dịch Vụ</h2>
-                    <p className="text-gray-500 text-[13px] mb-6 text-center max-w-md">Hãy chọn gói phù hợp để mở khóa các tính năng quản lý chi tiết.</p>
+                    <p className="text-gray-500 text-[13px] mb-6 text-center max-w-md">Lướt để chọn gói phù hợp. Gói sẽ tự động kích hoạt khi gia hạn.</p>
                     
                     <div className="relative w-full max-w-[360px] overflow-hidden py-4">
                         <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${planIndex * 100}%)` }}>
@@ -293,18 +282,15 @@ export default function Auth({ onLoginSuccess }) {
                     </button>
                 </div>
 
-                {/* =========================================================
-                    LỚP 3: MÀN HÌNH QUÉT MÃ QR THANH TOÁN
-                ========================================================= */}
+                {/* LỚP 3: MÀN HÌNH QUÉT MÃ QR */}
                 <div className={`absolute inset-0 w-full h-full bg-white z-[60] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : step === 'success' ? '-translate-x-full' : 'translate-x-full'}`}>
                     <div className="w-16 h-16 bg-[#E0F7FA] text-[#26D0CE] rounded-full flex items-center justify-center mb-4"><QrCode size={32}/></div>
-                    <h2 className="text-[24px] font-black text-[#1D1D1F] mb-1">Thanh Toán Gói {plans[planIndex].title}</h2>
-                    <p className="text-gray-500 text-[14px] mb-6 text-center">Vui lòng dùng App Ngân hàng quét mã QR dưới đây để thanh toán <strong className="text-[#26D0CE]">{plans[planIndex].price}</strong>.</p>
+                    <h2 className="text-[24px] font-black text-[#1D1D1F] mb-1">Quét mã thanh toán</h2>
+                    <p className="text-gray-500 text-[14px] mb-6 text-center">Bạn đang chọn gói <strong className="text-[#26D0CE]">{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã bên dưới để thanh toán.</p>
                     
-                    {/* KHUNG CHỨA ẢNH QR - THAY ĐỔI THEO GÓI CHỌN */}
                     <div className="w-[250px] h-[350px] border border-gray-200 rounded-2xl p-2 shadow-sm mb-6 bg-gray-50 flex items-center justify-center overflow-hidden">
-                        <img src={plans[planIndex].qrImage} alt={`QR Thanh toán ${plans[planIndex].price}`} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                        <div className="hidden text-gray-400 text-sm italic text-center px-4">Đang tải mã QR...<br/>(Kiểm tra lại tên ảnh trong thư mục public)</div>
+                        <img src={plans[planIndex].qrImage} alt={`QR Thanh toán`} className="w-full h-full object-contain mix-blend-multiply" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                        <div className="hidden text-gray-400 text-sm italic text-center px-4">Sếp chưa thả ảnh qr-10k.jpg, qr-50k.jpg, qr-100k.jpg vào thư mục public</div>
                     </div>
 
                     <button onClick={handleConfirmPayment} className="rounded-full bg-[#1D1D1F] text-white text-[14px] font-bold py-3.5 px-12 transition-transform active:scale-95 hover:bg-gray-800 shadow-md">
@@ -312,19 +298,17 @@ export default function Auth({ onLoginSuccess }) {
                     </button>
                 </div>
 
-                {/* =========================================================
-                    LỚP 4: MÀN HÌNH HOÀN TẤT & CHỜ XÁC NHẬN
-                ========================================================= */}
+                {/* LỚP 4: MÀN HÌNH HOÀN TẤT & CHỜ DUYỆT */}
                 <div className={`absolute inset-0 w-full h-full bg-gradient-to-br from-[#E0F7FA] to-white z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-20 h-20 bg-white shadow-lg text-[#FF9500] rounded-full flex items-center justify-center mb-6 animate-pulse">
                         <Clock size={40} strokeWidth={2.5}/>
                     </div>
                     <h2 className="text-[28px] font-black text-[#1D1D1F] mb-3 text-center">Tài khoản đang được xác nhận</h2>
                     <p className="text-gray-600 text-[15px] mb-8 text-center max-w-[320px] font-medium leading-relaxed">
-                        Hệ thống đã ghi nhận giao dịch của bạn. Xin vui lòng chờ Admin kích hoạt gói trong giây lát.
+                        Hệ thống đã ghi nhận. Xin vui lòng chờ Admin kích hoạt gói trong giây lát.
                     </p>
                     <button onClick={handleFinishAndLogin} className="rounded-full border-2 border-[#26D0CE] text-[#26D0CE] bg-white text-[14px] font-bold py-3.5 px-12 transition-all active:scale-95 hover:bg-[#26D0CE] hover:text-white shadow-sm">
-                        QUAY VỀ ĐĂNG NHẬP
+                        XÁC NHẬN
                     </button>
                 </div>
 
