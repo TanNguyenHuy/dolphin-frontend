@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
     const [users, setUsers] = useState([]);
     const [selectedBill, setSelectedBill] = useState(null);
+
+    // STATE CHO TÍNH NĂNG CHỈNH SỬA HẠN SỬ DỤNG
+    const [editExpiryId, setEditExpiryId] = useState(null);
+    const [expiryVal, setExpiryVal] = useState(1);
+    const [expiryUnit, setExpiryUnit] = useState('minutes'); 
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -29,36 +34,41 @@ export default function AdminPanel({ setView, authUser }) {
         fetchUsers();
     };
 
-    // ĐÃ UPDATE: Gọi API Đổi Gói Mới (Đồng bộ thời gian)
     const handleChangePlan = async (id, newPlan, currentPermissions) => {
         const planName = newPlan === 'premium' ? '💎 GÓI PREMIUM' : newPlan === '100k' ? '🥇 GÓI VVIP' : newPlan === '50k' ? '🥈 GÓI VIP' : '🥉 GÓI CƠ BẢN';
         if (!window.confirm(`Sếp có chắc chắn đổi khách hàng này sang ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`)) return;
 
         let canViewDetail = currentPermissions?.canViewDetail || false;
-        if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') {
-            canViewDetail = true;
-        } else {
-            canViewDetail = false;
-        }
+        if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') canViewDetail = true;
+        else canViewDetail = false;
 
         const updatedPermissions = { ...currentPermissions, canViewDetail };
 
         try {
-            await axios.put(`${API_URL}/users/${id}/change-plan`, { 
-                plan: newPlan, 
-                permissions: updatedPermissions 
-            });
+            await axios.put(`${API_URL}/users/${id}/change-plan`, { plan: newPlan, permissions: updatedPermissions });
             fetchUsers();
         } catch (e) { alert("Lỗi khi cập nhật gói!"); }
     };
 
-    // TÍNH NĂNG MỚI: ÉP CẮT HẠN SỬ DỤNG VỀ X GIÂY
-    const handleForceExpiry = async (id, seconds) => {
-        if (!window.confirm(`Cắt hạn sử dụng khách này xuống còn ${seconds} giây? (Thích hợp để Test)`)) return;
+    // HÀM MỚI: XỬ LÝ LƯU HẠN SỬ DỤNG TÙY CHỈNH
+    const submitCustomExpiry = async (id) => {
+        if (!expiryVal || expiryVal <= 0) return alert("Vui lòng nhập số lượng hợp lệ!");
+        
+        let seconds = 0;
+        const val = parseInt(expiryVal);
+        if (expiryUnit === 'seconds') seconds = val;
+        if (expiryUnit === 'minutes') seconds = val * 60;
+        if (expiryUnit === 'hours') seconds = val * 3600;
+        if (expiryUnit === 'days') seconds = val * 86400;
+
+        const unitName = expiryUnit === 'seconds' ? 'Giây' : expiryUnit === 'minutes' ? 'Phút' : expiryUnit === 'hours' ? 'Giờ' : 'Ngày';
+        if (!window.confirm(`Xác nhận đổi hạn sử dụng còn đúng ${val} ${unitName}?`)) return;
+
         try {
             await axios.put(`${API_URL}/users/${id}/force-expiry`, { seconds });
             fetchUsers();
-            alert(`Thành công! Khách này sẽ bị đá văng ra ngoài sau ${seconds} giây nữa!`);
+            setEditExpiryId(null); // Đóng form nhập liệu
+            alert("Đã cập nhật hạn sử dụng thành công!");
         } catch (e) { alert("Lỗi ép ngày!"); }
     };
 
@@ -77,25 +87,24 @@ export default function AdminPanel({ setView, authUser }) {
         return '0';
     };
 
+    // NÂNG CẤP ĐỒNG HỒ ĐẾM NGƯỢC (HIỂN THỊ CHI TIẾT TỚI GIÂY)
     const getRemainingTime = (expiryDate) => {
         if (!expiryDate) return null;
         const now = new Date(); const exp = new Date(expiryDate);
         if (now > exp) return "Đã hết hạn";
+        
         const diff = Math.abs(exp - now);
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
         
-        // Hiện chi tiết tới giây nếu sắp hết hạn (< 1 ngày)
-        if (days === 0 && hours === 0) {
-            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const secs = Math.floor((diff % (1000 * 60)) / 1000);
-            return `Còn ${mins} phút ${secs} giây`;
-        }
-
-        return `Còn ${days} ngày ${hours} giờ`;
+        if (days > 0) return `Còn ${days} ngày ${hours} giờ`;
+        if (hours > 0) return `Còn ${hours} giờ ${mins} phút`;
+        if (mins > 0) return `Còn ${mins} phút ${secs} giây`;
+        return `Còn ${secs} giây`;
     };
 
-    // Hook nhỏ để đồng hồ đếm ngược tick từng giây ngoài giao diện
     const [, setTick] = useState(0);
     useEffect(() => {
         const timer = setInterval(() => setTick(t => t + 1), 1000);
@@ -199,21 +208,38 @@ export default function AdminPanel({ setView, authUser }) {
                                         <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
                                     </div>
 
-                                    {/* MENU ÉP NGÀY ĐỂ TEST */}
+                                    {/* MENU SỬA HẠN TÙY CHỈNH (INLINE EDIT) */}
                                     {u.plan !== 'premium' && (
-                                        <div className="relative group">
-                                            <select 
-                                                className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-pink-100 bg-pink-50 text-pink-700 shadow-sm transition-all hover:border-pink-300 hover:bg-pink-100"
-                                                onChange={(e) => handleForceExpiry(u._id, e.target.value)}
-                                                value="default"
-                                                title="Cắt hạn sử dụng (Dùng để Test tính năng)"
+                                        editExpiryId === u._id ? (
+                                            <div className="flex items-center gap-1 bg-pink-50 p-1 rounded-2xl border border-pink-200 shadow-inner animate-fade-in">
+                                                <input 
+                                                    type="number" min="1" 
+                                                    value={expiryVal} 
+                                                    onChange={e => setExpiryVal(e.target.value)} 
+                                                    className="w-14 px-2 py-1.5 text-[12px] font-black text-center rounded-xl border border-pink-200 outline-none focus:border-pink-400" 
+                                                />
+                                                <select 
+                                                    value={expiryUnit} 
+                                                    onChange={e => setExpiryUnit(e.target.value)} 
+                                                    className="text-[12px] font-bold px-2 py-1.5 rounded-xl outline-none border border-pink-200 text-pink-700 bg-white cursor-pointer"
+                                                >
+                                                    <option value="seconds">Giây</option>
+                                                    <option value="minutes">Phút</option>
+                                                    <option value="hours">Giờ</option>
+                                                    <option value="days">Ngày</option>
+                                                </select>
+                                                <button onClick={() => submitCustomExpiry(u._id)} className="bg-pink-500 text-white p-1.5 rounded-xl hover:bg-pink-600 transition-colors shadow-sm"><Check size={16}/></button>
+                                                <button onClick={() => setEditExpiryId(null)} className="bg-white text-gray-500 border border-gray-200 p-1.5 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"><X size={16}/></button>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
+                                                className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-2.5 rounded-2xl border-2 border-pink-100 bg-pink-50 text-pink-600 hover:border-pink-300 transition-all shadow-sm active:scale-95"
+                                                title="Sửa hạn sử dụng tùy ý"
                                             >
-                                                <option value="default" hidden>Cắt Hạn Test</option>
-                                                <option value="10">Cắt còn 10 Giây</option>
-                                                <option value="60">Cắt còn 1 Phút</option>
-                                            </select>
-                                            <TimerReset size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500 pointer-events-none" />
-                                        </div>
+                                                <TimerReset size={15} /> Sửa Hạn
+                                            </button>
+                                        )
                                     )}
 
                                     <select className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} onChange={(e) => handleRestrict(u._id, e.target.value)} value={restrictStatus}>
