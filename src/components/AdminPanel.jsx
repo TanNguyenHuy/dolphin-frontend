@@ -79,14 +79,13 @@ export default function AdminPanel({ setView, authUser }) {
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                                     
-                                    {/* BADGE TÊN GÓI MÀU ĐỒNG - BẠC - VÀNG - PREMIUM */}
                                     {u.role === 'admin' ? (
                                         <span className="text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md flex items-center gap-1"><Crown size={12}/> Gói Premium</span>
                                     ) : (
                                         <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border shadow-sm ${
-                                            u.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : // VÀNG (VVIP)
-                                            u.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : // BẠC (VIP)
-                                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' // ĐỒNG (Cơ Bản)
+                                            u.plan === '100k' ? 'bg-gradient-to-r from-[#FDE68A] to-[#F59E0B] text-white border-[#D97706]' : 
+                                            u.plan === '50k' ? 'bg-gradient-to-r from-[#E2E8F0] to-[#94A3B8] text-white border-[#64748B]' : 
+                                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] text-white border-[#8D6E63]' 
                                         }`}>
                                             {u.plan === '100k' ? 'Gói VVIP' : u.plan === '50k' ? 'Gói VIP' : 'Gói Cơ Bản'}
                                         </span>
@@ -95,14 +94,21 @@ export default function AdminPanel({ setView, authUser }) {
                                 
                                 <p className="text-gray-400 text-[13px] mb-3 flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
                                 
-                                {u.isApproved && u.role !== 'admin' && (
-                                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                                        <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
-                                    </div>
-                                )}
+                                {/* ĐÃ FIX: CHỈ KHI DUYỆT RỒI MỚI HIỆN ĐỒNG HỒ */}
+                                {u.role !== 'admin' ? (
+                                    u.isApproved ? (
+                                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                                            <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
+                                        </div>
+                                    ) : (
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-orange-100 text-orange-600 border border-orange-200">
+                                            <Clock size={14}/> Đang chờ duyệt Bill...
+                                        </div>
+                                    )
+                                ) : null}
                                 
                                 {isRestricted && u.restrictedUntil && (
-                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-red-50 text-red-600 border border-red-200 mt-2">
+                                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm bg-red-50 text-red-600 border border-red-200 mt-2 ml-2">
                                         <ShieldAlert size={14}/> Hạn chế đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
                                     </div>
                                 )}
