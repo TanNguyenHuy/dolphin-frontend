@@ -3,10 +3,15 @@ import axios from 'axios';
 import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, UploadCloud, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { API_URL } from './utils';
 
-export default function Auth({ onLoginSuccess }) {
+// ĐÃ THÊM PROP: expiredEmail và onLogout
+export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [view, setView] = useState('LOGIN'); 
-    const [step, setStep] = useState('auth'); 
+    
+    // Nếu bị hết hạn truyền từ App ra -> Nhảy thẳng sang bước Chọn gói (pricing)
+    const [step, setStep] = useState(expiredEmail ? 'pricing' : 'auth'); 
+    const [registeredEmail, setRegisteredEmail] = useState(expiredEmail || ''); 
+    
     const [otpStep, setOtpStep] = useState(1); 
     const [planIndex, setPlanIndex] = useState(1); 
     const [loading, setLoading] = useState(false);
@@ -14,10 +19,8 @@ export default function Auth({ onLoginSuccess }) {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
-    const [registeredEmail, setRegisteredEmail] = useState(''); 
     const [billBase64, setBillBase64] = useState(null); 
 
-    // HỆ THỐNG THÔNG BÁO XỊN (TOAST)
     const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
 
     const showToast = (message, type = 'error') => {
@@ -45,6 +48,14 @@ export default function Auth({ onLoginSuccess }) {
 
     const [rememberMe, setRememberMe] = useState(false);
     
+    useEffect(() => {
+        if (expiredEmail) {
+            setStep('pricing');
+            setRegisteredEmail(expiredEmail);
+            showToast("⏳ Gói của bạn đã hết hạn, vui lòng gia hạn!", 'error');
+        }
+    }, [expiredEmail]);
+
     useEffect(() => {
         const savedEmail = localStorage.getItem('rememberedEmail');
         const savedPass = localStorage.getItem('rememberedPass');
@@ -93,7 +104,6 @@ export default function Auth({ onLoginSuccess }) {
             }
             else {
                 const user = res.data.user;
-                
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
                     setRegisteredEmail(user.email); 
                     setStep('pricing'); 
@@ -125,23 +135,21 @@ export default function Auth({ onLoginSuccess }) {
         finally { setLoading(false); }
     };
 
-    const handleFinishAndLogin = () => {
-        setStep('auth');
-        togglePanel(false); 
-        showToast('Đã gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.', 'success');
-    };
-
+    // Hàm gọi khi nhấn Đăng Xuất hoặc Quay Về
     const handleLogoutFromPricing = () => {
-        setRegisteredEmail('');
-        setStep('auth');
-        togglePanel(false); 
+        if (onLogout) {
+            onLogout(); // Gọi hàm xóa session ở App.jsx
+        } else {
+            setRegisteredEmail('');
+            setStep('auth');
+            togglePanel(false); 
+        }
     };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
             
-            {/* TOAST THÔNG BÁO XỊN (Thay thế alert) */}
-            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
                 <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
                     {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
                     <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
@@ -275,7 +283,7 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
+                {/* LỚP 2: MÀN HÌNH CHỌN GÓI CHO KHÁCH BỊ ĐÁ VĂNG / MUA MỚI */}
                 <div className={`absolute inset-0 bg-gray-50/90 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="text-center mb-10 mt-10 md:mt-0">
                         <h2 className="text-[28px] md:text-[34px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
@@ -318,7 +326,8 @@ export default function Auth({ onLoginSuccess }) {
                         TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
                     </button>
                     
-                    <button onClick={handleLogoutFromPricing} className="mt-6 text-gray-500 font-bold text-[13px] underline hover:text-gray-800 transition-colors">
+                    {/* NÚT ĐĂNG XUẤT NẾU KHÁCH CHƯA MUỐN GIA HẠN */}
+                    <button onClick={handleLogoutFromPricing} className="mt-6 text-gray-500 font-bold text-[13px] underline hover:text-red-500 transition-colors">
                         Trở về Đăng Nhập / Dùng tài khoản khác
                     </button>
                 </div>
@@ -355,14 +364,17 @@ export default function Auth({ onLoginSuccess }) {
                     </div>
                 </div>
 
-                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
+                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT (TỰ ĐỘNG THEO DÕI VÀ VÀO DASHBOARD NẾU ĐƯỢC DUYỆT) */}
                 <div className={`absolute inset-0 bg-green-50/80 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
                     <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
                     <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                        Hệ thống đã nhận được Bill thanh toán của bạn. Vui lòng đợi Admin kiểm tra và kích hoạt tài khoản trong vài phút.
+                        Hệ thống đã nhận được Bill thanh toán của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
                     </p>
-                    <button onClick={handleFinishAndLogin} className="bg-gray-900 hover:bg-black text-white px-16 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest">ĐÃ HIỂU VÀ QUAY VỀ</button>
+                    {/* Nếu họ muốn thoát sớm thì cho Đăng Xuất */}
+                    <button onClick={handleLogoutFromPricing} className="text-gray-500 font-bold text-[13px] underline hover:text-red-500 transition-colors">
+                        Đăng Xuất
+                    </button>
                 </div>
 
             </div>
