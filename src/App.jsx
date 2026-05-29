@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock } from 'lucide-react';
+import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
@@ -60,13 +60,19 @@ export default function App() {
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
     
-    // BIẾN CHECK QUYỀN ĐỂ CHẶN XEM VÀ XUẤT EXCEL
     const canViewDetail = isAdmin || authUser?.permissions?.canViewDetail === true;
     const canExportExcel = isAdmin || authUser?.plan === '100k' || authUser?.plan === 'premium';
 
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
     const [isExpiredState, setIsExpiredState] = useState(false);
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
+
+    // ĐÃ THÊM: HỆ THỐNG THÔNG BÁO XỊN (TOAST) CHO APP.JSX
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
 
     useEffect(() => {
         if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) {
@@ -186,10 +192,10 @@ export default function App() {
         } catch (err) {} 
     };
 
-    // ĐÃ FIX: CHẶN ĐỨNG KHÁCH HÀNG BẤM VÀO XEM CHI TIẾT NẾU KHÔNG CÓ QUYỀN
+    // ĐÃ FIX: CHẶN VÀ HIỆN TOAST THAY VÌ ALERT
     const fetchDetail = async (id) => { 
         if (!canViewDetail) {
-            alert("⚠️ Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!");
+            showToast("Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!", "error");
             return;
         }
 
@@ -204,7 +210,7 @@ export default function App() {
                 setView('DETAIL'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
-        } catch (err) {} 
+        } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
     
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động' }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
@@ -483,10 +489,10 @@ export default function App() {
         else { setShowFireworks(false); }
     }, [view, isTargetReached, currentId]);
 
-    // ĐÃ FIX: CHẶN XUẤT EXCEL NẾU KHÔNG PHẢI VVIP HOẶC PREMIUM
+    // ĐÃ FIX: CHẶN VÀ HIỆN TOAST THAY VÌ ALERT
     const handleExport = () => { 
         if (!canExportExcel) {
-            alert("⚠️ Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!");
+            showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error");
             return;
         }
 
@@ -510,6 +516,14 @@ export default function App() {
     return (
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
+
+            {/* TOAST THÔNG BÁO CHUNG CỦA HỆ THỐNG APP */}
+            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
+                <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
+                    {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
+                    <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
+                </div>
+            </div>
 
             {blockModal.show && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
@@ -789,7 +803,6 @@ export default function App() {
                     />
                 )}
             </div>
-            {/* COMPONENT CHAT CŨNG ĐÃ NHẬN AUTHUSER ĐỂ CHẶN THEO GÓI */}
             <ChatBox authUser={authUser} />
         </div>
     );
