@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X } from 'lucide-react';
+import { Trash2, Crown, ArrowLeft, Clock, ShieldAlert, Mail, Eye, X, TimerReset } from 'lucide-react';
 import { API_URL } from '../utils';
 
 export default function AdminPanel({ setView, authUser }) {
@@ -29,9 +29,10 @@ export default function AdminPanel({ setView, authUser }) {
         fetchUsers();
     };
 
+    // ĐÃ UPDATE: Gọi API Đổi Gói Mới (Đồng bộ thời gian)
     const handleChangePlan = async (id, newPlan, currentPermissions) => {
         const planName = newPlan === 'premium' ? '💎 GÓI PREMIUM' : newPlan === '100k' ? '🥇 GÓI VVIP' : newPlan === '50k' ? '🥈 GÓI VIP' : '🥉 GÓI CƠ BẢN';
-        if (!window.confirm(`Sếp có chắc chắn muốn nâng/hạ tài khoản này thành ${planName}?`)) return;
+        if (!window.confirm(`Sếp có chắc chắn đổi khách hàng này sang ${planName}? Hạn sử dụng sẽ được tính lại từ hôm nay!`)) return;
 
         let canViewDetail = currentPermissions?.canViewDetail || false;
         if (newPlan === '50k' || newPlan === '100k' || newPlan === 'premium') {
@@ -42,17 +43,23 @@ export default function AdminPanel({ setView, authUser }) {
 
         const updatedPermissions = { ...currentPermissions, canViewDetail };
 
-        // ĐÃ FIX: Nếu nâng lên Premium bằng tay thì xóa hạn sử dụng (planExpiry = null) và auto duyệt vào
-        const updatePayload = { plan: newPlan, permissions: updatedPermissions };
-        if (newPlan === 'premium') {
-            updatePayload.planExpiry = null;
-            updatePayload.isApproved = true;
-        }
-
         try {
-            await axios.put(`${API_URL}/users/${id}`, updatePayload);
+            await axios.put(`${API_URL}/users/${id}/change-plan`, { 
+                plan: newPlan, 
+                permissions: updatedPermissions 
+            });
             fetchUsers();
         } catch (e) { alert("Lỗi khi cập nhật gói!"); }
+    };
+
+    // TÍNH NĂNG MỚI: ÉP CẮT HẠN SỬ DỤNG VỀ X GIÂY
+    const handleForceExpiry = async (id, seconds) => {
+        if (!window.confirm(`Cắt hạn sử dụng khách này xuống còn ${seconds} giây? (Thích hợp để Test)`)) return;
+        try {
+            await axios.put(`${API_URL}/users/${id}/force-expiry`, { seconds });
+            fetchUsers();
+            alert(`Thành công! Khách này sẽ bị đá văng ra ngoài sau ${seconds} giây nữa!`);
+        } catch (e) { alert("Lỗi ép ngày!"); }
     };
 
     const handleRestrict = async (id, days) => {
@@ -77,8 +84,23 @@ export default function AdminPanel({ setView, authUser }) {
         const diff = Math.abs(exp - now);
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        // Hiện chi tiết tới giây nếu sắp hết hạn (< 1 ngày)
+        if (days === 0 && hours === 0) {
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            return `Còn ${mins} phút ${secs} giây`;
+        }
+
         return `Còn ${days} ngày ${hours} giờ`;
     };
+
+    // Hook nhỏ để đồng hồ đếm ngược tick từng giây ngoài giao diện
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     return (
         <div className="animate-fade-in-up pb-20">
@@ -120,14 +142,13 @@ export default function AdminPanel({ setView, authUser }) {
                                 
                                 <p className="text-gray-400 text-[13px] mb-3 flex items-center gap-1.5"><Mail size={12}/> {u.email}</p>
                                 
-                                {/* ĐÃ FIX: GÓI PREMIUM HIỂN THỊ VÔ THỜI HẠN */}
                                 {u.role !== 'admin' ? (
                                     u.plan === 'premium' ? (
                                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border border-purple-200 bg-purple-50 text-purple-700">
                                             <Clock size={14}/> Hạn sử dụng: Vô thời hạn
                                         </div>
                                     ) : u.isApproved ? (
-                                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                                        <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black shadow-sm border ${(!u.planExpiry || new Date() > new Date(u.planExpiry)) ? 'bg-red-50 text-red-600 border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border-green-200'}`}>
                                             <Clock size={14}/> Hạn sử dụng: {getRemainingTime(u.planExpiry)}
                                         </div>
                                     ) : (
@@ -168,6 +189,7 @@ export default function AdminPanel({ setView, authUser }) {
                                             className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-indigo-100 bg-indigo-50 text-indigo-700 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-100"
                                             value={u.plan || '10k'}
                                             onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
+                                            title="Đổi gói - Thời gian sẽ được tính lại từ đầu"
                                         >
                                             <option value="10k">🥉 GÓI CƠ BẢN (10k)</option>
                                             <option value="50k">🥈 GÓI VIP (50k)</option>
@@ -176,6 +198,23 @@ export default function AdminPanel({ setView, authUser }) {
                                         </select>
                                         <Crown size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
                                     </div>
+
+                                    {/* MENU ÉP NGÀY ĐỂ TEST */}
+                                    {u.plan !== 'premium' && (
+                                        <div className="relative group">
+                                            <select 
+                                                className="appearance-none text-[12px] font-black pl-9 pr-4 py-2.5 rounded-2xl outline-none cursor-pointer border-2 border-pink-100 bg-pink-50 text-pink-700 shadow-sm transition-all hover:border-pink-300 hover:bg-pink-100"
+                                                onChange={(e) => handleForceExpiry(u._id, e.target.value)}
+                                                value="default"
+                                                title="Cắt hạn sử dụng (Dùng để Test tính năng)"
+                                            >
+                                                <option value="default" hidden>Cắt Hạn Test</option>
+                                                <option value="10">Cắt còn 10 Giây</option>
+                                                <option value="60">Cắt còn 1 Phút</option>
+                                            </select>
+                                            <TimerReset size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500 pointer-events-none" />
+                                        </div>
+                                    )}
 
                                     <select className={`text-[12px] font-bold px-3 py-2.5 rounded-2xl outline-none cursor-pointer border transition-colors shadow-sm ${isRestricted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`} onChange={(e) => handleRestrict(u._id, e.target.value)} value={restrictStatus}>
                                         <option value="0">Bình thường</option>
