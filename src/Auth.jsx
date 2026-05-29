@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, ChevronLeft, ChevronRight, QrCode, Clock, ArrowRight, UploadCloud } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, QrCode, Clock, UploadCloud } from 'lucide-react';
 import { API_URL } from './utils';
 
 export default function Auth({ onLoginSuccess }) {
-    // Trạng thái trượt của Form (Đăng nhập / Đăng ký)
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [view, setView] = useState('LOGIN'); 
-    
-    // Trạng thái của 4 Lớp Màn hình (auth -> pricing -> qr -> success)
     const [step, setStep] = useState('auth'); 
     const [otpStep, setOtpStep] = useState(1); 
     const [planIndex, setPlanIndex] = useState(1); 
@@ -20,10 +17,23 @@ export default function Auth({ onLoginSuccess }) {
     const [registeredEmail, setRegisteredEmail] = useState(''); 
     const [billBase64, setBillBase64] = useState(null); 
 
+    // BỘ GÓI NÂNG CẤP: ĐỒNG - BẠC - VÀNG
     const plans = [
-        { id: '10k', title: 'Cơ Bản', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', features: ['Xem thống kê tổng quan', 'Khóa xem chi tiết lô', 'Hỗ trợ cơ bản'] },
-        { id: '50k', title: 'Tiêu Chuẩn', price: '50,000', period: '6 Tháng', icon: Star, qrImage: '/qr-50k.jpg', features: ['Xem đầy đủ thống kê', 'Xem chi tiết lô hàng', 'Hỗ trợ kỹ thuật 24/7'] },
-        { id: '100k', title: 'V.I.P', price: '100,000', period: 'Năm', icon: Crown, qrImage: '/qr-100k.jpg', features: ['Đầy đủ tính năng cao cấp', 'Xuất Excel báo cáo', 'Ưu tiên tính năng mới'] }
+        { 
+            id: '10k', title: 'GÓI CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', 
+            features: ['Xem thống kê tổng quan', 'Khóa xem chi tiết lô', 'Hỗ trợ cơ bản'],
+            theme: { text: '#8D6E63', bgIcon: '#EFEBE9', gradBorder: 'from-[#D7CCC8] to-[#8D6E63]', shadow: 'shadow-[#8D6E63]/30', btn: 'bg-gradient-to-r from-[#D7CCC8] to-[#8D6E63]' }
+        },
+        { 
+            id: '50k', title: 'GÓI VIP', price: '50,000', period: '6 Tháng', icon: Star, qrImage: '/qr-50k.jpg', 
+            features: ['Xem đầy đủ thống kê', 'Xem chi tiết lô hàng', 'Hỗ trợ kỹ thuật 24/7'],
+            theme: { text: '#64748B', bgIcon: '#F1F5F9', gradBorder: 'from-[#E2E8F0] to-[#64748B]', shadow: 'shadow-[#64748B]/30', btn: 'bg-gradient-to-r from-[#94A3B8] to-[#64748B]' }
+        },
+        { 
+            id: '100k', title: 'GÓI VVIP', price: '100,000', period: 'Năm', icon: Crown, qrImage: '/qr-100k.jpg', 
+            features: ['Đầy đủ tính năng cao cấp', 'Xuất Excel báo cáo', 'Ưu tiên tính năng mới'],
+            theme: { text: '#D97706', bgIcon: '#FEF3C7', gradBorder: 'from-[#FDE68A] via-[#F59E0B] to-[#D97706]', shadow: 'shadow-[#F59E0B]/40', btn: 'bg-gradient-to-r from-[#FBBF24] to-[#D97706]' }
+        }
     ];
 
     const [rememberMe, setRememberMe] = useState(false);
@@ -72,7 +82,7 @@ export default function Auth({ onLoginSuccess }) {
             const res = await axios.post(`${API_URL}${endpoint}`, formData);
             if (isRightPanelActive) { 
                 setRegisteredEmail(formData.email); 
-                setStep('pricing'); // Trượt sang chọn gói
+                setStep('pricing'); 
             }
             else {
                 const user = res.data.user;
@@ -107,7 +117,7 @@ export default function Auth({ onLoginSuccess }) {
 
     const handleFinishAndLogin = () => {
         setStep('auth');
-        togglePanel(false); // Trượt về màn hình Đăng Nhập
+        togglePanel(false); 
         setSuccessMsg('Đã gửi yêu cầu thành công! Vui lòng chờ Admin duyệt.');
     };
 
@@ -116,11 +126,10 @@ export default function Auth({ onLoginSuccess }) {
             <div className={`relative w-full max-w-[850px] min-h-[550px] bg-white rounded-[20px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
                 
                 {/* =========================================================
-                    LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (TRƯỢT MƯỢT MÀ)
+                    LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (GIỮ NGUYÊN GỐC CỦA SẾP)
                 ========================================================= */}
                 <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out bg-white ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
                     
-                    {/* KHUNG ĐĂNG KÝ (Nằm dưới, sẽ hiện lên và trượt sang phải khi Active) */}
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
                         <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <h1 className="font-extrabold text-[28px] md:text-[30px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
@@ -163,7 +172,6 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    {/* KHUNG ĐĂNG NHẬP (Nằm trên, trượt sang phải và mờ đi khi Active) */}
                     <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-10 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
                         <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
                             <div className="w-[65px] h-[65px] rounded-full flex items-center justify-center mb-3 shadow-sm border border-gray-100 overflow-hidden bg-white">
@@ -235,18 +243,13 @@ export default function Auth({ onLoginSuccess }) {
                         </form>
                     </div>
 
-                    {/* OVERLAY XANH TRƯỢT */}
                     <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : 'translate-x-0'}`}>
                         <div className={`bg-gradient-to-r from-[#26D0CE] to-[#21C8F6] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
-                            
-                            {/* Panel Trái (Thông báo khi ở Form Đăng ký) */}
                             <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
                                 <h1 className="font-extrabold text-[36px] mb-4">Mừng Trở Lại!</h1>
                                 <p className="text-[15px] font-medium tracking-wide leading-relaxed mb-8 opacity-95">Đăng nhập ngay để tiếp tục quản lý dòng tiền của bạn.</p>
                                 <button onClick={() => togglePanel(false)} className="rounded-full border-[1.5px] border-white bg-transparent text-white text-[13px] font-bold py-3.5 px-12 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">ĐĂNG NHẬP</button>
                             </div>
-
-                            {/* Panel Phải (Thông báo khi ở Form Đăng nhập) */}
                             <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-12 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
                                 <h1 className="font-extrabold text-[36px] mb-4">Chào Người Mới!</h1>
                                 <p className="text-[15px] font-medium tracking-wide leading-relaxed mb-8 opacity-95">Đăng ký để sử dụng không gian quản lý tài chính thông minh nhất.</p>
@@ -257,50 +260,86 @@ export default function Auth({ onLoginSuccess }) {
                 </div>
 
                 {/* =========================================================
-                    LỚP 2: MÀN HÌNH LƯỚT CHỌN GÓI
+                    LỚP 2: MÀN HÌNH CHỌN GÓI (HIỆU ỨNG THẺ CAO CẤP)
                 ========================================================= */}
-                <div className={`absolute inset-0 bg-[#f8fafc] z-[55] flex flex-col items-center justify-center p-6 transition-transform duration-700 ease-in-out ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <h2 className="text-3xl font-black text-gray-800 mb-6">Chọn Gói Dịch Vụ</h2>
-                    <div className="flex gap-4 w-full max-w-[800px] overflow-hidden">
+                <div className={`absolute inset-0 bg-gray-50/80 backdrop-blur-md z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="text-center mb-10 mt-10 md:mt-0">
+                        <h2 className="text-[28px] md:text-[34px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
+                        <p className="text-gray-500 font-medium max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng của bạn.</p>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row gap-6 w-full max-w-[900px]">
                         {plans.map((p, i) => (
-                            <div key={p.id} onClick={() => setPlanIndex(i)} className={`flex-1 p-6 rounded-3xl cursor-pointer transition-all border-4 ${planIndex === i ? 'bg-white border-[#26D0CE] shadow-2xl scale-105' : 'bg-gray-100 border-transparent opacity-60'}`}>
-                                <div className="w-12 h-12 bg-blue-50 text-[#33A1FD] rounded-xl flex items-center justify-center mb-4"><p.icon /></div>
-                                <h3 className="font-bold text-lg">{p.title}</h3>
-                                <div className="text-2xl font-black text-[#26D0CE] my-2">{p.price}đ</div>
-                                <ul className="text-[11px] space-y-1.5 text-gray-500 mb-6">
-                                    {p.features.map(f => <li key={f} className="flex gap-1"><Check size={12} className="text-green-500"/> {f}</li>)}
-                                </ul>
+                            <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[2px] rounded-[32px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `bg-gradient-to-br ${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
+                                <div className="bg-white rounded-[30px] p-6 h-full flex flex-col relative overflow-hidden">
+                                    
+                                    {/* Hiệu ứng Glow mờ bên trong thẻ khi được chọn */}
+                                    {planIndex === i && <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
+                                    
+                                    <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-14 h-14 mx-auto rounded-[18px] flex items-center justify-center mb-5 relative z-10 shadow-sm"><p.icon size={26} strokeWidth={2.5}/></div>
+                                    <h3 className="font-extrabold text-[16px] mb-2 text-center tracking-wide" style={{ color: p.theme.text }}>{p.title}</h3>
+                                    
+                                    <div className="text-[34px] font-black text-center mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
+                                        {p.price}<span className="text-[14px] font-bold text-gray-400 ml-1">/ {p.period}</span>
+                                    </div>
+                                    
+                                    <ul className="text-left space-y-4 mb-8 flex-1 relative z-10 px-2">
+                                        {p.features.map((f, idx) => (
+                                            <li key={idx} className="flex items-start gap-2.5 text-[13px] text-gray-600 font-semibold leading-relaxed">
+                                                <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}>
+                                                    <Check size={14} style={{ color: p.theme.text }} strokeWidth={3}/>
+                                                </div>
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <div className="mt-auto">
+                                        <button className={`w-full py-3.5 rounded-xl font-bold text-white text-[13px] tracking-widest shadow-md transition-all ${planIndex === i ? p.theme.btn : 'bg-gray-300 text-gray-500'}`}>
+                                            {planIndex === i ? 'ĐANG CHỌN' : 'CHỌN GÓI NÀY'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
-                    <button onClick={handleSelectPlan} className="mt-8 bg-[#1D1D1F] text-white px-16 py-4 rounded-full font-black shadow-xl active:scale-95 transition-all">TIẾP TỤC THANH TOÁN</button>
+
+                    <button onClick={handleSelectPlan} className="mt-12 bg-gray-900 text-white px-12 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:bg-black">
+                        TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
+                    </button>
                 </div>
 
                 {/* =========================================================
-                    LỚP 3: QUÉT QR & TẢI BILL
+                    LỚP 3: QUÉT QR & TẢI BILL (SỬA LẠI ĐỂ TƯƠNG THÍCH MÀU)
                 ========================================================= */}
-                <div className={`absolute inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="flex flex-col lg:flex-row items-center gap-12 w-full max-w-[1000px]">
-                        <div className="text-center lg:text-left flex-1">
-                            <h2 className="text-3xl font-black text-gray-800 mb-2">Quét & Tải Bill</h2>
-                            <p className="text-gray-500 mb-6 font-medium">Vui lòng quét mã <b>{plans[planIndex].title}</b> và tải ảnh xác nhận lên.</p>
+                <div className={`absolute inset-0 bg-white z-[60] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-y-auto ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
+                        <div className="text-center lg:text-left flex-1 w-full mt-10 lg:mt-0">
+                            <h2 className="text-[28px] md:text-[36px] font-black text-gray-800 mb-3 leading-tight">Hoàn tất<br className="hidden lg:block"/>Thanh toán</h2>
+                            <p className="text-gray-500 mb-8 font-medium text-[15px] leading-relaxed">Bạn đang chọn <strong style={{ color: plans[planIndex].theme.text }}>{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã và tải ảnh xác nhận lệnh chuyển tiền lên hệ thống.</p>
                             
-                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all mb-4">
+                            <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-3xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all mb-6">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                    {billBase64 ? <Check className="text-green-500 mb-2" size={32}/> : <UploadCloud className="text-gray-400 mb-2" size={32}/>}
-                                    <p className="text-sm text-gray-500 font-bold">{billBase64 ? "ĐÃ CHỌN ẢNH BILL" : "BẤM ĐỂ TẢI ẢNH CHUYỂN KHOẢN"}</p>
+                                    {billBase64 ? <Check className="text-green-500 mb-3" size={36}/> : <UploadCloud className="text-gray-400 mb-3" size={36}/>}
+                                    <p className="text-[13px] text-gray-600 font-bold tracking-wide">{billBase64 ? "ĐÃ CHỌN ẢNH THÀNH CÔNG" : "BẤM VÀO ĐỂ TẢI ẢNH BILL"}</p>
                                 </div>
                                 <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                             </label>
 
-                            <button onClick={handleConfirmPayment} disabled={loading || !billBase64} className="w-full bg-[#26D0CE] text-white py-4 rounded-2xl font-black shadow-lg disabled:bg-gray-300">XÁC NHẬN ĐÃ CHUYỂN {loading ? '...' : ''}</button>
-                            <button type="button" onClick={() => setStep('pricing')} className="w-full mt-4 text-gray-400 font-bold text-sm underline border-none bg-transparent">Quay lại chọn gói</button>
+                            <button onClick={handleConfirmPayment} disabled={loading || !billBase64} className={`w-full text-white py-4 rounded-full font-black text-[14px] uppercase tracking-widest shadow-xl disabled:bg-gray-300 disabled:shadow-none active:scale-95 transition-all ${plans[planIndex].theme.btn}`}>
+                                {loading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN ĐÃ CHUYỂN'}
+                            </button>
+                            <div className="text-center mt-6">
+                                <button type="button" onClick={() => setStep('pricing')} className="text-gray-400 hover:text-gray-600 font-bold text-[13px] underline transition-colors">Quay lại chọn gói</button>
+                            </div>
                         </div>
 
-                        {/* MÃ QR SIÊU TO */}
-                        <div className="bg-white border-8 border-gray-100 rounded-[40px] shadow-2xl p-4 w-[350px] lg:w-[420px] h-[350px] lg:h-[420px]">
-                            <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[20px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                            <div className="hidden text-gray-400 text-sm italic text-center px-4 mt-20">Sếp chưa thả ảnh qr-10k.jpg, qr-50k.jpg, qr-100k.jpg vào thư mục public</div>
+                        {/* MÃ QR SIÊU TO CÓ VIỀN MÀU THEO GÓI */}
+                        <div className={`p-[4px] rounded-[44px] bg-gradient-to-br ${plans[planIndex].theme.gradBorder} shadow-2xl w-[320px] sm:w-[400px] shrink-0`}>
+                            <div className="bg-white rounded-[40px] p-4 h-[400px] sm:h-[480px] flex items-center justify-center overflow-hidden relative">
+                                <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[24px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+                                <div className="hidden text-gray-400 text-sm italic text-center px-4 absolute">Ảnh mã QR chưa có trong thư mục public</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -308,11 +347,13 @@ export default function Auth({ onLoginSuccess }) {
                 {/* =========================================================
                     LỚP 4: THÀNH CÔNG & CHỜ DUYỆT
                 ========================================================= */}
-                <div className={`absolute inset-0 bg-green-50 z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="w-24 h-24 bg-white shadow-xl text-green-500 rounded-full flex items-center justify-center mb-6 animate-bounce"><Check size={50} strokeWidth={4}/></div>
-                    <h2 className="text-3xl font-black text-gray-800 mb-4">Đã gửi yêu cầu!</h2>
-                    <p className="text-gray-600 text-center max-w-sm mb-12 font-medium">Hệ thống đang kiểm tra Bill của bạn. Vui lòng chờ Admin kích hoạt trong vài phút.</p>
-                    <button onClick={handleFinishAndLogin} className="bg-gray-800 text-white px-16 py-4 rounded-full font-black shadow-xl active:scale-95 transition-all uppercase tracking-widest">Đã Hiểu</button>
+                <div className={`absolute inset-0 bg-green-50/80 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
+                    <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
+                    <p className="text-gray-600 text-[16px] mb-12 text-center max-w-[400px] font-medium leading-relaxed">
+                        Hệ thống đã nhận được Bill thanh toán của bạn. Vui lòng đợi Admin kiểm tra và kích hoạt tài khoản trong vài phút.
+                    </p>
+                    <button onClick={handleFinishAndLogin} className="bg-gray-900 hover:bg-black text-white px-16 py-4 rounded-full font-black text-[14px] shadow-2xl active:scale-95 transition-all uppercase tracking-widest">ĐÃ HIỂU VÀ QUAY VỀ</button>
                 </div>
 
             </div>
