@@ -108,13 +108,14 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 }
             }
         } catch (err) { 
-            // ĐÃ FIX: Bắt lệnh từ Backend, nếu là khách bỏ dở đăng ký -> Ép nhảy sang Chọn Gói
-            if (err.response?.data?.error === 'INCOMPLETE_REGISTRATION') {
-                setRegisteredEmail(err.response.data.email);
+            const errorMsg = err.response?.data?.error;
+            // ĐÃ FIX TẠI ĐÂY: Nhận diện mã khách bỏ dở và chuyển sang trang Bảng Giá
+            if (errorMsg === 'INCOMPLETE_REGISTRATION') {
+                setRegisteredEmail(err.response?.data?.email || formData.email);
                 setStep('pricing');
-                showToast("Vui lòng hoàn tất việc chọn gói và nạp Bill!", 'error');
+                showToast("Vui lòng hoàn tất việc chọn gói và tải Bill lên nhé!", 'error');
             } else {
-                showToast(err.response?.data?.error || "Sai thông tin đăng nhập!", 'error'); 
+                showToast(errorMsg || "Sai thông tin đăng nhập!", 'error'); 
             }
         }
         finally { setLoading(false); }
@@ -148,7 +149,6 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
         showToast("Đã đăng xuất tài khoản an toàn!", 'success');
     };
 
-    // Hàm riêng cho việc Quay về Đăng Nhập (Đăng ký mới)
     const handleBackToLogin = () => {
         setStep('auth');
         setView('LOGIN');
@@ -296,7 +296,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 </div>
 
                 {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
-                <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-6 sm:p-10 transition-transform duration-700 ease-in-out overflow-hidden ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] flex flex-col items-center justify-center p-4 sm:p-8 transition-transform duration-700 ease-in-out overflow-hidden ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
                     
                     <div className="text-center mb-8 mt-4 md:mt-0">
                         <h2 className="text-[30px] md:text-[36px] font-black text-gray-800 mb-2">Bảng Giá Dịch Vụ</h2>
@@ -376,7 +376,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     </div>
                 </div>
 
-                {/* ĐÃ FIX: PHÂN TÁCH MÀN HÌNH THÀNH CÔNG CHO 2 ĐỐI TƯỢNG */}
+                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
                 <div className={`absolute inset-0 bg-green-50/90 backdrop-blur-md z-[70] flex flex-col items-center justify-center p-8 transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
                     <div className="w-28 h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-8 animate-bounce"><Check size={60} strokeWidth={4}/></div>
                     <h2 className="text-[32px] font-black text-[#1D1D1F] mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
