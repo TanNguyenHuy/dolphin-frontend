@@ -21,7 +21,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
         setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
     };
 
-    // ĐÃ FIX: Bỏ chữ "GÓI", làm màu Satin mờ sang trọng, đồng bộ kích thước nút
+    // ĐÃ FIX: Nhãn Uniform size, Satin Matte mờ mịn nhẹ nhàng, bỏ chữ "GÓI"
     const plans = [
         { 
             id: '10k', title: 'CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', 
