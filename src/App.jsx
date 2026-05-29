@@ -60,8 +60,9 @@ export default function App() {
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
 
-    // HỆ THỐNG ĐẾM NGƯỢC VÀ ĐÁ VĂNG KHÁCH (MỚI THÊM)
+    // HỆ THỐNG ĐẾM NGƯỢC VÀ ĐÁ VĂNG KHÁCH (ĐÃ SỬA LẠI THÔNG BÁO XỊN)
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
+    const [showExpiryToast, setShowExpiryToast] = useState(false);
 
     useEffect(() => {
         if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) return;
@@ -71,11 +72,13 @@ export default function App() {
             const exp = new Date(authUser.planExpiry);
             
             if (now >= exp) {
-                // ĐÁ VĂNG: Thông báo, xóa Token, tải lại trang để chuyển về màn hình đăng nhập
-                alert("⏳ Gói dịch vụ của bạn đã hết hạn! Vui lòng đăng nhập lại và gia hạn để tiếp tục sử dụng.");
-                localStorage.removeItem('authUser');
-                sessionStorage.removeItem('authUser');
-                window.location.reload();
+                // KHI HẾT HẠN: Hiện Toast màu đỏ 3 giây rồi mới đá văng ra ngoài
+                setShowExpiryToast(true);
+                setTimeout(() => {
+                    localStorage.removeItem('authUser');
+                    sessionStorage.removeItem('authUser');
+                    window.location.reload();
+                }, 3000); 
             } else {
                 const diff = Math.abs(exp - now);
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -495,7 +498,13 @@ export default function App() {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
             <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
-
+            {/* TOAST ĐÁ VĂNG KHÁCH (HIỆN LÊN 3 GIÂY TRƯỚC KHI RELOAD) */}
+            <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ease-in-out ${showExpiryToast ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0 pointer-events-none'}`}>
+                <div className="flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl bg-white border border-red-200 text-red-600">
+                    <AlertTriangle size={24}/>
+                    <p className="font-bold text-[15px] tracking-wide">⏳ Gói dịch vụ đã hết hạn! Đang chuyển hướng...</p>
+                </div>
+            </div>
             <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-[32px] px-5 py-3 md:py-3 flex justify-between items-start md:items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
                 <div className="flex flex-col">
                     <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
