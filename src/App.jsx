@@ -154,6 +154,7 @@ export default function App() {
 
     const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); setView('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
+    // ĐÂY LÀ PHẦN LÕI ĐÃ ĐƯỢC FIX CỘNG DỒN TỪNG SẢN PHẨM TRỰC TIẾP
     const fetchDashboard = async () => { 
         try { 
             const res = await axios.get(`${API_URL}/sessions`); 
@@ -162,18 +163,38 @@ export default function App() {
                 try {
                     const detailRes = await axios.get(`${API_URL}/data/${ss.id}`);
                     const dailyList = detailRes.data?.daily || [];
+                    
+                    // --- BẮT ĐẦU: THUẬT TOÁN TỰ ĐỘNG CỘNG DỒN FRONTEND ---
+                    let computedTongNhap = 0;
+                    let computedTongBan = 0;
+                    let computedDoanhThu = 0;
+
+                    dailyList.forEach(item => {
+                        computedTongNhap += (Number(item.so_luong_nhap) || 0);
+                        computedTongBan += (Number(item.so_luong) || 0);
+                        computedDoanhThu += (Number(item.so_tien_ban_duoc) || 0);
+                    });
+
+                    // Ép các thông số của đợt bán theo đúng thực tế tổng hợp được
+                    ss.tong_sl_nhap = computedTongNhap;
+                    ss.tong_sl_ban = computedTongBan;
+                    ss.tong_doanh_thu = computedDoanhThu;
                     ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
+                    // --- KẾT THÚC CỘNG DỒN ---
+
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const safeBalesData = Array.isArray(balesData) ? balesData : [];
                     const sortedBales = [...safeBalesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
                     let computedVonTon = 0; let trungBinh = ss.tong_sl_nhap > 0 ? (ss.so_tien_cua_kien / ss.tong_sl_nhap) : 0;
+                    
                     dailyList.forEach((row) => {
                         const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
-                        let sl_con = (row.so_luong_nhap || 0) - (row.so_luong || 0);
+                        let sl_con = (Number(row.so_luong_nhap) || 0) - (Number(row.so_luong) || 0);
                         if (matchedBale) { computedVonTon += Math.round(sl_con * ((matchedBale.cost || 0) / (matchedBale.qty || 1))); } 
                         else { computedVonTon += Math.round(sl_con * trungBinh); }
                     });
                     ss.tong_tien_ton_computed = computedVonTon;
+                    
                     const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
                     if (dates.length > 0) { ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; } 
                     else { ss.actual_start_date = ss.start_date; ss.actual_end_date = ss.start_date; }
@@ -567,16 +588,16 @@ export default function App() {
                         </div>
                     </a>
                     
-                    {/* ĐÃ FIX: Đồng bộ nhãn w-[95px] h-[26px], xóa chữ GÓI, giữ nguyên màu gradient gốc */}
+                    {/* BẢN CHUẨN: KHÔNG CÓ CHỮ GÓI, KÍCH THƯỚC w-[95px] h-[26px], GIỮ MÀU GRADIENT GỐC */}
                     {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md">
+                        <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
                             <Crown size={12}/> PREMIUM
                         </div>
                     ) : (
-                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-md text-white ${
-                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 border-yellow-500' : 
-                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-400 to-slate-500 border-slate-400' : 
-                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] border-[#8D6E63]' 
+                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md text-white ${
+                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 
+                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800 border-none' : 
+                            'bg-gradient-to-r from-stone-300 to-stone-400 text-stone-800 border-none'
                         }`}>
                             {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                         </div>
