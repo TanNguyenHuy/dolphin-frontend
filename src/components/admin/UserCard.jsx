@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Crown, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, MessageSquareOff } from 'lucide-react';
+import { Star, Trash2, Crown, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, MessageSquareOff } from 'lucide-react';
 
 export default function UserCard({
     u, getRestrictStatus, getChatRestrictStatus, getRemainingTime,
