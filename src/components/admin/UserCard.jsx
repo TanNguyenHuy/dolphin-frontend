@@ -19,16 +19,16 @@ export default function UserCard({
                 <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                     {isAbandoned ? (
-                        <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-300 bg-gray-200 text-gray-500 shadow-sm">CHƯA CHỌN</span>
+                        <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-300 bg-[linear-gradient(135deg,#E5E7EB_0%,#FFFFFF_50%,#D1D5DB_100%)] text-gray-500 shadow-[inset_0_1px_3px_rgba(255,255,255,1)]">CHƯA CHỌN</span>
                     ) : u.plan === 'premium' || u.role === 'admin' ? (
-                        <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-300 bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md"><Crown size={12}/> PREMIUM</span>
+                        <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[linear-gradient(135deg,#4C1D95_0%,#D8B4FE_40%,#7E22CE_60%,#312E81_100%)] text-white border border-[#E9D5FF] shadow-[inset_0_1px_4px_rgba(255,255,255,0.7),0_4px_10px_rgba(109,40,217,0.4)]"><Crown size={12}/> PREMIUM</span>
                     ) : (
-                        <span className={`w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-md text-white ${
-                            u.plan === '100k' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 border-yellow-500' : 
-                            u.plan === '50k' ? 'bg-gradient-to-r from-slate-400 to-slate-500 border-slate-400' : 
-                            'bg-gradient-to-r from-[#D7CCC8] to-[#A1887F] border-[#8D6E63]' 
+                        <span className={`w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                            u.plan === '100k' ? 'bg-[linear-gradient(135deg,#B45309_0%,#FDE68A_40%,#D97706_60%,#78350F_100%)] text-[#451A03] border border-[#FEF08A] shadow-[inset_0_1px_4px_rgba(255,255,255,0.8),0_4px_10px_rgba(180,83,9,0.4)]' : 
+                            u.plan === '50k' ? 'bg-[linear-gradient(135deg,#64748B_0%,#F8FAFC_40%,#94A3B8_60%,#334155_100%)] text-[#0F172A] border border-[#FFFFFF] shadow-[inset_0_1px_4px_rgba(255,255,255,0.9),0_4px_10px_rgba(100,116,139,0.4)]' : 
+                            'bg-[linear-gradient(135deg,#78350F_0%,#FBBF24_40%,#B45309_60%,#451A03_100%)] text-[#FFFBEB] border border-[#FCD34D] shadow-[inset_0_1px_4px_rgba(255,255,255,0.5),0_4px_10px_rgba(120,53,15,0.4)]' 
                         }`}>
-                            {u.plan === '100k' ? 'VVIP' : u.plan === '50k' ? 'VIP' : 'CƠ BẢN'}
+                            {u.plan === '100k' ? <><Crown size={12}/> VVIP</> : u.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                         </span>
                     )}
                 </div>
