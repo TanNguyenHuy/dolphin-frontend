@@ -32,14 +32,14 @@ export default function Header({
                 </a>
                 
                 {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                    <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[linear-gradient(135deg,#4C1D95_0%,#D8B4FE_40%,#7E22CE_60%,#312E81_100%)] text-white border border-[#E9D5FF] shadow-[inset_0_1px_4px_rgba(255,255,255,0.7),0_4px_10px_rgba(109,40,217,0.4)]">
+                    <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md bg-[linear-gradient(110deg,rgba(216,180,254,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(192,132,252,0.5)_50%,rgba(168,85,247,0.5)_100%)] border border-white/80 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(147,51,234,0.4),0_4px_12px_rgba(168,85,247,0.4)] text-purple-900">
                         <Crown size={12}/> PREMIUM
                     </div>
                 ) : (
-                    <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                        authUser?.plan === '100k' ? 'bg-[linear-gradient(135deg,#EAB308_0%,#FEF08A_40%,#EAB308_60%,#854D0E_100%)] text-[#422006] border border-[#FEF9C3] shadow-[inset_0_1px_4px_rgba(255,255,255,0.9),0_4px_10px_rgba(234,179,8,0.4)]' : 
-                        authUser?.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8_0%,#F1F5F9_40%,#94A3B8_60%,#475569_100%)] text-[#0F172A] border border-[#FFFFFF] shadow-[inset_0_1px_4px_rgba(255,255,255,1),0_4px_10px_rgba(148,163,184,0.4)]' : 
-                        'bg-[linear-gradient(135deg,#C2410C_0%,#FED7AA_40%,#C2410C_60%,#7C2D12_100%)] text-[#FFFBEB] border border-[#FFEDD5] shadow-[inset_0_1px_4px_rgba(255,255,255,0.6),0_4px_10px_rgba(194,65,12,0.4)]'
+                    <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/80 ${
+                        authUser?.plan === '100k' ? 'bg-[linear-gradient(110deg,rgba(253,230,138,0.7)_0%,rgba(255,255,255,0.9)_25%,rgba(251,191,36,0.5)_50%,rgba(217,119,6,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(217,119,6,0.4),0_4px_12px_rgba(245,158,11,0.4)] text-amber-900' : 
+                        authUser?.plan === '50k' ? 'bg-[linear-gradient(110deg,rgba(241,245,249,0.8)_0%,rgba(255,255,255,1)_25%,rgba(203,213,225,0.5)_50%,rgba(148,163,184,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(148,163,184,0.4),0_4px_12px_rgba(148,163,184,0.3)] text-slate-800' : 
+                        'bg-[linear-gradient(110deg,rgba(254,215,170,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(251,146,60,0.5)_50%,rgba(234,88,12,0.4)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(234,88,12,0.4),0_4px_12px_rgba(249,115,22,0.3)] text-orange-900'
                     }`}>
                         {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                     </div>
