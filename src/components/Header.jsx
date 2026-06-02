@@ -37,9 +37,9 @@ export default function Header({
                     </div>
                 ) : (
                     <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                        authUser?.plan === '100k' ? 'bg-[linear-gradient(135deg,#B45309_0%,#FDE68A_40%,#D97706_60%,#78350F_100%)] text-[#451A03] border border-[#FEF08A] shadow-[inset_0_1px_4px_rgba(255,255,255,0.8),0_4px_10px_rgba(180,83,9,0.4)]' : 
-                        authUser?.plan === '50k' ? 'bg-[linear-gradient(135deg,#64748B_0%,#F8FAFC_40%,#94A3B8_60%,#334155_100%)] text-[#0F172A] border border-[#FFFFFF] shadow-[inset_0_1px_4px_rgba(255,255,255,0.9),0_4px_10px_rgba(100,116,139,0.4)]' : 
-                        'bg-[linear-gradient(135deg,#78350F_0%,#FBBF24_40%,#B45309_60%,#451A03_100%)] text-[#FFFBEB] border border-[#FCD34D] shadow-[inset_0_1px_4px_rgba(255,255,255,0.5),0_4px_10px_rgba(120,53,15,0.4)]'
+                        authUser?.plan === '100k' ? 'bg-[linear-gradient(135deg,#EAB308_0%,#FEF08A_40%,#EAB308_60%,#854D0E_100%)] text-[#422006] border border-[#FEF9C3] shadow-[inset_0_1px_4px_rgba(255,255,255,0.9),0_4px_10px_rgba(234,179,8,0.4)]' : 
+                        authUser?.plan === '50k' ? 'bg-[linear-gradient(135deg,#94A3B8_0%,#F1F5F9_40%,#94A3B8_60%,#475569_100%)] text-[#0F172A] border border-[#FFFFFF] shadow-[inset_0_1px_4px_rgba(255,255,255,1),0_4px_10px_rgba(148,163,184,0.4)]' : 
+                        'bg-[linear-gradient(135deg,#C2410C_0%,#FED7AA_40%,#C2410C_60%,#7C2D12_100%)] text-[#FFFBEB] border border-[#FFEDD5] shadow-[inset_0_1px_4px_rgba(255,255,255,0.6),0_4px_10px_rgba(194,65,12,0.4)]'
                     }`}>
                         {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
                     </div>
