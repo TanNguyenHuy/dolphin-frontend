@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound, Crown, Star, Check, QrCode, Clock, UploadCloud, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Crown, Star, Eye } from 'lucide-react';
 import { API_URL } from './utils';
+
+// Import các Module vừa bóc tách
+import Toast from './components/Toast';
+import AuthForm from './components/auth/AuthForm';
+import PricingPlan from './components/auth/PricingPlan';
+import PaymentQR from './components/auth/PaymentQR';
+import SuccessStatus from './components/auth/SuccessStatus';
 
 export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [view, setView] = useState('LOGIN'); 
-    
     const [step, setStep] = useState(expiredEmail ? 'pricing' : 'auth'); 
     const [registeredEmail, setRegisteredEmail] = useState(expiredEmail || ''); 
-    
     const [otpStep, setOtpStep] = useState(1); 
     const [planIndex, setPlanIndex] = useState(1); 
     const [loading, setLoading] = useState(false);
@@ -24,7 +29,6 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
         setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
     };
 
-    // ĐÃ FIX: Áp dụng dải màu ánh kim (Metallic Gradient) và Viền nổi 3D (Inner Shadow)
     const plans = [
         { 
             id: '10k', title: 'GÓI CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', 
@@ -156,10 +160,8 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
         setRegisteredEmail('');
         setBillBase64(null);
         setFormData({...formData, password: '', otp: '', newPassword: ''});
-        
         localStorage.removeItem('authUser');
         sessionStorage.removeItem('authUser');
-        
         if (onLogout) onLogout();
         showToast("Đã đăng xuất tài khoản an toàn!", 'success');
     };
@@ -176,252 +178,29 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
             
-            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
-                <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
-                    {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
-                    <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
-                </div>
-            </div>
+            <Toast toast={toast} />
 
             <div className={`relative w-full max-w-[1050px] min-h-[600px] md:min-h-[700px] bg-white rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
-                
-                {/* LỚP 1: MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ */}
-                <div className={`absolute inset-0 w-full h-full transition-transform duration-700 ease-in-out bg-white ${step !== 'auth' ? '-translate-x-full' : 'translate-x-0'}`}>
-                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 transition-all duration-700 ease-in-out ${isRightPanelActive ? 'md:translate-x-full opacity-100 z-20 pointer-events-auto' : 'opacity-0 pointer-events-none z-10'}`}>
-                        <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
-                            <h1 className="font-extrabold text-[28px] md:text-[34px] mb-2 text-[#333]">Tạo Tài Khoản</h1>
-                            <p className="text-[14px] text-gray-500 mb-8 font-medium">Tài khoản đầu tiên sẽ là Admin</p>
-
-                            {otpStep === 1 ? (
-                                <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
-                                        <User size={20} className="text-gray-400" />
-                                        <input required type="text" placeholder="Tên hiển thị" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                                    </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
-                                        <Mail size={20} className="text-gray-400" />
-                                        <input required type="email" placeholder="Email đăng nhập" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                                    </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-8 relative">
-                                        <Lock size={20} className="text-gray-400" />
-                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
-                                    </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-[linear-gradient(135deg,#21C8F6,#26D0CE)] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(38,208,206,0.3)] tracking-wider">
-                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐĂNG KÝ NGAY'}
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6">
-                                        <KeyRound size={20} className="text-[#26D0CE]" />
-                                        <input required type="text" placeholder="Nhập mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[18px] text-center font-bold tracking-[0.3em] text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
-                                    </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-[linear-gradient(135deg,#21C8F6,#26D0CE)] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(38,208,206,0.3)] tracking-wider">
-                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'XÁC NHẬN MÃ OTP'}
-                                    </button>
-                                </>
-                            )}
-                            <button type="button" onClick={() => togglePanel(false)} className="md:hidden mt-8 text-[#26D0CE] text-[14px] font-bold underline">Đã có tài khoản? Đăng nhập</button>
-                        </form>
-                    </div>
-
-                    <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full flex flex-col items-center justify-center p-8 md:p-12 transition-all duration-700 ease-in-out bg-white ${isRightPanelActive ? 'md:translate-x-full opacity-0 pointer-events-none z-10' : 'translate-x-0 opacity-100 z-20 pointer-events-auto'}`}>
-                        <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full h-full text-center">
-                            <div className="w-[75px] h-[75px] rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-100 overflow-hidden bg-white">
-                                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { e.target.style.display='none'; }} />
-                            </div>
-                            <h1 className="font-extrabold text-[28px] md:text-[34px] mb-2 text-[#222]">
-                                {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
-                            </h1>
-                            <p className="text-[14px] text-gray-500 mb-8 font-medium">
-                                {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : 'Nhập email để nhận mã khôi phục'}
-                            </p>
-
-                            {view === 'LOGIN' ? (
-                                <>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
-                                        <Mail size={20} className="text-gray-400" />
-                                        <input required type="email" placeholder="Email" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                                    </div>
-                                    <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-5 relative">
-                                        <Lock size={20} className="text-gray-400" />
-                                        <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
-                                    </div>
-                                    <div className="flex items-center justify-between w-full px-2 mb-8">
-                                        <label className="flex items-center cursor-pointer group">
-                                            <input type="checkbox" className="mr-2 cursor-pointer w-[16px] h-[16px] accent-[#26D0CE]" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                                            <span className="text-[14px] text-gray-500 group-hover:text-gray-800 transition-colors font-medium">Ghi nhớ tài khoản</span>
-                                        </label>
-                                    </div>
-                                    <button type="submit" disabled={loading} className="rounded-full bg-[linear-gradient(135deg,#21C8F6,#26D0CE)] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(38,208,206,0.3)] tracking-wider">
-                                        {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐĂNG NHẬP'}
-                                    </button>
-                                    <button type="button" onClick={() => { setView('FORGOT'); setOtpStep(1); }} className="mt-6 text-[14px] text-[#21C8F6] hover:text-[#26D0CE] font-semibold transition-colors">Quên mật khẩu?</button>
-                                </>
-                            ) : (
-                                otpStep === 1 ? (
-                                    <>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6">
-                                            <Mail size={20} className="text-gray-400" />
-                                            <input required type="email" placeholder="Email của bạn" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-gray-700" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                                        </div>
-                                        <button type="submit" disabled={loading} className="rounded-full bg-[linear-gradient(135deg,#21C8F6,#26D0CE)] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(38,208,206,0.3)] tracking-wider">
-                                            {loading ? <RefreshCw size={20} className="animate-spin" /> : 'NHẬN MÃ OTP'}
-                                        </button>
-                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[14px] text-gray-500 hover:text-[#26D0CE] font-semibold">Quay lại đăng nhập</button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-4">
-                                            <KeyRound size={20} className="text-[#26D0CE]" />
-                                            <input required type="text" placeholder="Mã OTP 6 số" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] text-center tracking-widest font-bold text-gray-700" maxLength={6} value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} />
-                                        </div>
-                                        <div className="bg-[#f4f6f9] w-full rounded-full flex items-center px-5 py-4 mb-6 relative">
-                                            <Lock size={20} className="text-gray-400" />
-                                            <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="bg-transparent outline-none border-none w-full ml-3 text-[15px] pr-8 text-gray-700" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} />
-                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
-                                        </div>
-                                        <button type="submit" disabled={loading} className="rounded-full bg-[linear-gradient(135deg,#21C8F6,#26D0CE)] text-white text-[15px] font-bold py-4 px-8 transition-transform active:scale-95 hover:opacity-90 w-full flex justify-center uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(38,208,206,0.3)] mb-4 tracking-wider">
-                                            {loading ? <RefreshCw size={20} className="animate-spin" /> : 'ĐỔI MẬT KHẨU'}
-                                        </button>
-                                        <button type="button" onClick={() => { setView('LOGIN'); }} className="text-[14px] text-gray-500 hover:text-[#26D0CE] font-semibold">Hủy</button>
-                                    </>
-                                )
-                            )}
-                            <button type="button" onClick={() => togglePanel(true)} className="md:hidden mt-8 text-[#26D0CE] text-[14px] font-bold underline">Chưa có tài khoản? Tạo ngay</button>
-                        </form>
-                    </div>
-
-                    <div className={`hidden md:block absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50 ${isRightPanelActive ? '-translate-x-full' : 'translate-x-0'}`}>
-                        <div className={`bg-[linear-gradient(135deg,#26D0CE,#21C8F6)] relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-1/2' : 'translate-x-0'}`}>
-                            <div className={`absolute top-0 left-0 flex flex-col items-center justify-center w-1/2 h-full px-14 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-0' : '-translate-x-[20%]'}`}>
-                                <h1 className="font-extrabold text-[40px] mb-4">Mừng Trở Lại!</h1>
-                                <p className="text-[16px] font-medium tracking-wide leading-relaxed mb-10 opacity-95">Đăng nhập ngay để tiếp tục quản lý dòng tiền của bạn.</p>
-                                <button onClick={() => togglePanel(false)} className="rounded-full border-[2px] border-white bg-transparent text-white text-[14px] font-bold py-4 px-14 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">ĐĂNG NHẬP</button>
-                            </div>
-                            <div className={`absolute top-0 right-0 flex flex-col items-center justify-center w-1/2 h-full px-14 text-center text-white transition-transform duration-700 ease-in-out ${isRightPanelActive ? 'translate-x-[20%]' : 'translate-x-0'}`}>
-                                <h1 className="font-extrabold text-[40px] mb-4">Chào Người Mới!</h1>
-                                <p className="text-[16px] font-medium tracking-wide leading-relaxed mb-10 opacity-95">Đăng ký để sử dụng không gian quản lý tài chính thông minh nhất.</p>
-                                <button onClick={() => togglePanel(true)} className="rounded-full border-[2px] border-white bg-transparent text-white text-[14px] font-bold py-4 px-14 tracking-widest uppercase transition-transform active:scale-95 hover:bg-white hover:text-[#26D0CE]">TẠO TÀI KHOẢN</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* LỚP 2: MÀN HÌNH CHỌN GÓI */}
-                <div className={`absolute inset-0 bg-gray-50/95 backdrop-blur-sm z-[55] overflow-y-auto md:overflow-hidden custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'pricing' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="flex flex-col items-center justify-start md:justify-center min-h-full w-full p-4 py-8 md:p-0">
-                        <div className="text-center mb-6 md:mb-8 mt-2 md:mt-0">
-                            <h2 className="text-[26px] md:text-[32px] font-black text-gray-800 mb-1.5 md:mb-2">Bảng Giá Dịch Vụ</h2>
-                            <p className="text-gray-500 font-medium text-[13px] md:text-[14px] max-w-md mx-auto">Nâng cấp tài khoản để mở khóa toàn quyền kiểm soát dữ liệu bán hàng.</p>
-                        </div>
-                        
-                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full max-w-[950px] px-2 md:px-0">
-                            {plans.map((p, i) => (
-                                <div key={p.id} onClick={() => setPlanIndex(i)} className={`relative flex-1 p-[3px] rounded-[36px] cursor-pointer transition-all duration-300 group ${planIndex === i ? `${p.theme.gradBorder} scale-105 shadow-2xl ${p.theme.shadow} z-10` : 'bg-gray-200 opacity-60 hover:opacity-100 scale-100 hover:scale-105'}`}>
-                                    <div className="bg-white rounded-[32px] p-5 md:p-8 h-full flex flex-col relative overflow-hidden">
-                                        {planIndex === i && <div className={`absolute -top-10 -right-10 w-32 h-32 md:w-40 md:h-40 ${p.theme.gradBorder} blur-[40px] opacity-20 rounded-full pointer-events-none`}></div>}
-                                        
-                                        <div style={{ backgroundColor: p.theme.bgIcon, color: p.theme.text }} className="w-12 h-12 md:w-14 md:h-14 mx-auto rounded-[16px] md:rounded-[18px] flex items-center justify-center mb-4 md:mb-5 relative z-10 shadow-sm"><p.icon size={24} strokeWidth={2.5}/></div>
-                                        <h3 className="font-extrabold text-[15px] md:text-[16px] mb-2 text-center tracking-wide" style={{ color: p.theme.text }}>{p.title}</h3>
-                                        
-                                        <div className="text-[30px] md:text-[36px] font-black text-center mb-5 md:mb-6 tracking-tight relative z-10" style={{ color: p.theme.text }}>
-                                            {p.price}<span className="text-[12px] md:text-[13px] font-bold text-gray-400 ml-1">/ {p.period}</span>
-                                        </div>
-                                        
-                                        <ul className="text-left space-y-3 md:space-y-4 mb-6 md:mb-8 flex-1 relative z-10 px-1">
-                                            {p.features.map((f, idx) => (
-                                                <li key={idx} className="flex items-start gap-2.5 text-[12px] md:text-[14px] text-gray-600 font-semibold leading-relaxed">
-                                                    <div className={`mt-0.5 rounded-full p-0.5`} style={{ backgroundColor: p.theme.bgIcon }}><Check size={12} style={{ color: p.theme.text }} strokeWidth={3}/></div>
-                                                    {f}
-                                                </li>
-                                            ))}
-                                        </ul>
-
-                                        <div className="mt-auto relative z-10">
-                                            <button className={`w-full py-3 md:py-3.5 rounded-[16px] font-bold text-[12px] md:text-[13px] tracking-widest transition-all ${planIndex === i ? p.theme.btn : 'bg-gray-300 text-gray-500'}`}>
-                                                {planIndex === i ? 'ĐANG CHỌN' : 'CHỌN GÓI NÀY'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button onClick={handleSelectPlan} className="mt-8 md:mt-10 bg-[linear-gradient(135deg,#111827,#000000)] text-white px-12 md:px-14 py-3.5 md:py-4 rounded-full font-black text-[13px] md:text-[14px] shadow-xl active:scale-95 transition-all uppercase tracking-widest flex items-center gap-2 hover:shadow-2xl">
-                            TIẾP TỤC THANH TOÁN <ArrowRight size={18}/>
-                        </button>
-                        
-                        <button onClick={forceLogoutAndReset} className="mt-4 md:mt-5 text-gray-500 font-bold text-[12px] md:text-[13px] underline hover:text-red-500 transition-colors pb-4 md:pb-0">
-                            Trở về Đăng Nhập / Dùng tài khoản khác
-                        </button>
-                    </div>
-                </div>
-
-                {/* LỚP 3: QUÉT QR & TẢI BILL */}
-                <div className={`absolute inset-0 bg-white z-[60] overflow-y-auto custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'qr' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="flex flex-col items-center justify-center min-h-full w-full p-6 sm:p-10 py-12">
-                        <div className="flex flex-col lg:flex-row items-center gap-8 md:gap-14 w-full max-w-[1000px]">
-                            <div className="text-center lg:text-left flex-1 w-full mt-4 lg:mt-0">
-                                <h2 className="text-[28px] md:text-[36px] font-black text-gray-800 mb-2 leading-tight">Hoàn tất<br className="hidden lg:block"/>Thanh toán</h2>
-                                <p className="text-gray-500 mb-8 font-medium text-[15px] leading-relaxed">Bạn đang chọn <strong style={{ color: plans[planIndex].theme.text }}>{plans[planIndex].title} ({plans[planIndex].price})</strong>. Vui lòng quét mã và tải ảnh xác nhận lệnh chuyển tiền lên hệ thống.</p>
-                                
-                                <label className="flex flex-col items-center justify-center w-full h-32 md:h-36 border-2 border-dashed border-gray-300 rounded-3xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-all mb-6">
-                                    <div className="flex flex-col items-center justify-center pt-4 pb-5">
-                                        {billBase64 ? <Check className="text-green-500 mb-2" size={32}/> : <UploadCloud className="text-gray-400 mb-2" size={32}/>}
-                                        <p className="text-[12px] md:text-[13px] text-gray-600 font-bold tracking-wide">{billBase64 ? "ĐÃ CHỌN ẢNH THÀNH CÔNG" : "BẤM VÀO ĐỂ TẢI ẢNH BILL"}</p>
-                                    </div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                                </label>
-
-                                <button onClick={handleConfirmPayment} disabled={loading || !billBase64} className={`w-full text-white py-3.5 rounded-full font-black text-[13px] uppercase tracking-widest shadow-xl disabled:bg-gray-300 disabled:shadow-none active:scale-95 transition-all ${plans[planIndex].theme.btn}`}>
-                                    {loading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN ĐÃ CHUYỂN'}
-                                </button>
-                                <div className="text-center mt-5 md:mt-6 pb-4 md:pb-0">
-                                    <button type="button" onClick={() => setStep('pricing')} className="text-gray-400 hover:text-gray-600 font-bold text-[13px] underline transition-colors">Quay lại chọn gói</button>
-                                </div>
-                            </div>
-
-                            <div className={`p-[4px] md:p-[5px] rounded-[36px] md:rounded-[44px] ${plans[planIndex].theme.gradBorder} shadow-2xl w-[280px] sm:w-[360px] shrink-0`}>
-                                <div className="bg-white rounded-[32px] md:rounded-[40px] p-3 md:p-4 h-[360px] sm:h-[460px] flex items-center justify-center overflow-hidden relative">
-                                    <img src={plans[planIndex].qrImage} className="w-full h-full object-contain rounded-[20px]" alt="QR" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-                                    <div className="hidden text-gray-400 text-sm italic text-center px-4 absolute">Ảnh mã QR chưa có trong thư mục public</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* LỚP 4: THÀNH CÔNG & CHỜ DUYỆT */}
-                <div className={`absolute inset-0 bg-green-50/90 backdrop-blur-md z-[70] overflow-y-auto custom-scrollbar transition-transform duration-700 ease-in-out ${step === 'success' ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <div className="flex flex-col items-center justify-center min-h-full w-full p-6 sm:p-8 py-12">
-                        <div className="w-24 h-24 md:w-28 md:h-28 bg-white shadow-2xl shadow-green-200 text-green-500 rounded-full flex items-center justify-center mb-6 md:mb-8 animate-bounce"><Check size={50} strokeWidth={4}/></div>
-                        <h2 className="text-[28px] md:text-[32px] font-black text-[#1D1D1F] mb-3 md:mb-4 text-center">Đã Gửi Yêu Cầu!</h2>
-                        
-                        {expiredEmail ? (
-                            <>
-                                <p className="text-gray-600 text-[15px] md:text-[16px] mb-10 md:mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                                    Hệ thống đã nhận được Bill thanh toán gia hạn của bạn. Vui lòng giữ nguyên màn hình này, hệ thống sẽ tự động đưa bạn vào Workspace ngay khi Admin xác nhận.
-                                </p>
-                                <button onClick={forceLogoutAndReset} className="text-gray-500 font-bold text-[13px] md:text-[14px] underline hover:text-red-500 transition-colors pb-4 md:pb-0">
-                                    Đăng Xuất
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-gray-600 text-[15px] md:text-[16px] mb-10 md:mb-12 text-center max-w-[400px] font-medium leading-relaxed">
-                                    Tài khoản của bạn đã được tạo và Bill thanh toán đã gửi thành công! Vui lòng đợi Admin kiểm tra. Sau khi được duyệt, bạn có thể Đăng nhập để sử dụng.
-                                </p>
-                                <button onClick={handleBackToLogin} className="text-[#1DB2A0] font-bold text-[13px] md:text-[14px] underline hover:text-[#159a8a] transition-colors pb-4 md:pb-0">
-                                    Trở về màn hình Đăng Nhập
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-
+                <AuthForm 
+                    step={step} isRightPanelActive={isRightPanelActive} togglePanel={togglePanel} 
+                    view={view} setView={setView} otpStep={otpStep} setOtpStep={setOtpStep} 
+                    handleSendOTP={handleSendOTP} handleAuth={handleAuth} loading={loading} 
+                    formData={formData} setFormData={setFormData} showPassword={showPassword} 
+                    setShowPassword={setShowPassword} rememberMe={rememberMe} setRememberMe={setRememberMe} 
+                />
+                <PricingPlan 
+                    step={step} plans={plans} planIndex={planIndex} setPlanIndex={setPlanIndex} 
+                    handleSelectPlan={handleSelectPlan} forceLogoutAndReset={forceLogoutAndReset} 
+                />
+                <PaymentQR 
+                    step={step} setStep={setStep} plans={plans} planIndex={planIndex} 
+                    billBase64={billBase64} handleFileChange={handleFileChange} 
+                    handleConfirmPayment={handleConfirmPayment} loading={loading} 
+                />
+                <SuccessStatus 
+                    step={step} expiredEmail={expiredEmail} 
+                    forceLogoutAndReset={forceLogoutAndReset} handleBackToLogin={handleBackToLogin} 
+                />
             </div>
         </div>
     ); 

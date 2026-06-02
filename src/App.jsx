@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, X, AlertTriangle, RefreshCw, LogOut, Users, Wallet, Fish, Crown, ChevronLeft, ChevronRight, TrendingUp, Package, Percent, Clock, CheckCircle2, AlertCircle, Star, Eye } from 'lucide-react';
 import { saveAs } from 'file-saver';
+
+// Import các Component giao diện
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import ChatBox from './components/ChatBox';
-import { API_URL, AD_COST_PER_SALE, formatCurrency, formatInput, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
+import Header from './components/Header';
+import Toast from './components/Toast';
+
+// Import các Modals
+import SyncModal from './components/modals/SyncModal';
+import EditRowModal from './components/modals/EditRowModal';
+import EditSessionModal from './components/modals/EditSessionModal';
+import DeleteSessionModal from './components/modals/DeleteSessionModal';
+import DeleteRowModal from './components/modals/DeleteRowModal';
+import SalaryModal from './components/modals/SalaryModal';
+import BlockModal from './components/modals/BlockModal';
+
+// Import Utils và Bộ Não Logic
+import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
+import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
 
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
@@ -66,8 +81,8 @@ export default function App() {
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
     const [isExpiredState, setIsExpiredState] = useState(false);
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
-
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
@@ -78,11 +93,9 @@ export default function App() {
             setIsExpiredState(false);
             return;
         }
-
         const checkExpiry = () => {
             const now = new Date();
             const exp = new Date(authUser.planExpiry);
-            
             if (now >= exp) {
                 if (!isExpiredState) setIsExpiredState(true);
             } else {
@@ -99,7 +112,6 @@ export default function App() {
                 else setTimeLeftDisplay(`Còn ${secs} giây`);
             }
         };
-
         checkExpiry();
         const timer = setInterval(checkExpiry, 1000);
         return () => clearInterval(timer);
@@ -123,24 +135,12 @@ export default function App() {
                 
                 if (
                     JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || 
-                    authUser.role !== latestData.role ||
-                    authUser.planExpiry !== latestData.planExpiry ||
-                    authUser.plan !== latestData.plan ||
-                    authUser.isApproved !== latestData.isApproved ||
-                    authUser.isChatBanned !== latestData.isChatBanned ||
-                    authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil
+                    authUser.role !== latestData.role || authUser.planExpiry !== latestData.planExpiry ||
+                    authUser.plan !== latestData.plan || authUser.isApproved !== latestData.isApproved ||
+                    authUser.isChatBanned !== latestData.isChatBanned || authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil
                 ) {
                     setAuthUser(prev => {
-                        const updated = { 
-                            ...prev, 
-                            permissions: latestData.permissions, 
-                            role: latestData.role,
-                            plan: latestData.plan,
-                            planExpiry: latestData.planExpiry,
-                            isApproved: latestData.isApproved,
-                            isChatBanned: latestData.isChatBanned,
-                            chatRestrictedUntil: latestData.chatRestrictedUntil
-                        };
+                        const updated = { ...prev, permissions: latestData.permissions, role: latestData.role, plan: latestData.plan, planExpiry: latestData.planExpiry, isApproved: latestData.isApproved, isChatBanned: latestData.isChatBanned, chatRestrictedUntil: latestData.chatRestrictedUntil };
                         if (localStorage.getItem('authUser')) localStorage.setItem('authUser', JSON.stringify(updated));
                         if (sessionStorage.getItem('authUser')) sessionStorage.setItem('authUser', JSON.stringify(updated));
                         return updated;
@@ -154,7 +154,6 @@ export default function App() {
 
     const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); setView('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
-    // ĐÂY LÀ PHẦN LÕI ĐÃ ĐƯỢC FIX CỘNG DỒN TỪNG SẢN PHẨM TRỰC TIẾP
     const fetchDashboard = async () => { 
         try { 
             const res = await axios.get(`${API_URL}/sessions`); 
@@ -164,23 +163,17 @@ export default function App() {
                     const detailRes = await axios.get(`${API_URL}/data/${ss.id}`);
                     const dailyList = detailRes.data?.daily || [];
                     
-                    // --- BẮT ĐẦU: THUẬT TOÁN TỰ ĐỘNG CỘNG DỒN FRONTEND ---
-                    let computedTongNhap = 0;
-                    let computedTongBan = 0;
-                    let computedDoanhThu = 0;
-
+                    let computedTongNhap = 0; let computedTongBan = 0; let computedDoanhThu = 0;
                     dailyList.forEach(item => {
                         computedTongNhap += (Number(item.so_luong_nhap) || 0);
                         computedTongBan += (Number(item.so_luong) || 0);
                         computedDoanhThu += (Number(item.so_tien_ban_duoc) || 0);
                     });
 
-                    // Ép các thông số của đợt bán theo đúng thực tế tổng hợp được
                     ss.tong_sl_nhap = computedTongNhap;
                     ss.tong_sl_ban = computedTongBan;
                     ss.tong_doanh_thu = computedDoanhThu;
                     ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
-                    // --- KẾT THÚC CỘNG DỒN ---
 
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const safeBalesData = Array.isArray(balesData) ? balesData : [];
@@ -213,21 +206,12 @@ export default function App() {
     };
 
     const fetchDetail = async (id) => { 
-        if (!canViewDetail) {
-            showToast("Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!", "error");
-            return;
-        }
-
+        if (!canViewDetail) { showToast("Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!", "error"); return; }
         try { 
             const res = await axios.get(`${API_URL}/data/${id}`); 
-            let balesData = []; 
-            try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
+            let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
             if(res.data) { 
-                setDetailData(res.data); 
-                setImportedBales(Array.isArray(balesData) ? balesData : []); 
-                setCurrentId(id); 
-                setView('DETAIL'); 
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                setDetailData(res.data); setImportedBales(Array.isArray(balesData) ? balesData : []); setCurrentId(id); setView('DETAIL'); window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
@@ -240,8 +224,7 @@ export default function App() {
     
     const updateSessionField = async (field, value) => { 
         if(!canEdit || !detailData) return; 
-        const newData = { ...detailData, [field]: value }; 
-        setDetailData(newData); 
+        const newData = { ...detailData, [field]: value }; setDetailData(newData); 
         try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} 
     };
 
@@ -251,15 +234,11 @@ export default function App() {
         if(!baleName || cost === 0) return; 
         try { 
             const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); 
-            const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; 
-            setImportedBales(updated); 
-            
+            const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated); 
             const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
             const newGiatUi = Math.round(newCost * 0.04);
-            
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
-            
             setBaleName(''); setBaleCost(''); setBaleQty(''); 
         } catch (err) {} 
     };
@@ -269,12 +248,9 @@ export default function App() {
         try { 
             await axios.delete(`${API_URL}/bales/${id}`); 
             const safeBales = Array.isArray(importedBales) ? importedBales : []; 
-            const updated = safeBales.filter(b => b.id !== id); 
-            setImportedBales(updated); 
-            
+            const updated = safeBales.filter(b => b.id !== id); setImportedBales(updated); 
             const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
             const newGiatUi = Math.round(newCost * 0.04);
-            
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
         } catch (err) {} 
@@ -291,84 +267,12 @@ export default function App() {
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
+    // Gọi Bộ Não phân tích chuỗi JSON từ IG
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) {
             setSyncManualQty(''); setSyncManualRev(''); return;
         }
-        
-        let q = 0; let r = 0;
-        let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
-        let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
-        
-        if (matchQ && matchR && syncText.toLowerCase().includes('tổng')) {
-            q = Number(matchQ[1]);
-            let num = Number(matchR[1].replace(/[^\d]/g, ''));
-            if (matchR[2] && (matchR[2].toLowerCase() === 'k' || matchR[2].toLowerCase().includes('nghìn') || matchR[2].toLowerCase().includes('nghin'))) num *= 1000;
-            else if (syncText.toLowerCase().includes('k')) num *= 1000;
-            r = num;
-        } else {
-            try {
-                let parsed = JSON.parse(syncText);
-                let dataArray = [];
-                if (Array.isArray(parsed)) { dataArray = parsed; } 
-                else if (parsed && typeof parsed === 'object') {
-                    if (Array.isArray(parsed.data)) dataArray = parsed.data;
-                    else if (Array.isArray(parsed.items)) dataArray = parsed.items;
-                }
-
-                if (dataArray.length > 0) {
-                    q = dataArray.length; 
-                    dataArray.forEach(item => {
-                        let itemPrice = 0;
-                        if (typeof item === 'object' && item !== null) {
-                            for (let key in item) {
-                                let k = key.toLowerCase();
-                                if (k.includes('price') || k.includes('gia') || k.includes('sale') || k.includes('amount') || k.includes('total') || k === 'p') {
-                                    let val = item[key];
-                                    if (typeof val === 'number') {
-                                        itemPrice = val;
-                                        if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000; 
-                                        break;
-                                    } else if (typeof val === 'string') {
-                                        let p = Number(val.replace(/[^\d]/g, ''));
-                                        if (p > 0) {
-                                            itemPrice = p;
-                                            if (val.toLowerCase().includes('k') || itemPrice < 10000) itemPrice *= 1000;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (itemPrice === 0 && typeof item === 'object' && item !== null) {
-                            let itemStr = JSON.stringify(item).toLowerCase().replace(/\\[nr]/g, ' ');
-                            itemStr = itemStr.replace(/https?:\/\/[^\s]+/g, '');
-                            let matches = [...itemStr.matchAll(/(?:giá|gia|sale)\s*[:\-]?\s*([0-9\.\,]+)\s*(k|nghìn|nghin|đ|vnd|cành)?/gi)];
-                            if (matches.length > 0) {
-                                for (let m of matches) {
-                                    let p = Number(m[1].replace(/[^\d]/g, ''));
-                                    let unit = m[2] ? m[2].trim() : '';
-                                    if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
-                                    else if (p > 0 && p < 10000) p *= 1000; 
-                                    if (p > itemPrice && p < 10000000) itemPrice = p; 
-                                }
-                            } else {
-                                let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
-                                for (let m of fallbackMatches) {
-                                    let p = Number(m[1].replace(/[^\d]/g, ''));
-                                    if (p > 10 && p < 10000) {
-                                        let tempPrice = p * 1000;
-                                        if (tempPrice > itemPrice && tempPrice < 10000000) itemPrice = tempPrice;
-                                    }
-                                }
-                            }
-                        }
-                        r += itemPrice; 
-                    });
-                }
-            } catch (e) { console.error("Lỗi đọc JSON:", e); }
-        }
+        const { q, r } = parseIGSyncText(syncText);
         setSyncManualQty(q > 0 ? q.toString() : '');
         setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : '0'));
     }, [syncText]);
@@ -378,7 +282,6 @@ export default function App() {
         try {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
-            
             const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
@@ -388,7 +291,6 @@ export default function App() {
     };
 
     const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
-    
     const handleSaveSession = async () => { 
         if (!editingSession) return; 
         try { 
@@ -411,96 +313,11 @@ export default function App() {
         return { ...ss, autoAdCost, realProfit, computedGiatUi };
     });
 
-    const dashboardProfit = enrichedSessions.reduce((sum, s) => sum + s.realProfit, 0);
-    const totalRevenueForTax = enrichedSessions.reduce((sum, s) => sum + (s.tong_doanh_thu || 0), 0);
-    const taxBase = totalRevenueForTax - 500000000; const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0; const showTax = taxAmount > 0;
-    const displayRevenueTr = (totalRevenueForTax / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
-    
-    let globalTongNhap = 0; 
-    let globalTongBan = 0; 
-    let globalVonTon = 0;
-    let hangBiLoai = 0; 
+    // Gọi Bộ Não tính toán Global (Dashboard)
+    const { dashboardProfit, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon } = calculateGlobalStats(enrichedSessions);
 
-    enrichedSessions.forEach(ss => { 
-        const nameLower = String(ss?.name || '').toLowerCase();
-        const isSale = nameLower.includes('sale');
-        const isDangLai = nameLower.includes('đăng lại') || nameLower.includes('dang lai');
-
-        if (isSale) {
-            hangBiLoai += (ss?.tong_sl_nhap || 0);
-        } else if (isDangLai) {
-            globalTongBan += (ss?.tong_sl_ban || 0);
-        } else {
-            globalTongNhap += (ss?.tong_sl_nhap || 0); 
-            globalTongBan += (ss?.tong_sl_ban || 0);
-            globalVonTon += (ss?.tong_tien_ton_computed || 0); 
-        }
-    });
-
-    const globalTongCon = Math.max(0, globalTongNhap - globalTongBan - hangBiLoai);
-
-    let detailProfit = 0; let mvpRowId = null; let enrichedDaily = []; let exactTotalVonTon = 0; let detailAutoAdCost = 0;
-    let actualStartDate = detailData?.start_date; let actualEndDate = detailData?.start_date;
-    let dynamicTarget = 10000000; let isTargetReached = false;
-
-    if (detailData) { 
-        const dailyList = Array.isArray(detailData.daily) ? detailData.daily : [];
-        const itemCount = dailyList.length;
-        dynamicTarget = Math.max(1, Math.ceil(itemCount / 4)) * 10000000;
-        detailAutoAdCost = itemCount * AD_COST_PER_SALE;
-        
-        const computedGiatUi = Math.round((detailData.so_tien_cua_kien || 0) * 0.04);
-        detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - computedGiatUi - detailAutoAdCost;
-        isTargetReached = detailProfit >= dynamicTarget && itemCount > 0;
-
-        const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
-        if (dates.length > 0) { actualStartDate = new Date(Math.min(...dates)).toISOString().split('T')[0]; actualEndDate = new Date(Math.max(...dates)).toISOString().split('T')[0]; }
-
-        const safeImportedBalesForSort = Array.isArray(importedBales) ? importedBales : [];
-        let maxRevenue = -Infinity; const sortedBales = [...safeImportedBalesForSort].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
-
-        let chronologicalList = [...dailyList].map((item, idx) => ({...item, originalIdx: idx}));
-        chronologicalList.sort((a, b) => {
-            const dateA = new Date(a.ngay_ban || 0).getTime();
-            const dateB = new Date(b.ngay_ban || 0).getTime();
-            if (dateA === dateB) return a.originalIdx - b.originalIdx;
-            return dateA - dateB;
-        });
-
-        chronologicalList = chronologicalList.map((row, index, arr) => {
-            const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
-            let sl_nhap = row.so_luong_nhap || 0; let sl_con = sl_nhap - (row.so_luong || 0); let loi = 0; let tien_ton = 0; let avgCost = 0;
-            
-            if (matchedBale) {
-                avgCost = (matchedBale.cost || 0) / (matchedBale.qty || 1); 
-                tien_ton = Math.round(sl_con * avgCost);
-                let cumulativeRevenue = 0;
-                for (let i = 0; i <= index; i++) {
-                    if (String(arr[i].ten_san_pham || '').toLowerCase().includes(String(matchedBale.name || '').toLowerCase())) {
-                        cumulativeRevenue += (arr[i].so_tien_ban_duoc || 0);
-                    }
-                }
-                loi = Math.round(cumulativeRevenue - (matchedBale.cost || 0)); 
-            } else {
-                avgCost = detailData.computed?.trung_binh || 0; 
-                tien_ton = Math.round(sl_con * avgCost); 
-                loi = Math.round(row.so_tien_ban_duoc || 0);
-            }
-            
-            if ((row.so_tien_ban_duoc || 0) > maxRevenue && (row.so_tien_ban_duoc || 0) > 0) { maxRevenue = row.so_tien_ban_duoc; mvpRowId = row.id; }
-            return { ...row, loi, sl_nhap, sl_con, tien_ton }; 
-        });
-
-        enrichedDaily = [...chronologicalList].sort((a, b) => {
-            const dateA = new Date(a.ngay_ban || 0).getTime();
-            const dateB = new Date(b.ngay_ban || 0).getTime();
-            if (dateB === dateA) return b.originalIdx - a.originalIdx;
-            return dateB - dateA;
-        });
-
-        enrichedDaily = enrichedDaily.map((row, idx) => ({ ...row, stt: enrichedDaily.length - idx }));
-    }
-
+    // Gọi Bộ Não tính toán Detail
+    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE);
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
@@ -509,53 +326,22 @@ export default function App() {
     }, [view, isTargetReached, currentId]);
 
     const handleExport = () => { 
-        if (!canExportExcel) {
-            showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error");
-            return;
-        }
-
+        if (!canExportExcel) { showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error"); return; }
         if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
         enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
     if (!authUser || isExpiredState) {
-        return <Auth 
-            onLoginSuccess={(u, rememberMe) => { 
-                setAuthUser(u); 
-                if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } 
-                else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); }
-            }} 
-            expiredEmail={isExpiredState ? authUser?.email : null}
-            onLogout={handleLogout}
-        />;
+        return <Auth onLoginSuccess={(u, rememberMe) => { setAuthUser(u); if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); } }} expiredEmail={isExpiredState ? authUser?.email : null} onLogout={handleLogout} />;
     }
 
     return (
         <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
             {showFireworks && <Confetti />}
 
-            <div className={`fixed top-5 right-5 z-[9999] transition-all duration-500 ease-in-out ${toast.show ? 'translate-x-0 opacity-100' : 'translate-x-[150%] opacity-0'}`}>
-                <div className={`flex items-center gap-3 px-6 py-4 rounded-[20px] shadow-2xl border ${toast.type === 'success' ? 'bg-white border-green-200 text-green-700' : 'bg-white border-red-200 text-red-600'}`}>
-                    {toast.type === 'success' ? <CheckCircle2 size={24}/> : <AlertCircle size={24}/>}
-                    <p className="font-bold text-[14px] tracking-wide">{toast.message}</p>
-                </div>
-            </div>
-
-            {blockModal.show && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] text-center shadow-2xl animate-scale-up border border-white">
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
-                            <AlertTriangle size={32}/>
-                        </div>
-                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Quyền Truy Cập Bị Chặn</h2>
-                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">{blockModal.message}</p>
-                        <button onClick={() => { localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); window.location.reload(); }} className="w-full py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all">
-                            Đã Hiểu và Đăng Xuất
-                        </button>
-                    </div>
-                </div>
-            )}
+            <Toast toast={toast} />
+            <BlockModal blockModal={blockModal} />
 
             <style dangerouslySetInnerHTML={{ __html: `
                 html, body, div, span, p, h1, h2, h3, h4, h5, h6 { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
@@ -575,246 +361,18 @@ export default function App() {
             `}} />
             <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
 
-            <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-[32px] px-5 py-3 md:py-3 flex justify-between items-start md:items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60">
-                <div className="flex flex-col">
-                    <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white/60 backdrop-blur-md rounded-full shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform group-hover:scale-105 border border-white/50">
-                            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='block'}} />
-                            <Fish size={18} className="text-[#33A1FD] hidden" />
-                        </div>
-                        <div className="min-w-0 pr-2 pt-1">
-                            <div className="flex items-center gap-1.5"><h1 className="text-[17px] md:text-[20px] font-bold text-[#1D1D1F] tracking-tight leading-tight truncate">{authUser.name}</h1>{isAdmin && <Crown size={14} className="text-[#FF9500] shrink-0" title="Quản trị viên"/>}</div>
-                            <p className="text-[10px] md:text-[11px] font-semibold text-[#5c5c5c] tracking-wide truncate">{isAdmin ? 'Quản trị viên' : (canEdit ? 'Có quyền chỉnh sửa' : 'Chỉ xem')}</p>
-                        </div>
-                    </a>
-                    
-                    {/* BẢN CHUẨN: KHÔNG CÓ CHỮ GÓI, KÍCH THƯỚC w-[95px] h-[26px], GIỮ MÀU GRADIENT GỐC */}
-                    {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white">
-                            <Crown size={12}/> PREMIUM
-                        </div>
-                    ) : (
-                        <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-md text-white ${
-                            authUser?.plan === '100k' ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 
-                            authUser?.plan === '50k' ? 'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800 border-none' : 
-                            'bg-gradient-to-r from-stone-300 to-stone-400 text-stone-800 border-none'
-                        }`}>
-                            {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
-                        </div>
-                    )}
-                    
-                    {authUser?.role !== 'admin' && authUser?.plan !== 'premium' && authUser?.planExpiry && (
-                        <div className={`mt-2 md:ml-14 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-sm transition-all ${timeLeftDisplay.includes('giây') || timeLeftDisplay.includes('phút') ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-                            <Clock size={12} /> Hạn dùng: {timeLeftDisplay}
-                        </div>
-                    )}
-                </div>
-                
-                <div className="flex items-center gap-1.5 md:gap-2 shrink-0 self-center mt-2 md:mt-0">
-                    {view === 'DASHBOARD' && (
-                        <>
-                            {isAdmin && (
-                                <button onClick={() => setView('USERS')} title="Quản lý Người dùng" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-white/30 border border-white/40 text-[#1DB2A0] rounded-full hover:bg-white/60 transition-all shadow-sm active:scale-95">
-                                    <Users size={16} className="md:w-[18px] md:h-[18px]"/>
-                                </button>
-                            )}
-                            {canEdit && (
-                                <button onClick={handleCreateAutoSession} disabled={isProcessingCreate} className="w-9 h-9 md:w-auto md:px-5 md:py-3.5 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white font-semibold rounded-full hover:opacity-90 transition-all shadow-md flex items-center justify-center md:justify-start gap-2 text-[14px] disabled:opacity-50 active:scale-95 border border-white/20">
-                                    {isProcessingCreate ? <RefreshCw size={16} className="animate-spin" /> : <Plus size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={2.5}/>}
-                                    <span className="hidden md:inline">Tạo Thống Kê</span>
-                                </button>
-                            )}
-                        </>
-                    )}
-                    <button onClick={handleLogout} title="Đăng xuất" className="w-9 h-9 md:w-11 md:h-11 flex items-center justify-center bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] rounded-full hover:bg-[#FF3B30]/20 transition-all shadow-sm active:scale-95 shrink-0">
-                        <LogOut size={16} className="md:w-[18px] md:h-[18px]"/>
-                    </button>
-                </div>
-            </div>
+            <Header 
+                authUser={authUser} isAdmin={isAdmin} canEdit={canEdit} timeLeftDisplay={timeLeftDisplay}
+                view={view} setView={setView} handleCreateAutoSession={handleCreateAutoSession}
+                isProcessingCreate={isProcessingCreate} handleLogout={handleLogout}
+            />
 
-            {/* MODAL CẬP NHẬT THAY THẾ JSON */}
-            {syncRow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
-                        <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
-                        
-                        <div className="mb-4">
-                            <h2 className="text-[22px] font-bold text-[#1D1D1F] tracking-tight flex items-center gap-2"><RefreshCw className="text-[#1DB2A0]"/> Cập nhật từ IG</h2>
-                            <p className="text-[13px] text-[#5c5c5c] mt-1">Cập nhật thay thế cho: <strong className="text-[#1A5B82]">{syncRow.ten_san_pham}</strong></p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <textarea 
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:border-[#26D0CE] focus:bg-white rounded-[16px] text-[12px] font-mono text-[#1D1D1F] outline-none transition-all resize-none h-[80px] custom-scrollbar placeholder-gray-400"
-                                    placeholder="Dán mã JSON hoặc copy dòng chữ 'Đã quét: X món...' từ Tool vào đây."
-                                    value={syncText}
-                                    onChange={e => setSyncText(e.target.value)}
-                                />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3 w-full border-t border-gray-100 pt-4">
-                                <div>
-                                    <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1">SL Bán Mới</label>
-                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[16px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all focus:border-[#1DB2A0] focus:bg-white" value={formatInput(syncManualQty)} onChange={e => setSyncManualQty(e.target.value)} placeholder="0" />
-                                </div>
-                                <div>
-                                    <label className="text-[11px] font-bold text-[#5c5c5c] uppercase tracking-wider mb-1 block pl-1">Tổng thu Mới</label>
-                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[16px] font-bold text-[#33A1FD] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#33A1FD] focus:bg-white" value={formatInput(syncManualRev)} onChange={e => setSyncManualRev(e.target.value)} placeholder="0" />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="mt-6 flex gap-3">
-                            <button onClick={() => {setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');}} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[14px]">Hủy bỏ</button>
-                            <button onClick={handleConfirmSync} disabled={isProcessingEdit || (!syncManualQty && !syncManualRev)} className="flex-1 bg-gradient-to-r from-[#1DB2A0] to-[#159a8a] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all disabled:opacity-50 text-[14px] shadow-lg active:scale-95">
-                                {isProcessingEdit ? 'Đang lưu...' : 'Cập nhật'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL SỬA BẢN GHI */}
-            {editingRow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[420px] animate-scale-up relative shadow-2xl border border-white">
-                        <button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
-                        <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Sửa Bản Ghi</h2></div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Ngày Bán</label>
-                                <input type="date" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingRow.ngay_ban} onChange={e => setEditingRow({...editingRow, ngay_ban: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên Sản Phẩm</label>
-                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingRow.ten_san_pham} onChange={e => setEditingRow({...editingRow, ten_san_pham: e.target.value})} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 w-full">
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Nhập</label>
-                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-bold text-[#33A1FD] text-center tabular-nums outline-none transition-all focus:border-[#33A1FD] focus:bg-white" value={formatInput(editingRow.so_luong_nhap)} onChange={e => setEditingRow({...editingRow, so_luong_nhap: e.target.value})} />
-                                </div>
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">SL Bán</label>
-                                    <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-bold text-[#1DB2A0] text-center tabular-nums outline-none transition-all focus:border-[#1DB2A0] focus:bg-white" value={formatInput(editingRow.so_luong)} onChange={e => setEditingRow({...editingRow, so_luong: e.target.value})} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tổng Doanh Thu</label>
-                                <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#26D0CE] focus:bg-white" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Link (Tùy chọn)</label>
-                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#33A1FD] outline-none transition-all focus:border-[#33A1FD] focus:bg-white" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} />
-                            </div>
-                        </div>
-                        <div className="mt-8 flex gap-3">
-                            <button onClick={() => setEditingRow(null)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[15px]">Hủy</button>
-                            <button onClick={handleSaveEdit} disabled={isProcessingEdit} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all disabled:opacity-50 text-[15px] shadow-lg active:scale-95">
-                                {isProcessingEdit ? 'Đang lưu...' : 'Lưu Thay Đổi'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL THIẾT LẬP ĐỢT BÁN */}
-            {editingSession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[400px] animate-scale-up relative shadow-2xl border border-white">
-                        <button onClick={() => setEditingSession(null)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
-                        <div className="mb-6"><h2 className="text-[24px] font-bold text-[#1D1D1F] tracking-tight">Thiết lập đợt bán</h2></div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Tên hiển thị (Tùy chọn)</label>
-                                <input type="text" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[15px] font-medium text-[#1D1D1F] outline-none transition-all focus:border-[#26D0CE] focus:bg-white" value={editingSession.name === 'Thống kê tự động' ? '' : editingSession.name} placeholder="Để trống hệ thống sẽ lấy Ngày" onChange={e => setEditingSession({...editingSession, name: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí Nhập Kiện</label>
-                                <input className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none transition-all tracking-tight focus:border-[#26D0CE] focus:bg-white" value={formatInput(editingSession.so_tien_cua_kien)} onChange={e => setEditingSession({...editingSession, so_tien_cua_kien: e.target.value})} />
-                            </div>
-                            
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#5c5c5c] mb-1.5 ml-1 block">Chi phí khác (Giặt ủi... Tự động 4%)</label>
-                                <input disabled className="w-full px-4 py-3.5 bg-gray-100 border border-gray-200 rounded-[16px] text-[17px] font-bold text-[#1D1D1F] text-right tabular-nums outline-none cursor-not-allowed opacity-70" value={formatInput(Math.round((editingSession.so_tien_cua_kien || 0) * 0.04))} readOnly />
-                            </div>
-                        </div>
-                        <div className="mt-8 flex gap-3">
-                            <button onClick={() => setEditingSession(null)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-[15px]">Hủy</button>
-                            <button onClick={handleSaveSession} className="flex-1 bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white py-3.5 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg text-[15px] active:scale-95">Cập nhật</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL XÓA ĐỢT BÁN */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
-                            <AlertTriangle size={32}/>
-                        </div>
-                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Xóa đợt thống kê?</h2>
-                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">Hành động này sẽ xóa <strong className="text-red-500">vĩnh viễn</strong> toàn bộ dữ liệu của đợt bán này và không thể khôi phục.</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
-                            <button onClick={confirmDeleteSession} className="flex-1 py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all">Xóa Ngay</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL XÓA SẢN PHẨM */}
-            {showDeleteRowModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all animate-fade-in">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[360px] text-center shadow-2xl animate-scale-up border border-white">
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-red-50 text-red-500 border border-red-100">
-                            <Trash2 size={32}/>
-                        </div>
-                        <h2 className="text-[22px] font-black text-gray-800 mb-2">Xóa sản phẩm này?</h2>
-                        <p className="text-[14px] text-gray-500 font-medium mb-8 leading-relaxed">Dữ liệu của sản phẩm sẽ bị xóa khỏi đợt bán hiện tại.</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowDeleteRowModal(false)} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
-                            <button onClick={confirmDeleteRow} disabled={isProcessingDelete} className="flex-1 py-3.5 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg active:scale-95 transition-all disabled:opacity-50">
-                                {isProcessingDelete ? 'Đang Xóa...' : 'Xóa Ngay'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL PHÁT LƯƠNG */}
-            {showSalaryModal && salarySession && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all">
-                    <div className="bg-white rounded-[32px] p-6 md:p-8 w-full max-w-[380px] animate-scale-up relative flex flex-col items-center text-center shadow-2xl border border-white">
-                        <button onClick={() => setShowSalaryModal(false)} className="absolute top-5 right-5 text-gray-500 bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors active:scale-95"><X size={20}/></button>
-                        <div className="w-16 h-16 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mb-4 text-[#1DB2A0]"><Wallet size={32} /></div>
-                        <h2 className="text-[22px] font-black text-[#1D1D1F] tracking-tight mb-1">Phát Lương Đợt Bán</h2>
-                        <p className="text-[13px] text-gray-500 font-medium mb-6">Trích xuất 30% lợi nhuận</p>
-                        {salarySession.realProfit <= 0 ? (
-                            <div className="w-full p-4 bg-red-50 rounded-2xl text-red-600 font-bold text-[14px] border border-red-100">Lợi nhuận đợt này đang âm hoặc bằng 0.<br/>Chưa thể phát lương!</div>
-                        ) : (
-                            <>
-                                <div className="w-full bg-gray-50 rounded-[20px] p-4 mb-4 border border-gray-100 text-left">
-                                    <div className="flex justify-between text-[13px] font-semibold text-gray-500 mb-2"><span>Tổng lợi nhuận:</span> <span className="text-[#1D1D1F]">{formatCurrency(salarySession.realProfit)}đ</span></div>
-                                    <div className="flex justify-between text-[15px] font-black text-[#1D1D1F] pt-2 border-t border-gray-200"><span>Lương (30%):</span> <span className="text-[#1DB2A0]">{formatCurrency(Math.round(salarySession.realProfit * 0.3))}đ</span></div>
-                                </div>
-                                <div className="w-full text-left mb-4">
-                                    <label className="text-[12px] font-bold text-gray-500 mb-1.5 ml-1 block">SĐT MoMo người nhận:</label>
-                                    <input type="text" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:border-[#1DB2A0] focus:bg-white rounded-[16px] text-[16px] font-bold text-[#1D1D1F] tracking-wider text-center outline-none transition-all" placeholder="Ví dụ: 0912345678" value={momoPhone} onChange={e => setMomoPhone(e.target.value.replace(/[^0-9]/g, ''))} maxLength={11} />
-                                </div>
-                                {momoPhone.length >= 10 ? (
-                                    <div className="p-2 bg-white rounded-[20px] border border-gray-100 shadow-sm mb-2"><img src={`https://img.vietqr.io/image/momo-${momoPhone}-compact2.png?amount=${Math.round(salarySession.realProfit * 0.3)}&addInfo=PhatLuong`} alt="VietQR MoMo" className="w-48 h-48 mx-auto" /></div>
-                                ) : (
-                                    <div className="w-48 h-48 mx-auto bg-gray-50 rounded-[20px] border border-dashed border-gray-300 flex items-center justify-center text-[12px] text-gray-400 font-medium p-4 text-center mb-2">Nhập đủ SĐT MoMo để tạo mã QR</div>
-                                )}
-                                <span className="text-[11px] font-medium text-gray-400 italic">Quét bằng MoMo, Zalo, hoặc App Ngân hàng</span>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
+            <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} handleConfirmSync={handleConfirmSync} isProcessingEdit={isProcessingEdit} />
+            <EditRowModal editingRow={editingRow} setEditingRow={setEditingRow} handleSaveEdit={handleSaveEdit} isProcessingEdit={isProcessingEdit} />
+            <EditSessionModal editingSession={editingSession} setEditingSession={setEditingSession} handleSaveSession={handleSaveSession} />
+            <DeleteSessionModal showDeleteModal={showDeleteModal} setShowDeleteModal={setShowDeleteModal} confirmDeleteSession={confirmDeleteSession} />
+            <DeleteRowModal showDeleteRowModal={showDeleteRowModal} setShowDeleteRowModal={setShowDeleteRowModal} confirmDeleteRow={confirmDeleteRow} isProcessingDelete={isProcessingDelete} />
+            <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
 
             <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
@@ -830,8 +388,7 @@ export default function App() {
                         canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                         baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                         newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                        handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete}
-                        handleStartSync={setSyncRow}
+                        handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
                     />
                 )}
             </div>
