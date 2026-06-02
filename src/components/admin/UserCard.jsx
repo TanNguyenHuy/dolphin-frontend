@@ -21,15 +21,17 @@ export default function UserCard({
                     {isAbandoned ? (
                         <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/60 bg-[linear-gradient(110deg,rgba(229,231,235,0.5)_0%,rgba(255,255,255,0.8)_25%,rgba(209,213,219,0.4)_50%,rgba(156,163,175,0.3)_100%)] text-gray-600 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(156,163,175,0.2)]">CHƯA CHỌN</span>
                     ) : u.plan === 'premium' || u.role === 'admin' ? (
-                        <span className="w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md bg-[linear-gradient(110deg,rgba(216,180,254,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(192,132,252,0.5)_50%,rgba(168,85,247,0.5)_100%)] border border-white/80 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(147,51,234,0.4),0_4px_12px_rgba(168,85,247,0.4)] text-purple-900"><Crown size={12}/> PREMIUM</span>
+                        <img src="/badge-premium.png" alt="PREMIUM" className="w-[110px] object-contain drop-shadow-sm" />
                     ) : (
-                        <span className={`w-[95px] h-[26px] flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/80 ${
-                            u.plan === '100k' ? 'bg-[linear-gradient(110deg,rgba(253,230,138,0.7)_0%,rgba(255,255,255,0.9)_25%,rgba(251,191,36,0.5)_50%,rgba(217,119,6,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(217,119,6,0.4),0_4px_12px_rgba(245,158,11,0.4)] text-amber-900' : 
-                            u.plan === '50k' ? 'bg-[linear-gradient(110deg,rgba(241,245,249,0.8)_0%,rgba(255,255,255,1)_25%,rgba(203,213,225,0.5)_50%,rgba(148,163,184,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(148,163,184,0.4),0_4px_12px_rgba(148,163,184,0.3)] text-slate-800' : 
-                            'bg-[linear-gradient(110deg,rgba(254,215,170,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(251,146,60,0.5)_50%,rgba(234,88,12,0.4)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(234,88,12,0.4),0_4px_12px_rgba(249,115,22,0.3)] text-orange-900' 
-                        }`}>
-                            {u.plan === '100k' ? <><Crown size={12}/> VVIP</> : u.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
-                        </span>
+                        <div className="flex items-center">
+                            {u.plan === '100k' ? (
+                                <img src="/badge-vvip.png" alt="VVIP" className="w-[110px] object-contain drop-shadow-sm" />
+                            ) : u.plan === '50k' ? (
+                                <img src="/badge-vip.png" alt="VIP" className="w-[110px] object-contain drop-shadow-sm" />
+                            ) : (
+                                <img src="/badge-coban.png" alt="CƠ BẢN" className="w-[110px] object-contain drop-shadow-sm" />
+                            )}
+                        </div>
                     )}
                 </div>
                 

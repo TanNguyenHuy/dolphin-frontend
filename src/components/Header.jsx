@@ -32,27 +32,16 @@ export default function Header({
                 </a>
                 
                 {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                    <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest relative overflow-hidden bg-[#e9d5ff] text-[#4c1d95] shadow-[0_4px_10px_rgba(147,51,234,0.3),inset_0_-3px_5px_rgba(88,28,135,0.4),inset_0_3px_4px_rgba(255,255,255,1)] border border-white/60">
-                        {/* Hiệu ứng mặt cắt phản quang phía trên */}
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.2)_40%,rgba(255,255,255,0)_45%,rgba(0,0,0,0.05)_55%,rgba(0,0,0,0.15)_100%)] pointer-events-none"></div>
-                        {/* Tia sáng chéo */}
-                        <div className="absolute top-0 left-[-50%] w-[200%] h-full bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.8)_45%,rgba(255,255,255,0.9)_50%,transparent_55%)] pointer-events-none mix-blend-overlay"></div>
-                        <Crown size={12} className="relative z-10 drop-shadow-sm text-white fill-white/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">PREMIUM</span>
-                    </div>
+                    <img src="/badge-premium.png" alt="PREMIUM" className="mt-2 md:ml-14 w-[110px] object-contain hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
                 ) : (
-                    <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest relative overflow-hidden transition-all border border-white/60 ${
-                        authUser?.plan === '100k' 
-                        ? 'bg-[#fde68a] text-[#78350f] shadow-[0_4px_10px_rgba(217,119,6,0.3),inset_0_-3px_5px_rgba(180,83,9,0.4),inset_0_3px_4px_rgba(255,255,255,1)]' 
-                        : authUser?.plan === '50k' 
-                        ? 'bg-[#e2e8f0] text-[#334155] shadow-[0_4px_10px_rgba(148,163,184,0.3),inset_0_-3px_5px_rgba(100,116,139,0.4),inset_0_3px_4px_rgba(255,255,255,1)]' 
-                        : 'bg-[#fed7aa] text-[#7c2d12] shadow-[0_4px_10px_rgba(234,88,12,0.3),inset_0_-3px_5px_rgba(194,65,12,0.4),inset_0_3px_4px_rgba(255,255,255,1)]'
-                    }`}>
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.2)_40%,rgba(255,255,255,0)_45%,rgba(0,0,0,0.05)_55%,rgba(0,0,0,0.15)_100%)] pointer-events-none"></div>
-                        <div className="absolute top-0 left-[-50%] w-[200%] h-full bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.8)_45%,rgba(255,255,255,0.9)_50%,transparent_55%)] pointer-events-none mix-blend-overlay"></div>
-                        
-                        {authUser?.plan === '100k' ? <><Crown size={12} className="relative z-10 drop-shadow-sm text-amber-600 fill-amber-500/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">VVIP</span></> 
-                        : authUser?.plan === '50k' ? <><Star size={12} className="relative z-10 drop-shadow-sm text-slate-500 fill-slate-400/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">VIP</span></> 
-                        : <><Eye size={12} className="relative z-10 drop-shadow-sm text-orange-600 fill-orange-500/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">CƠ BẢN</span></>}
+                    <div className="mt-2 md:ml-14 flex items-center">
+                        {authUser?.plan === '100k' ? (
+                            <img src="/badge-vvip.png" alt="VVIP" className="w-[110px] object-contain hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                        ) : authUser?.plan === '50k' ? (
+                            <img src="/badge-vip.png" alt="VIP" className="w-[110px] object-contain hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                        ) : (
+                            <img src="/badge-coban.png" alt="CƠ BẢN" className="w-[110px] object-contain hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                        )}
                     </div>
                 )}
                 
