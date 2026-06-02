@@ -32,16 +32,27 @@ export default function Header({
                 </a>
                 
                 {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                    <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md bg-[linear-gradient(110deg,rgba(216,180,254,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(192,132,252,0.5)_50%,rgba(168,85,247,0.5)_100%)] border border-white/80 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(147,51,234,0.4),0_4px_12px_rgba(168,85,247,0.4)] text-purple-900">
-                        <Crown size={12}/> PREMIUM
+                    <div className="mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest relative overflow-hidden bg-[#e9d5ff] text-[#4c1d95] shadow-[0_4px_10px_rgba(147,51,234,0.3),inset_0_-3px_5px_rgba(88,28,135,0.4),inset_0_3px_4px_rgba(255,255,255,1)] border border-white/60">
+                        {/* Hiệu ứng mặt cắt phản quang phía trên */}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.2)_40%,rgba(255,255,255,0)_45%,rgba(0,0,0,0.05)_55%,rgba(0,0,0,0.15)_100%)] pointer-events-none"></div>
+                        {/* Tia sáng chéo */}
+                        <div className="absolute top-0 left-[-50%] w-[200%] h-full bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.8)_45%,rgba(255,255,255,0.9)_50%,transparent_55%)] pointer-events-none mix-blend-overlay"></div>
+                        <Crown size={12} className="relative z-10 drop-shadow-sm text-white fill-white/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">PREMIUM</span>
                     </div>
                 ) : (
-                    <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/80 ${
-                        authUser?.plan === '100k' ? 'bg-[linear-gradient(110deg,rgba(253,230,138,0.7)_0%,rgba(255,255,255,0.9)_25%,rgba(251,191,36,0.5)_50%,rgba(217,119,6,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(217,119,6,0.4),0_4px_12px_rgba(245,158,11,0.4)] text-amber-900' : 
-                        authUser?.plan === '50k' ? 'bg-[linear-gradient(110deg,rgba(241,245,249,0.8)_0%,rgba(255,255,255,1)_25%,rgba(203,213,225,0.5)_50%,rgba(148,163,184,0.5)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(148,163,184,0.4),0_4px_12px_rgba(148,163,184,0.3)] text-slate-800' : 
-                        'bg-[linear-gradient(110deg,rgba(254,215,170,0.6)_0%,rgba(255,255,255,0.9)_25%,rgba(251,146,60,0.5)_50%,rgba(234,88,12,0.4)_100%)] shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(234,88,12,0.4),0_4px_12px_rgba(249,115,22,0.3)] text-orange-900'
+                    <div className={`mt-2 md:ml-14 w-[95px] h-[26px] inline-flex items-center justify-center gap-1 rounded-full text-[10px] font-black uppercase tracking-widest relative overflow-hidden transition-all border border-white/60 ${
+                        authUser?.plan === '100k' 
+                        ? 'bg-[#fde68a] text-[#78350f] shadow-[0_4px_10px_rgba(217,119,6,0.3),inset_0_-3px_5px_rgba(180,83,9,0.4),inset_0_3px_4px_rgba(255,255,255,1)]' 
+                        : authUser?.plan === '50k' 
+                        ? 'bg-[#e2e8f0] text-[#334155] shadow-[0_4px_10px_rgba(148,163,184,0.3),inset_0_-3px_5px_rgba(100,116,139,0.4),inset_0_3px_4px_rgba(255,255,255,1)]' 
+                        : 'bg-[#fed7aa] text-[#7c2d12] shadow-[0_4px_10px_rgba(234,88,12,0.3),inset_0_-3px_5px_rgba(194,65,12,0.4),inset_0_3px_4px_rgba(255,255,255,1)]'
                     }`}>
-                        {authUser?.plan === '100k' ? <><Crown size={12}/> VVIP</> : authUser?.plan === '50k' ? <><Star size={12}/> VIP</> : <><Eye size={12}/> CƠ BẢN</>}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.2)_40%,rgba(255,255,255,0)_45%,rgba(0,0,0,0.05)_55%,rgba(0,0,0,0.15)_100%)] pointer-events-none"></div>
+                        <div className="absolute top-0 left-[-50%] w-[200%] h-full bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.8)_45%,rgba(255,255,255,0.9)_50%,transparent_55%)] pointer-events-none mix-blend-overlay"></div>
+                        
+                        {authUser?.plan === '100k' ? <><Crown size={12} className="relative z-10 drop-shadow-sm text-amber-600 fill-amber-500/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">VVIP</span></> 
+                        : authUser?.plan === '50k' ? <><Star size={12} className="relative z-10 drop-shadow-sm text-slate-500 fill-slate-400/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">VIP</span></> 
+                        : <><Eye size={12} className="relative z-10 drop-shadow-sm text-orange-600 fill-orange-500/40"/> <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">CƠ BẢN</span></>}
                     </div>
                 )}
                 
