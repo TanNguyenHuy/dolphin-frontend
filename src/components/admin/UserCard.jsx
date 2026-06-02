@@ -19,17 +19,17 @@ export default function UserCard({
                 <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-extrabold text-[18px] text-gray-800">{u.name}</h3>
                     {isAbandoned ? (
-                        <span className="w-[95px] h-[26px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/60 bg-[linear-gradient(110deg,rgba(229,231,235,0.5)_0%,rgba(255,255,255,0.8)_25%,rgba(209,213,219,0.4)_50%,rgba(156,163,175,0.3)_100%)] text-gray-600 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(156,163,175,0.2)] shrink-0">CHƯA CHỌN</span>
+                        <span className="w-[95px] h-[32px] md:h-[36px] flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border border-white/60 bg-[linear-gradient(110deg,rgba(229,231,235,0.5)_0%,rgba(255,255,255,0.8)_25%,rgba(209,213,219,0.4)_50%,rgba(156,163,175,0.3)_100%)] text-gray-600 shadow-[inset_0_1px_2px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(156,163,175,0.2)] shrink-0">CHƯA CHỌN</span>
                     ) : u.plan === 'premium' || u.role === 'admin' ? (
-                        <img src="/badge-premium.png" alt="PREMIUM" className="h-[26px] w-auto object-contain drop-shadow-sm shrink-0" />
+                        <img src="/badge-premium.png" alt="PREMIUM" className="h-[32px] md:h-[36px] w-auto object-contain drop-shadow-sm shrink-0" />
                     ) : (
                         <div className="flex items-center shrink-0">
                             {u.plan === '100k' ? (
-                                <img src="/badge-vvip.png" alt="VVIP" className="h-[26px] w-auto object-contain drop-shadow-sm shrink-0" />
+                                <img src="/badge-vvip.png" alt="VVIP" className="h-[32px] md:h-[36px] w-auto object-contain drop-shadow-sm shrink-0" />
                             ) : u.plan === '50k' ? (
-                                <img src="/badge-vip.png" alt="VIP" className="h-[26px] w-auto object-contain drop-shadow-sm shrink-0" />
+                                <img src="/badge-vip.png" alt="VIP" className="h-[32px] md:h-[36px] w-auto object-contain drop-shadow-sm shrink-0" />
                             ) : (
-                                <img src="/badge-coban.png" alt="CƠ BẢN" className="h-[26px] w-auto object-contain drop-shadow-sm shrink-0" />
+                                <img src="/badge-coban.png" alt="CƠ BẢN" className="h-[32px] md:h-[36px] w-auto object-contain drop-shadow-sm shrink-0" />
                             )}
                         </div>
                     )}

@@ -31,16 +31,16 @@ export default function Header({
                     </div>
                 </a>
                 
-                {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                    <img src="/badge-premium.png" alt="PREMIUM" className="mt-2 md:ml-14 h-[28px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+               {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
+                    <img src="/badge-premium.png" alt="PREMIUM" className="mt-2 md:ml-14 h-[36px] md:h-[40px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
                 ) : (
                     <div className="mt-2 md:ml-14 flex items-center shrink-0">
                         {authUser?.plan === '100k' ? (
-                            <img src="/badge-vvip.png" alt="VVIP" className="h-[28px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                            <img src="/badge-vvip.png" alt="VVIP" className="h-[36px] md:h-[40px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
                         ) : authUser?.plan === '50k' ? (
-                            <img src="/badge-vip.png" alt="VIP" className="h-[28px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                            <img src="/badge-vip.png" alt="VIP" className="h-[36px] md:h-[40px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
                         ) : (
-                            <img src="/badge-coban.png" alt="CƠ BẢN" className="h-[28px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
+                            <img src="/badge-coban.png" alt="CƠ BẢN" className="h-[36px] md:h-[40px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
                         )}
                     </div>
                 )}
