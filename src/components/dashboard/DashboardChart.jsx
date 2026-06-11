@@ -7,13 +7,23 @@ const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="bg-[#FFFDF7]/95 backdrop-blur-xl border border-[#FFE0B2] p-4 rounded-[20px] shadow-[0_10px_30px_rgba(230,81,0,0.15)] transform transition-all">
-                <p className="text-[#D84315] text-[11px] uppercase tracking-widest mb-1.5 font-bold flex items-center gap-2">
-                    <Calendar size={12} /> Đợt {data.name}
+            <div className="bg-[#FFFDF7]/95 backdrop-blur-xl border border-[#FFE0B2] p-4 rounded-[20px] shadow-[0_10px_30px_rgba(230,81,0,0.15)] transform transition-all min-w-[200px]">
+                <p className="text-[#D84315] text-[11px] uppercase tracking-widest mb-3 font-bold flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5"><Calendar size={12} /> ĐỢT {data.name}</span>
+                    <span className="bg-[#FFE0B2]/50 px-2 py-0.5 rounded-md">{data.days} ngày</span>
                 </p>
-                <p className={`text-[18px] font-black tracking-tight drop-shadow-sm ${data.profit >= 0 ? 'text-[#059669]' : 'text-[#E11D48]'}`}>
-                    {formatCurrency(data.profit)} <span className="text-[12px] font-bold opacity-80">VNĐ</span>
-                </p>
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center gap-4 text-[13px] font-semibold text-gray-600">
+                        <span>Thực tế nhận:</span>
+                        <span className={data.actualProfit >= 0 ? 'text-[#059669]' : 'text-[#E11D48]'}>
+                            {formatCurrency(data.actualProfit)} đ
+                        </span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4 text-[14px] font-black border-t border-[#FFE0B2]/50 pt-2 text-[#E65100]">
+                        <span>Hiệu suất 15 ngày:</span>
+                        <span>{formatCurrency(data.profit15Days)} đ</span>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -26,17 +36,28 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
         enrichedSessions.forEach(ss => {
             const dateStr = ss.actual_start_date || ss.start_date;
             if (!dateStr) return;
+            
+            const shortName = ss.name || '';
+            const nameLower = shortName.toLowerCase();
+
+            // 1. LỌC DỮ LIỆU: Bỏ qua "sale", "đăng lại", "thống kê tự động"
+            if (nameLower === 'thống kê tự động' || nameLower.includes('sale') || nameLower.includes('đăng lại')) {
+                return; 
+            }
+
             const year = new Date(dateStr).getFullYear();
             if (!data[year]) data[year] = [];
 
-            let shortName = ss.name;
-            if (!shortName || shortName === 'Thống kê tự động' || shortName.toLowerCase().includes('sale')) {
-                 shortName = `${new Date(dateStr).getDate()}/${new Date(dateStr).getMonth() + 1}`;
-            }
+            // 2. CHUẨN HÓA 15 NGÀY
+            const soNgayThucTe = Math.max(1, ss.so_ngay || 1); // Đảm bảo không bị chia cho 0
+            const tiLe = 15 / soNgayThucTe;
+            const loiNhuan15Ngay = ss.realProfit * tiLe;
 
             data[year].push({
                 name: shortName,
-                profit: ss.realProfit,
+                profit15Days: Math.round(loiNhuan15Ngay), // Dùng để vẽ chiều cao cột
+                actualProfit: ss.realProfit,              // Dùng để tính tổng và hiển thị Tooltip
+                days: soNgayThucTe,
                 fullDate: dateStr
             });
         });
@@ -60,7 +81,9 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
     }, [availableYears, selectedYear]);
 
     const currentChartData = chartDataByYear[selectedYear] || [];
-    const yearlyTotal = currentChartData.reduce((sum, item) => sum + item.profit, 0);
+    
+    // Tính tổng vẫn dựa trên lợi nhuận thực tế để sổ sách không bị sai
+    const yearlyTotal = currentChartData.reduce((sum, item) => sum + item.actualProfit, 0);
 
     const handlePrevYear = () => {
         const currentIndex = availableYears.indexOf(selectedYear);
@@ -117,9 +140,11 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(230,81,0,0.08)" vertical={false} />
                             <XAxis dataKey="name" stroke="#8D6E63" fontSize={11} fontWeight="700" tickLine={false} axisLine={false} dy={10} />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,140,0,0.05)', radius: 8 }} />
-                            <Bar dataKey="profit" radius={[8, 8, 8, 8]} maxBarSize={45} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
+                            
+                            {/* VẼ CỘT DỰA TRÊN LỢI NHUẬN CHUẨN HÓA 15 NGÀY */}
+                            <Bar dataKey="profit15Days" radius={[8, 8, 8, 8]} maxBarSize={45} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
                                 {currentChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
+                                    <Cell key={`cell-${index}`} fill={entry.actualProfit >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
                                 ))}
                             </Bar>
                         </BarChart>
@@ -127,7 +152,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-[#BCAAA4] text-[13px] font-medium border-2 border-dashed border-[#FFE0B2] rounded-2xl bg-white/40">
                         <Calendar size={32} className="mb-2 opacity-50 text-[#FFB300]" />
-                        Chưa có dữ liệu đợt bán nào trong năm {selectedYear}
+                        Chưa có dữ liệu đợt bán chuẩn nào trong năm {selectedYear}
                     </div>
                 )}
             </div>
