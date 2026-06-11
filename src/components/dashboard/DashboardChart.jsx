@@ -40,23 +40,36 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
             const shortName = ss.name || '';
             const nameLower = shortName.toLowerCase();
 
-            // 1. LỌC DỮ LIỆU: Bỏ qua "sale", "đăng lại", "thống kê tự động"
-            if (nameLower === 'thống kê tự động' || nameLower.includes('sale') || nameLower.includes('đăng lại')) {
+            // 1. LỌC ĐÚNG: Chỉ ẩn hoàn toàn "sale" và "đăng lại"
+            if (nameLower.includes('sale') || nameLower.includes('đăng lại')) {
                 return; 
             }
 
             const year = new Date(dateStr).getFullYear();
             if (!data[year]) data[year] = [];
 
-            // 2. CHUẨN HÓA 15 NGÀY
-            const soNgayThucTe = Math.max(1, ss.so_ngay || 1); // Đảm bảo không bị chia cho 0
+            // 2. HIỂN THỊ ĐẸP: Đổi "Thống kê tự động" thành ngày/tháng
+            let displayName = shortName;
+            if (!displayName || nameLower === 'thống kê tự động') {
+                const d = new Date(dateStr);
+                displayName = `${d.getDate()}/${d.getMonth() + 1}`;
+            }
+
+            // 3. TÍNH CHUẨN HÓA 15 NGÀY (Cộng thêm backup tự tính ngày nếu DB thiếu)
+            let soNgayThucTe = ss.so_ngay;
+            if (!soNgayThucTe || soNgayThucTe <= 0) {
+                const end = ss.actual_end_date || ss.end_date || new Date().toISOString();
+                const start = ss.actual_start_date || ss.start_date;
+                soNgayThucTe = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)));
+            }
+            
             const tiLe = 15 / soNgayThucTe;
             const loiNhuan15Ngay = ss.realProfit * tiLe;
 
             data[year].push({
-                name: shortName,
-                profit15Days: Math.round(loiNhuan15Ngay), // Dùng để vẽ chiều cao cột
-                actualProfit: ss.realProfit,              // Dùng để tính tổng và hiển thị Tooltip
+                name: displayName,
+                profit15Days: Math.round(loiNhuan15Ngay), // Vẽ chiều cao
+                actualProfit: ss.realProfit,              // Hiển thị và cộng tổng
                 days: soNgayThucTe,
                 fullDate: dateStr
             });
@@ -82,7 +95,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
 
     const currentChartData = chartDataByYear[selectedYear] || [];
     
-    // Tính tổng vẫn dựa trên lợi nhuận thực tế để sổ sách không bị sai
+    // Tính tổng lợi nhuận thực tế (không phải số chuẩn hóa) để sổ sách khớp 100%
     const yearlyTotal = currentChartData.reduce((sum, item) => sum + item.actualProfit, 0);
 
     const handlePrevYear = () => {
@@ -141,7 +154,6 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                             <XAxis dataKey="name" stroke="#8D6E63" fontSize={11} fontWeight="700" tickLine={false} axisLine={false} dy={10} />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,140,0,0.05)', radius: 8 }} />
                             
-                            {/* VẼ CỘT DỰA TRÊN LỢI NHUẬN CHUẨN HÓA 15 NGÀY */}
                             <Bar dataKey="profit15Days" radius={[8, 8, 8, 8]} maxBarSize={45} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
                                 {currentChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.actualProfit >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
