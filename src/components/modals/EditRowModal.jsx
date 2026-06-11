@@ -19,7 +19,6 @@ export default function EditRowModal({ editingRow, setEditingRow, handleSaveEdit
 
             return {
                 ...prev,
-                // Chỉ thay đổi SL Bán và Doanh thu, giữ nguyên SL Nhập
                 so_luong: isAdd ? currentBan + q : Math.max(0, currentBan - q),
                 so_tien_ban_duoc: isAdd ? currentTien + p : Math.max(0, currentTien - p)
             };
@@ -31,7 +30,8 @@ export default function EditRowModal({ editingRow, setEditingRow, handleSaveEdit
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all animate-fade-in">
-            <div className="bg-white rounded-[28px] w-full max-w-[440px] p-6 md:p-8 shadow-2xl animate-scale-up relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            {/* ĐÃ TĂNG ĐỘ RỘNG TỪ 440px LÊN 520px Ở DÒNG DƯỚI */}
+            <div className="bg-white rounded-[28px] w-full max-w-[520px] p-6 md:p-8 shadow-2xl animate-scale-up relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <button onClick={() => setEditingRow(null)} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors active:scale-95">
                     <X size={16} />
                 </button>
@@ -75,9 +75,10 @@ export default function EditRowModal({ editingRow, setEditingRow, handleSaveEdit
                         <label className="flex items-center gap-1.5 text-[10px] font-black text-[#1A5B82] uppercase tracking-widest mb-3">
                             <Calculator size={14}/> Cập nhật tự động (±)
                         </label>
-                        <div className="flex items-center gap-2.5">
-                            <input type="text" placeholder="SL đổi" className="w-[75px] px-2 py-3 rounded-[12px] border border-white bg-white/80 text-center text-[15px] font-bold text-[#1D1D1F] outline-none focus:border-[#26D0CE] focus:bg-white shadow-sm tabular-nums transition-colors" value={formatInput(deltaQty)} onChange={e => setDeltaQty(e.target.value)} />
-                            <input type="text" placeholder="Tiền thay đổi" className="flex-1 px-3 py-3 rounded-[12px] border border-white bg-white/80 text-right text-[15px] font-bold text-[#1D1D1F] outline-none focus:border-[#26D0CE] focus:bg-white shadow-sm tabular-nums transition-colors" value={formatInput(deltaPrice)} onChange={e => setDeltaPrice(e.target.value)} />
+                        {/* Đã điều chỉnh flex-wrap để chống tràn trên các màn hình nhỏ */}
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+                            <input type="text" placeholder="SL đổi" className="w-[85px] shrink-0 px-2 py-3 rounded-[12px] border border-white bg-white/80 text-center text-[15px] font-bold text-[#1D1D1F] outline-none focus:border-[#26D0CE] focus:bg-white shadow-sm tabular-nums transition-colors" value={formatInput(deltaQty)} onChange={e => setDeltaQty(e.target.value)} />
+                            <input type="text" placeholder="Tiền thay đổi" className="flex-1 min-w-[120px] px-3 py-3 rounded-[12px] border border-white bg-white/80 text-right text-[15px] font-bold text-[#1D1D1F] outline-none focus:border-[#26D0CE] focus:bg-white shadow-sm tabular-nums transition-colors" value={formatInput(deltaPrice)} onChange={e => setDeltaPrice(e.target.value)} />
                             
                             <div className="flex gap-1.5 shrink-0">
                                 <button onClick={() => applyDelta(true)} type="button" className="w-[46px] h-[46px] flex items-center justify-center bg-gradient-to-tr from-[#1DB2A0] to-[#26D0CE] hover:opacity-90 text-white rounded-[12px] shadow-md active:scale-95 transition-all" title="Cộng thêm">
