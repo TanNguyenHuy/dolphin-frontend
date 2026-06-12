@@ -248,7 +248,11 @@ export default function App() {
         try { 
             await axios.delete(`${API_URL}/bales/${id}`); 
             const safeBales = Array.isArray(importedBales) ? importedBales : []; 
-            const updated = safeBales.filter(b => b.id !== id); setImportedBales(updated); 
+            
+            // ĐÃ SỬA: Lọc chính xác bằng b._id thay vì b.id
+            const updated = safeBales.filter(b => b._id !== id); 
+            
+            setImportedBales(updated); 
             const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
             const newGiatUi = Math.round(newCost * 0.04);
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
