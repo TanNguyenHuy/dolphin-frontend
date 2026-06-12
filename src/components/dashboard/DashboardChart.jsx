@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload }) => {
                     </div>
                     <div className="flex justify-between items-center gap-4 text-[14px] font-black border-t border-[#FFE0B2]/50 pt-2 text-[#E65100]">
                         <span>Hiệu suất 15 ngày:</span>
-                        <span>{formatCurrency(data.profit15Days)} đ</span>
+                        <span className={data.profit15Days >= 0 ? 'text-[#E65100]' : 'text-[#E11D48]'}>{formatCurrency(data.profit15Days)} đ</span>
                     </div>
                 </div>
             </div>
@@ -40,7 +40,6 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
             const shortName = ss.name || '';
             const nameLower = shortName.toLowerCase();
 
-            // 1. LỌC ĐÚNG: Chỉ ẩn hoàn toàn "sale" và "đăng lại"
             if (nameLower.includes('sale') || nameLower.includes('đăng lại')) {
                 return; 
             }
@@ -48,14 +47,13 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
             const year = new Date(dateStr).getFullYear();
             if (!data[year]) data[year] = [];
 
-            // 2. HIỂN THỊ ĐẸP: Đổi "Thống kê tự động" thành ngày/tháng
             let displayName = shortName;
             if (!displayName || nameLower === 'thống kê tự động') {
                 const d = new Date(dateStr);
                 displayName = `${d.getDate()}/${d.getMonth() + 1}`;
             }
 
-            // 3. TÍNH CHUẨN HÓA 15 NGÀY (Cộng thêm backup tự tính ngày nếu DB thiếu)
+            // TÍNH CHUẨN HÓA LẠI SỐ NGÀY
             let soNgayThucTe = ss.so_ngay;
             if (!soNgayThucTe || soNgayThucTe <= 0) {
                 const end = ss.actual_end_date || ss.end_date || new Date().toISOString();
@@ -64,12 +62,17 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
             }
             
             const tiLe = 15 / soNgayThucTe;
-            const loiNhuan15Ngay = ss.realProfit * tiLe;
+            
+            // SỬA LỖI TOÁN HỌC: CHỈ NHÂN TỈ LỆ 15 NGÀY CHO DOANH THU
+            // Vốn nhập (so_tien_cua_kien) và Giặt ủi là chi phí cố định 1 lần, KHÔNG ĐƯỢC NHÂN.
+            const doanhThu15Ngay = (ss.tong_doanh_thu || 0) * tiLe;
+            const quangCao15Ngay = (ss.quang_cao || 0) * tiLe;
+            const loiNhuan15Ngay = doanhThu15Ngay - (ss.so_tien_cua_kien || 0) - (ss.computedGiatUi || 0) - quangCao15Ngay;
 
             data[year].push({
                 name: displayName,
-                profit15Days: Math.round(loiNhuan15Ngay), // Vẽ chiều cao
-                actualProfit: ss.realProfit,              // Hiển thị và cộng tổng
+                profit15Days: Math.round(loiNhuan15Ngay), 
+                actualProfit: ss.realProfit,              
                 days: soNgayThucTe,
                 fullDate: dateStr
             });
@@ -95,7 +98,6 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
 
     const currentChartData = chartDataByYear[selectedYear] || [];
     
-    // Tính tổng lợi nhuận thực tế (không phải số chuẩn hóa) để sổ sách khớp 100%
     const yearlyTotal = currentChartData.reduce((sum, item) => sum + item.actualProfit, 0);
 
     const handlePrevYear = () => {
@@ -156,7 +158,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                             
                             <Bar dataKey="profit15Days" radius={[8, 8, 8, 8]} maxBarSize={45} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out">
                                 {currentChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.actualProfit >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
+                                    <Cell key={`cell-${index}`} fill={entry.profit15Days >= 0 ? 'url(#colorProfit)' : 'url(#colorLoss)'} />
                                 ))}
                             </Bar>
                         </BarChart>
