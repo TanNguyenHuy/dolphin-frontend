@@ -189,15 +189,22 @@ export default function App() {
                     ss.tong_tien_ton_computed = computedVonTon;
                     
                     const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
-                    if (dates.length > 0) { ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; } 
-                    else { ss.actual_start_date = ss.start_date; ss.actual_end_date = ss.start_date; }
-                } catch(e) { ss.quang_cao = 0; ss.tong_tien_ton_computed = 0; ss.actual_start_date = ss.start_date; ss.actual_end_date = ss.start_date; }
+                    if (dates.length > 0) { 
+                        ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; 
+                        ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; 
+                    } else { 
+                        // ĐÃ SỬA: Lấy ngày hôm nay làm mặc định nếu đợt bán chưa có ngày
+                        ss.actual_start_date = ss.start_date || getTodayString(); 
+                        ss.actual_end_date = ss.end_date || ss.actual_start_date; 
+                    }
+                } catch(e) { ss.quang_cao = 0; ss.tong_tien_ton_computed = 0; ss.actual_start_date = ss.start_date || getTodayString(); ss.actual_end_date = ss.start_date || getTodayString(); }
                 return ss;
             }));
             enrichedSessions.forEach((ss, idx) => ss.originalIndex = idx);
             enrichedSessions.sort((a, b) => {
-                const dateA = new Date(a.actual_start_date || a.start_date || 0).getTime();
-                const dateB = new Date(b.actual_start_date || b.start_date || 0).getTime();
+                // ĐÃ SỬA: Fallback về Date.now() để luôn đưa các đợt mới lên Top 1
+                const dateA = new Date(a.actual_start_date || a.start_date || Date.now()).getTime();
+                const dateB = new Date(b.actual_start_date || b.start_date || Date.now()).getTime();
                 if (dateB === dateA) return b.originalIndex - a.originalIndex;
                 return dateB - dateA;
             });
@@ -216,7 +223,17 @@ export default function App() {
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
     
-    const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động' }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
+    // ĐÃ SỬA: Gửi kèm start_date là ngày hôm nay khi tạo thống kê mới
+    const handleCreateAutoSession = async () => { 
+        if (!canEdit || isProcessingCreate) return; 
+        setIsProcessingCreate(true); 
+        try { 
+            const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); 
+            await fetchDashboard(); 
+            if(res.data && res.data.id) fetchDetail(res.data.id); 
+        } catch (err) {} finally { setIsProcessingCreate(false); } 
+    };
+
     const handleDeleteSession = (e, id) => { if(!canDelete) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
@@ -243,15 +260,13 @@ export default function App() {
         } catch (err) {} 
     };
 
+    // Hàm Xóa Kiện đã được khắc phục dùng _id ở bước trước
     const handleDeleteBale = async (id) => { 
         if(!canDelete) return; 
         try { 
             await axios.delete(`${API_URL}/bales/${id}`); 
             const safeBales = Array.isArray(importedBales) ? importedBales : []; 
-            
-            // ĐÃ SỬA: Lọc chính xác bằng b._id thay vì b.id
             const updated = safeBales.filter(b => b._id !== id); 
-            
             setImportedBales(updated); 
             const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
             const newGiatUi = Math.round(newCost * 0.04);
