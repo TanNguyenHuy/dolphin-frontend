@@ -27,16 +27,23 @@ export default function CapitalManagement({
                     
                     {canEdit && (
                         <form onSubmit={handleAddBale} className="bg-white/40 p-4 rounded-[20px] space-y-3 shadow-sm border border-white/60 backdrop-blur-md">
-                            <input required placeholder="Tên lô hàng..." className="w-full min-w-0 liquid-input rounded-[14px] px-3 py-2.5 text-[14px] font-semibold text-[#1D1D1F] focus:border-[#26D0CE] outline-none transition-all" value={baleName} onChange={e=>setBaleName(e.target.value)} />
+                            {/* Thêm || '' để ô nhập không bao giờ bị khóa cứng */}
+                            <input required placeholder="Tên lô hàng..." className="w-full min-w-0 liquid-input rounded-[14px] px-3 py-2.5 text-[14px] font-semibold text-[#1D1D1F] focus:border-[#26D0CE] outline-none transition-all" 
+                                value={baleName || ''} 
+                                onChange={e => setBaleName ? setBaleName(e.target.value) : alert("Lỗi trạng thái React: setBaleName bị mất kết nối")} />
                             <div className="flex gap-2 w-full">
-                                <input required placeholder="Giá (VNĐ)" className="flex-1 min-w-0 liquid-input rounded-[14px] px-3 py-2.5 text-[14px] font-semibold text-[#1D1D1F] text-right focus:border-[#26D0CE] outline-none transition-all tabular-nums" value={formatInput(baleCost)} onChange={e => setBaleCost(e.target.value)} />
-                                <input required placeholder="SL" className="w-[65px] shrink-0 liquid-input rounded-[14px] px-2 py-2.5 text-[14px] font-bold text-[#33A1FD] text-center focus:border-[#26D0CE] outline-none transition-all tabular-nums" value={formatInput(baleQty)} onChange={e => setBaleQty(e.target.value)} />
+                                <input required placeholder="Giá (VNĐ)" className="flex-1 min-w-0 liquid-input rounded-[14px] px-3 py-2.5 text-[14px] font-semibold text-[#1D1D1F] text-right focus:border-[#26D0CE] outline-none transition-all tabular-nums" 
+                                    value={formatInput(baleCost) || ''} 
+                                    onChange={e => setBaleCost ? setBaleCost(e.target.value) : alert("Lỗi trạng thái React: setBaleCost bị mất kết nối")} />
+                                <input required placeholder="SL" className="w-[65px] shrink-0 liquid-input rounded-[14px] px-2 py-2.5 text-[14px] font-bold text-[#33A1FD] text-center focus:border-[#26D0CE] outline-none transition-all tabular-nums" 
+                                    value={formatInput(baleQty) || ''} 
+                                    onChange={e => setBaleQty ? setBaleQty(e.target.value) : alert("Lỗi trạng thái React: setBaleQty bị mất kết nối")} />
                             </div>
                             <button type="submit" className="w-full min-w-0 bg-white/80 text-[#1A5B82] border border-white shadow-sm py-2.5 rounded-[14px] text-[13px] font-bold hover:bg-white transition-colors active:opacity-70 mt-1 whitespace-nowrap">Thêm Vốn Nhập</button>
                         </form>
                     )}
 
-                    {(importedBales || []).length > 0 && (
+                    {(importedBales || []).length > 0 ? (
                         <div className="space-y-2">
                             {(importedBales || []).map(b => {
                                 if (!b) return null;
@@ -48,11 +55,17 @@ export default function CapitalManagement({
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                         <span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                        {canDelete && <button type="button" onClick={() => handleDeleteBale(b._id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
+                                        {/* Bắt lỗi trực tiếp nếu hàm xóa bị mất */}
+                                        {canDelete && <button type="button" onClick={() => {
+                                            console.log("Đang gọi xóa kiện:", b._id);
+                                            handleDeleteBale ? handleDeleteBale(b._id) : alert("Lỗi kết nối hàm Xóa từ máy chủ!");
+                                        }} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
                                     </div>
                                 </div>
                             )})}
                         </div>
+                    ) : (
+                        <div className="text-center p-4 text-[12px] text-gray-400 italic">Đang tải kiện hàng hoặc chưa có kiện nào...</div>
                     )}
 
                     <div className="mt-auto space-y-4 pt-4 border-t border-white/50 min-w-0">
