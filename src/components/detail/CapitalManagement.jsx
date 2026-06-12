@@ -48,7 +48,7 @@ export default function CapitalManagement({
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                         <span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                        {canDelete && <button type="button" onClick={() => console.log("CHI TIẾT KIỆN HÀNG LÀ:", b)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
+                                        {canDelete && <button type="button" onClick={() => handleDeleteBale(b._id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
                                     </div>
                                 </div>
                             )})}
