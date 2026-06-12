@@ -41,14 +41,14 @@ export default function CapitalManagement({
                             {(importedBales || []).map(b => {
                                 if (!b) return null;
                                 return (
-                                <div key={b.id} className="p-3.5 bg-white/60 hover:bg-white transition-colors border border-white/80 rounded-[20px] flex items-center justify-between group shadow-sm min-w-0">
+                                <div key={b._id} className="p-3.5 bg-white/60 hover:bg-white transition-colors border border-white/80 rounded-[20px] flex items-center justify-between group shadow-sm min-w-0">
                                     <div className="flex-1 min-w-0 pr-2">
                                         <div className="text-[13px] font-bold text-[#1D1D1F] truncate">{b.name || ''}</div>
                                         <div className="text-[11px] text-[#5c5c5c] mt-0.5 font-medium truncate">SL: <span className="font-semibold text-[#1D1D1F]">{b.qty || 0}</span> • TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}</div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                         <span className="font-bold text-[#1D1D1F] text-[14px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                        {canDelete && <button type="button" onClick={() => handleDeleteBale(b.id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
+                                        {canDelete && <button type="button" onClick={() => handleDeleteBale(b._id)} className="text-[#8E8E93] hover:text-[#FF3B30] transition-colors bg-white hover:bg-[#FF3B30]/10 p-1.5 rounded-full border border-gray-100 shadow-sm"><X size={12}/></button>}
                                     </div>
                                 </div>
                             )})}
