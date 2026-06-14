@@ -53,21 +53,23 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 displayName = `${d.getDate()}/${d.getMonth() + 1}`;
             }
 
-            // TÍNH CHUẨN HÓA LẠI SỐ NGÀY
+            // TÍNH TOÁN SỐ NGÀY
             let soNgayThucTe = ss.so_ngay;
             if (!soNgayThucTe || soNgayThucTe <= 0) {
                 const end = ss.actual_end_date || ss.end_date || new Date().toISOString();
-                const start = ss.actual_start_date || ss.start_date;
+                const start = ss.actual_start_date || ss.start_date || new Date().toISOString();
                 soNgayThucTe = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)));
             }
             
+            // ĐÃ SỬA LẠI THEO ĐÚNG CÔNG THỨC CHUẨN CỦA BẠN: LỢI NHUẬN * (15 / SỐ NGÀY)
             const tiLe = 15 / soNgayThucTe;
-            
-            // SỬA LỖI TOÁN HỌC: CHỈ NHÂN TỈ LỆ 15 NGÀY CHO DOANH THU
-            // Vốn nhập (so_tien_cua_kien) và Giặt ủi là chi phí cố định 1 lần, KHÔNG ĐƯỢC NHÂN.
-            const doanhThu15Ngay = (ss.tong_doanh_thu || 0) * tiLe;
-            const quangCao15Ngay = (ss.quang_cao || 0) * tiLe;
-            const loiNhuan15Ngay = doanhThu15Ngay - (ss.so_tien_cua_kien || 0) - (ss.computedGiatUi || 0) - quangCao15Ngay;
+            let loiNhuan15Ngay = ss.realProfit * tiLe;
+
+            // Rào chắn bảo vệ: Nếu đợt bán chưa có doanh thu (chỉ mới nhập vốn) thì KHÔNG nhân 15 lần
+            // để tránh hiện tượng cột đỏ đâm thủng biểu đồ.
+            if ((!ss.tong_doanh_thu || ss.tong_doanh_thu === 0) && ss.realProfit < 0) {
+                loiNhuan15Ngay = ss.realProfit;
+            }
 
             data[year].push({
                 name: displayName,
