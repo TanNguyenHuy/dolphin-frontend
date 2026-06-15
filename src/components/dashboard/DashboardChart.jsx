@@ -21,7 +21,9 @@ const CustomTooltip = ({ active, payload }) => {
                     </div>
                     <div className="flex justify-between items-center gap-4 text-[14px] font-black border-t border-[#FFE0B2]/50 pt-2 text-[#E65100]">
                         <span>Hiệu suất 15 ngày:</span>
-                        <span className={data.profit15Days >= 0 ? 'text-[#E65100]' : 'text-[#E11D48]'}>{formatCurrency(data.profit15Days)} đ</span>
+                        <span className={data.profit15Days >= 0 ? 'text-[#E65100]' : 'text-[#E11D48]'}>
+                            {data.days > 4 ? `${formatCurrency(data.profit15Days)} đ` : 'Chờ ổn định'}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -53,7 +55,6 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 displayName = `${d.getDate()}/${d.getMonth() + 1}`;
             }
 
-            // TÍNH TOÁN SỐ NGÀY
             let soNgayThucTe = ss.so_ngay;
             if (!soNgayThucTe || soNgayThucTe <= 0) {
                 const end = ss.actual_end_date || ss.end_date || new Date().toISOString();
@@ -61,14 +62,13 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 soNgayThucTe = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)));
             }
             
-            // ĐÃ SỬA LẠI THEO ĐÚNG CÔNG THỨC CHUẨN CỦA BẠN: LỢI NHUẬN * (15 / SỐ NGÀY)
-            const tiLe = 15 / soNgayThucTe;
-            let loiNhuan15Ngay = ss.realProfit * tiLe;
+            // Lấy lợi nhuận thực tế làm mốc cơ bản
+            let loiNhuan15Ngay = ss.realProfit;
 
-            // Rào chắn bảo vệ: Nếu đợt bán chưa có doanh thu (chỉ mới nhập vốn) thì KHÔNG nhân 15 lần
-            // để tránh hiện tượng cột đỏ đâm thủng biểu đồ.
-            if ((!ss.tong_doanh_thu || ss.tong_doanh_thu === 0) && ss.realProfit < 0) {
-                loiNhuan15Ngay = ss.realProfit;
+            // CHỈ NHÂN TỈ LỆ 15 NGÀY KHI SỐ NGÀY BÁN LỚN HƠN 4
+            if (soNgayThucTe > 4) {
+                const tiLe = 15 / soNgayThucTe;
+                loiNhuan15Ngay = ss.realProfit * tiLe;
             }
 
             data[year].push({
