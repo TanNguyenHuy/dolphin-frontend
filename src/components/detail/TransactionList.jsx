@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, Link as LinkIcon, Pencil, Trash2, RefreshCw, Calendar, Clock } from 'lucide-react';
+import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock } from 'lucide-react';
 import { formatCurrency, formatInput, formatDateDisplay } from '../../utils';
 
 const formatDateTime = (dateString) => {
@@ -16,7 +16,7 @@ const formatDateTime = (dateString) => {
 };
 
 export default function TransactionList({
-    enrichedDaily, detailData, mvpRowId, canEdit, canDelete, handleStartSync,
+    enrichedDaily, detailData, mvpRowId, canEdit, canDelete,
     isProcessingEdit, isProcessingDelete, handleStartEdit, handleDeleteRow
 }) {
     return (
@@ -98,18 +98,8 @@ export default function TransactionList({
                                     </div>
 
                                     <div className="flex items-center gap-1 sm:border-l border-gray-200 sm:pl-3 ml-4">
-                                        {canEdit && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleStartSync(row); }} 
-                                                disabled={isProcessingEdit || isProcessingDelete} 
-                                                className="p-2 text-[#33A1FD] hover:bg-blue-50 rounded-full transition-colors active:scale-95 shadow-sm sm:shadow-none" 
-                                                title="Cập nhật thay thế"
-                                            >
-                                                <RefreshCw size={14}/>
-                                            </button>
-                                        )}
-                                        {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-gray-400 hover:text-[#33A1FD] hover:bg-gray-50 rounded-full transition-colors active:scale-95 shadow-sm sm:shadow-none"><Pencil size={14}/></button>}
-                                        {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors active:scale-95 shadow-sm sm:shadow-none"><Trash2 size={14}/></button>}
+                                        {canEdit && <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-gray-400 hover:text-[#33A1FD] hover:bg-gray-50 rounded-full transition-colors active:scale-95 shadow-sm sm:shadow-none" title="Sửa bản ghi"><Pencil size={14}/></button>}
+                                        {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors active:scale-95 shadow-sm sm:shadow-none" title="Xóa bản ghi"><Trash2 size={14}/></button>}
                                     </div>
                                 </div>
                             </div>
