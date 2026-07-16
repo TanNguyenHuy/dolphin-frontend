@@ -2,30 +2,21 @@ import React from 'react';
 import { Fish, Crown, Clock, Users, Plus, RefreshCw, LogOut, TrendingUp, Package, List } from 'lucide-react';
 
 export default function Header({
-    authUser,
-    isAdmin,
-    canEdit,
-    timeLeftDisplay,
-    view,
-    setView,
-    handleCreateAutoSession,
-    isProcessingCreate,
-    handleLogout
+    authUser, isAdmin, canEdit, timeLeftDisplay, view, setView,
+    handleCreateAutoSession, isProcessingCreate, handleLogout
 }) {
-    // Hàm xử lý lướt mượt
+    // Lệnh cuộn trang siêu mượt (Native Scroll)
     const scrollToSection = (id) => {
         const element = document.getElementById(id);
         if (element) {
-            // Trừ hao 130px để không bị thanh Header đè lên mất tiêu đề
-            const y = element.getBoundingClientRect().top + window.scrollY - 130;
-            window.scrollTo({ top: y, behavior: 'smooth' });
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
     return (
         <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-[32px] px-5 py-3 md:py-3 flex flex-col md:flex-row justify-between items-start md:items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60 gap-4 md:gap-0">
             
-            {/* 1. KHU VỰC THÔNG TIN NGƯỜI DÙNG & BADGE */}
+            {/* 1. KHU VỰC THÔNG TIN NGƯỜI DÙNG */}
             <div className="flex flex-col">
                 <a href="https://www.instagram.com/dolphin_97ers/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group active:opacity-60 transition-opacity min-w-0">
                     <div className="w-10 h-10 md:w-12 md:h-12 bg-white/60 backdrop-blur-md rounded-full shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform group-hover:scale-105 border border-white/50">
@@ -66,7 +57,7 @@ export default function Header({
                 </div>
             </div>
 
-            {/* 2. MENU ĐIỀU HƯỚNG CUỘN */}
+            {/* 2. MENU ĐIỀU HƯỚNG CUỘN (CHỈ HIỆN Ở DASHBOARD) */}
             {view === 'DASHBOARD' && (
                 <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full md:w-auto pb-2 md:pb-0">
                     <button 
