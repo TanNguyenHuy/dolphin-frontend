@@ -10,11 +10,18 @@ export default function Header({
     setView,
     handleCreateAutoSession,
     isProcessingCreate,
-    handleLogout,
-    // Nhận biến từ App.jsx
-    activeTab,
-    setActiveTab
+    handleLogout
 }) {
+    // Hàm xử lý lướt mượt
+    const scrollToSection = (id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            // Trừ hao 130px để không bị thanh Header đè lên mất tiêu đề
+            const y = element.getBoundingClientRect().top + window.scrollY - 130;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
     return (
         <div className="fixed top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[96%] max-w-[1600px] z-50 liquid-glass rounded-[32px] px-5 py-3 md:py-3 flex flex-col md:flex-row justify-between items-start md:items-center transition-all duration-500 hover:bg-white/70 shadow-sm border border-white/60 gap-4 md:gap-0">
             
@@ -59,33 +66,33 @@ export default function Header({
                 </div>
             </div>
 
-            {/* 2. KHU VỰC MENU TÁP CHUYỂN TRANG (CHỈ HIỂN THỊ Ở DASHBOARD) */}
+            {/* 2. MENU ĐIỀU HƯỚNG CUỘN */}
             {view === 'DASHBOARD' && (
                 <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full md:w-auto pb-2 md:pb-0">
                     <button 
-                        onClick={() => setActiveTab('CHART')} 
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border ${activeTab === 'CHART' ? 'bg-[#FFF3E0] border-[#FFB74D] text-[#E65100]' : 'bg-white/60 border-transparent text-gray-500 hover:bg-white'}`}
+                        onClick={() => scrollToSection('section-loi-nhuan')} 
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-[#FFE0B2] text-[#E65100] hover:bg-white hover:-translate-y-0.5"
                     >
                         <TrendingUp size={16} strokeWidth={2.5} /> Lợi Nhuận
                     </button>
                     
                     <button 
-                        onClick={() => setActiveTab('STATS')} 
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border ${activeTab === 'STATS' ? 'bg-[#E3F2FD] border-[#64B5F6] text-[#1A5B82]' : 'bg-white/60 border-transparent text-gray-500 hover:bg-white'}`}
+                        onClick={() => scrollToSection('section-kho-thue')} 
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-blue-200 text-[#1A5B82] hover:bg-white hover:-translate-y-0.5"
                     >
                         <Package size={16} strokeWidth={2.5} /> Kho, Vốn & Thuế
                     </button>
                     
                     <button 
-                        onClick={() => setActiveTab('LIST')} 
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border ${activeTab === 'LIST' ? 'bg-[#E0F2F1] border-[#4DB6AC] text-[#00695C]' : 'bg-white/60 border-transparent text-gray-500 hover:bg-white'}`}
+                        onClick={() => scrollToSection('section-danh-sach')} 
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-teal-200 text-[#00695C] hover:bg-white hover:-translate-y-0.5"
                     >
                         <List size={16} strokeWidth={2.5} /> Đợt Bán
                     </button>
                 </div>
             )}
             
-            {/* 3. KHU VỰC CÔNG CỤ (TẠO THỐNG KÊ, ĐĂNG XUẤT) */}
+            {/* 3. KHU VỰC CÔNG CỤ */}
             <div className="flex items-center gap-1.5 md:gap-2 shrink-0 self-end md:self-center">
                 {view === 'DASHBOARD' && (
                     <>
