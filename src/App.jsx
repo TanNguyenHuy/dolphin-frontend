@@ -24,6 +24,35 @@ import BlockModal from './components/modals/BlockModal';
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
 
+// ============================================================================
+// LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY) - NGĂN CHẶN LỖI TRẮNG TRANG
+// ============================================================================
+class ErrorBoundary extends React.Component {
+    constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
+    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+    componentDidCatch(error, errorInfo) { this.setState({ errorInfo }); console.error("Crash:", error, errorInfo); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-6 md:p-10 bg-[#FFF5F5] border-2 border-red-200 rounded-[32px] shadow-2xl max-w-5xl mx-auto mt-32 relative z-50">
+                    <h2 className="text-[24px] font-black text-red-600 mb-4 uppercase tracking-widest">🚨 Hệ thống phát hiện Crash (Sập giao diện)!</h2>
+                    <p className="text-[15px] text-gray-700 font-medium mb-6">Thay vì hiện màn hình trắng, lá chắn đã chặn lại. Hãy chụp màn hình khung đỏ dưới đây và gửi lại cho tôi, tôi sẽ chỉ ra ngay file nào đang gây lỗi:</p>
+                    <div className="bg-white p-5 rounded-2xl overflow-x-auto text-[13px] font-mono text-red-800 border border-red-100 shadow-inner max-h-[400px] overflow-y-auto">
+                        <strong className="text-red-600 text-[15px]">{this.state.error?.toString()}</strong>
+                        <br/><br/>
+                        {this.state.errorInfo?.componentStack}
+                    </div>
+                    <button onClick={() => window.location.reload()} className="mt-8 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95">
+                        Tải lại trang
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+// ============================================================================
+
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
         if (typeof window !== 'undefined') { 
@@ -75,7 +104,6 @@ export default function App() {
     const canEdit = isAdmin || authUser?.permissions?.canEdit === true;
     const canDelete = isAdmin || authUser?.permissions?.canDelete === true;
     const canPay = isAdmin || authUser?.permissions?.canPay === true;
-    
     const canViewDetail = isAdmin || authUser?.permissions?.canViewDetail === true;
     const canExportExcel = isAdmin || authUser?.plan === '100k' || authUser?.plan === 'premium';
 
@@ -90,23 +118,17 @@ export default function App() {
     };
 
     useEffect(() => {
-        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) {
-            setIsExpiredState(false);
-            return;
-        }
+        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) { setIsExpiredState(false); return; }
         const checkExpiry = () => {
-            const now = new Date();
-            const exp = new Date(authUser.planExpiry);
-            if (now >= exp) {
-                if (!isExpiredState) setIsExpiredState(true);
-            } else {
+            const now = new Date(); const exp = new Date(authUser.planExpiry);
+            if (now >= exp) { if (!isExpiredState) setIsExpiredState(true); } 
+            else {
                 if (isExpiredState) setIsExpiredState(false);
                 const diff = Math.abs(exp - now);
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                
                 if (days > 0) setTimeLeftDisplay(`Còn ${days} ngày ${hours} giờ`);
                 else if (hours > 0) setTimeLeftDisplay(`Còn ${hours} giờ ${mins} phút`);
                 else if (mins > 0) setTimeLeftDisplay(`Còn ${mins} phút ${secs} giây`);
@@ -130,16 +152,9 @@ export default function App() {
                 const isActuallyExpired = latestData.planExpiry && new Date(latestData.planExpiry) <= new Date();
 
                 if (latestData.isBanned || (!latestData.isApproved && !isActuallyExpired && !latestData.paymentImage)) {
-                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!' });
-                    return;
+                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!' }); return;
                 }
-                
-                if (
-                    JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || 
-                    authUser.role !== latestData.role || authUser.planExpiry !== latestData.planExpiry ||
-                    authUser.plan !== latestData.plan || authUser.isApproved !== latestData.isApproved ||
-                    authUser.isChatBanned !== latestData.isChatBanned || authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil
-                ) {
+                if (JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || authUser.role !== latestData.role || authUser.planExpiry !== latestData.planExpiry || authUser.plan !== latestData.plan || authUser.isApproved !== latestData.isApproved || authUser.isChatBanned !== latestData.isChatBanned || authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil) {
                     setAuthUser(prev => {
                         const updated = { ...prev, permissions: latestData.permissions, role: latestData.role, plan: latestData.plan, planExpiry: latestData.planExpiry, isApproved: latestData.isApproved, isChatBanned: latestData.isChatBanned, chatRestrictedUntil: latestData.chatRestrictedUntil };
                         if (localStorage.getItem('authUser')) localStorage.setItem('authUser', JSON.stringify(updated));
@@ -171,10 +186,7 @@ export default function App() {
                         computedDoanhThu += (Number(item.so_tien_ban_duoc) || 0);
                     });
 
-                    ss.tong_sl_nhap = computedTongNhap;
-                    ss.tong_sl_ban = computedTongBan;
-                    ss.tong_doanh_thu = computedDoanhThu;
-                    ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
+                    ss.tong_sl_nhap = computedTongNhap; ss.tong_sl_ban = computedTongBan; ss.tong_doanh_thu = computedDoanhThu; ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
 
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const safeBalesData = Array.isArray(balesData) ? balesData : [];
@@ -184,8 +196,7 @@ export default function App() {
                     dailyList.forEach((row) => {
                         const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
                         let sl_con = (Number(row.so_luong_nhap) || 0) - (Number(row.so_luong) || 0);
-                        if (matchedBale) { computedVonTon += Math.round(sl_con * ((matchedBale.cost || 0) / (matchedBale.qty || 1))); } 
-                        else { computedVonTon += Math.round(sl_con * trungBinh); }
+                        if (matchedBale) { computedVonTon += Math.round(sl_con * ((matchedBale.cost || 0) / (matchedBale.qty || 1))); } else { computedVonTon += Math.round(sl_con * trungBinh); }
                     });
                     ss.tong_tien_ton_computed = computedVonTon;
                     
@@ -193,10 +204,7 @@ export default function App() {
                     if (dates.length > 0) { 
                         ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; 
                         ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; 
-                    } else { 
-                        ss.actual_start_date = ss.start_date || getTodayString(); 
-                        ss.actual_end_date = ss.end_date || ss.actual_start_date; 
-                    }
+                    } else { ss.actual_start_date = ss.start_date || getTodayString(); ss.actual_end_date = ss.end_date || ss.actual_start_date; }
                 } catch(e) { ss.quang_cao = 0; ss.tong_tien_ton_computed = 0; ss.actual_start_date = ss.start_date || getTodayString(); ss.actual_end_date = ss.start_date || getTodayString(); }
                 return ss;
             }));
@@ -204,8 +212,7 @@ export default function App() {
             enrichedSessions.sort((a, b) => {
                 const dateA = new Date(a.actual_start_date || a.start_date || Date.now()).getTime();
                 const dateB = new Date(b.actual_start_date || b.start_date || Date.now()).getTime();
-                if (dateB === dateA) return b.originalIndex - a.originalIndex;
-                return dateB - dateA;
+                if (dateB === dateA) return b.originalIndex - a.originalIndex; return dateB - dateA;
             });
             setSessions(enrichedSessions); 
         } catch (err) {} 
@@ -216,9 +223,16 @@ export default function App() {
         try { 
             const res = await axios.get(`${API_URL}/data/${id}`); 
             let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
-            if(res.data) { 
-                // BỌC ÁO GIÁP BẢO VỆ: Đảm bảo daily luôn là một mảng dù API có trả về undefined
-                const safeData = { ...res.data, daily: Array.isArray(res.data.daily) ? res.data.daily : [] };
+            
+            // ÉP KIỂU TUYỆT ĐỐI CHỐNG UNDEFINED CHO MỌI BIẾN
+            if(res.data && typeof res.data === 'object' && !Array.isArray(res.data)) { 
+                const safeData = { 
+                    ...res.data, 
+                    name: res.data.name || 'Đợt bán',
+                    start_date: res.data.start_date || getTodayString(),
+                    end_date: res.data.end_date || getTodayString(),
+                    daily: Array.isArray(res.data.daily) ? res.data.daily : [] 
+                };
                 setDetailData(safeData); 
                 setImportedBales(Array.isArray(balesData) ? balesData : []); 
                 setCurrentId(id); 
@@ -228,36 +242,20 @@ export default function App() {
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
     
-    const handleCreateAutoSession = async () => { 
-        if (!canEdit || isProcessingCreate) return; 
-        setIsProcessingCreate(true); 
-        try { 
-            const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); 
-            await fetchDashboard(); 
-            if(res.data && res.data.id) fetchDetail(res.data.id); 
-        } catch (err) {} finally { setIsProcessingCreate(false); } 
-    };
-
+    const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
     const handleDeleteSession = (e, id) => { if(!canDelete) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
     
-    const updateSessionField = async (field, value) => { 
-        if(!canEdit || !detailData) return; 
-        const newData = { ...detailData, [field]: value }; setDetailData(newData); 
-        try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} 
-    };
+    const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
 
     const handleAddBale = async (e) => { 
-        e.preventDefault(); if(!canEdit) return; 
-        const cost = parseInput(baleCost); const qty = parseInput(baleQty); 
-        if(!baleName || cost === 0) return; 
+        e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; 
         try { 
             const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); 
             const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated); 
-            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
-            const newGiatUi = Math.round(newCost * 0.04);
+            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
             setBaleName(''); setBaleCost(''); setBaleQty(''); 
@@ -268,11 +266,8 @@ export default function App() {
         if(!canDelete) return; 
         try { 
             await axios.delete(`${API_URL}/bales/${id}`); 
-            const safeBales = Array.isArray(importedBales) ? importedBales : []; 
-            const updated = safeBales.filter(b => b._id !== id); 
-            setImportedBales(updated); 
-            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0);
-            const newGiatUi = Math.round(newCost * 0.04);
+            const safeBales = Array.isArray(importedBales) ? importedBales : []; const updated = safeBales.filter(b => b._id !== id); setImportedBales(updated); 
+            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
         } catch (err) {} 
@@ -280,7 +275,7 @@ export default function App() {
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) {} finally { setIsProcessingAdd(false); }
+        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
@@ -290,12 +285,9 @@ export default function App() {
     };
 
     useEffect(() => {
-        if (typeof syncText !== 'string' || !syncText.trim()) {
-            setSyncManualQty(''); setSyncManualRev(''); return;
-        }
+        if (typeof syncText !== 'string' || !syncText.trim()) { setSyncManualQty(''); setSyncManualRev(''); return; }
         const { q, r } = parseIGSyncText(syncText);
-        setSyncManualQty(q > 0 ? q.toString() : '');
-        setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : '0'));
+        setSyncManualQty(q > 0 ? q.toString() : ''); setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : '0'));
     }, [syncText]);
 
     const handleConfirmSync = async () => {
@@ -315,8 +307,7 @@ export default function App() {
     const handleSaveSession = async () => { 
         if (!editingSession) return; 
         try { 
-            const newKien = parseInput(editingSession.so_tien_cua_kien);
-            const newGiatUi = Math.round(newKien * 0.04);
+            const newKien = parseInput(editingSession.so_tien_cua_kien); const newGiatUi = Math.round(newKien * 0.04);
             await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: newKien, so_tien_giat_ui: newGiatUi }); 
             await fetchDashboard(); 
             if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId); 
@@ -326,6 +317,7 @@ export default function App() {
     
     const handleBack = () => { fetchDashboard(); setView('DASHBOARD'); setDetailData(null); setImportedBales([]); };
 
+    // TÍNH TOÁN DỮ LIỆU ĐƯỢC BỌC KỸ CÀNG
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
@@ -334,12 +326,18 @@ export default function App() {
         return { ...ss, autoAdCost, realProfit, computedGiatUi };
     });
 
-    const { dashboardProfit, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon } = calculateGlobalStats(enrichedSessions);
-    
-    // TĂNG CƯỜNG BẢO VỆ: Đảm bảo biến detailData và enrichedDaily không bao giờ sập
-    const safeDetailData = detailData ? { ...detailData, daily: Array.isArray(detailData.daily) ? detailData.daily : [] } : null;
-    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = calculateDetailStats(safeDetailData, importedBales, AD_COST_PER_SALE);
-    const safeEnrichedDaily = Array.isArray(enrichedDaily) ? enrichedDaily : [];
+    let dashboardProfit = 0, totalRevenueForTax = 0, taxAmount = 0, showTax = false, displayRevenueTr = 0, globalTongNhap = 0, globalTongBan = 0, globalVonTon = 0, globalTongCon = 0;
+    try {
+        const gStats = calculateGlobalStats(enrichedSessions) || {};
+        dashboardProfit = gStats.dashboardProfit || 0; totalRevenueForTax = gStats.totalRevenueForTax || 0; taxAmount = gStats.taxAmount || 0; showTax = gStats.showTax || false; displayRevenueTr = gStats.displayRevenueTr || 0; globalTongNhap = gStats.globalTongNhap || 0; globalTongBan = gStats.globalTongBan || 0; globalVonTon = gStats.globalVonTon || 0; globalTongCon = gStats.globalTongCon || 0;
+    } catch(e) { console.error("Global Stats Crash", e); }
+
+    let detailProfit = 0, mvpRowId = null, enrichedDaily = [], detailAutoAdCost = 0, actualStartDate = null, actualEndDate = null, dynamicTarget = 0, isTargetReached = false;
+    try {
+        const dStats = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE) || {};
+        detailProfit = dStats.detailProfit || 0; mvpRowId = dStats.mvpRowId || null; enrichedDaily = Array.isArray(dStats.enrichedDaily) ? dStats.enrichedDaily : []; detailAutoAdCost = dStats.detailAutoAdCost || 0; actualStartDate = dStats.actualStartDate || null; actualEndDate = dStats.actualEndDate || null; dynamicTarget = dStats.dynamicTarget || 0; isTargetReached = dStats.isTargetReached || false;
+    } catch(e) { console.error("Detail Stats Crash", e); }
+
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
@@ -350,7 +348,7 @@ export default function App() {
     const handleExport = () => { 
         if (!canExportExcel) { showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error"); return; }
         if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
-        safeEnrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
+        enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
@@ -397,27 +395,29 @@ export default function App() {
             <DeleteRowModal showDeleteRowModal={showDeleteRowModal} setShowDeleteRowModal={setShowDeleteRowModal} confirmDeleteRow={confirmDeleteRow} isProcessingDelete={isProcessingDelete} />
             <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
             
-            <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
-                {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
-                
-                {view === 'DASHBOARD' && (
-                    <DashboardView 
-                        activeTab={activeTab}
-                        dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
-                    />
-                )}
-                
-                {view === 'DETAIL' && safeDetailData && (
-                    <DetailView 
-                        detailData={safeDetailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                        isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
-                        canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
-                        baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                        newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={safeEnrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                        handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
-                    />
-                )}
-            </div>
+            <ErrorBoundary>
+                <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
+                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
+                    
+                    {view === 'DASHBOARD' && (
+                        <DashboardView 
+                            activeTab={activeTab}
+                            dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
+                        />
+                    )}
+                    
+                    {view === 'DETAIL' && detailData && (
+                        <DetailView 
+                            detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
+                            isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                            canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
+                            baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
+                            newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
+                            handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
+                        />
+                    )}
+                </div>
+            </ErrorBoundary>
             <ChatBox authUser={authUser} />
         </div>
     );
