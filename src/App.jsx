@@ -36,6 +36,7 @@ export default function App() {
     });
 
     const [view, setView] = useState('DASHBOARD');
+    const [activeTab, setActiveTab] = useState('CHART'); // Biến điều khiển Tab
     const [sessions, setSessions] = useState([]);
     const [currentId, setCurrentId] = useState(null);
     const [detailData, setDetailData] = useState(null);
@@ -193,7 +194,6 @@ export default function App() {
                         ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; 
                         ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; 
                     } else { 
-                        // ĐÃ SỬA: Lấy ngày hôm nay làm mặc định nếu đợt bán chưa có ngày
                         ss.actual_start_date = ss.start_date || getTodayString(); 
                         ss.actual_end_date = ss.end_date || ss.actual_start_date; 
                     }
@@ -202,7 +202,6 @@ export default function App() {
             }));
             enrichedSessions.forEach((ss, idx) => ss.originalIndex = idx);
             enrichedSessions.sort((a, b) => {
-                // ĐÃ SỬA: Fallback về Date.now() để luôn đưa các đợt mới lên Top 1
                 const dateA = new Date(a.actual_start_date || a.start_date || Date.now()).getTime();
                 const dateB = new Date(b.actual_start_date || b.start_date || Date.now()).getTime();
                 if (dateB === dateA) return b.originalIndex - a.originalIndex;
@@ -223,7 +222,6 @@ export default function App() {
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
     
-    // ĐÃ SỬA: Gửi kèm start_date là ngày hôm nay khi tạo thống kê mới
     const handleCreateAutoSession = async () => { 
         if (!canEdit || isProcessingCreate) return; 
         setIsProcessingCreate(true); 
@@ -260,7 +258,6 @@ export default function App() {
         } catch (err) {} 
     };
 
-    // Hàm Xóa Kiện đã được khắc phục dùng _id ở bước trước
     const handleDeleteBale = async (id) => { 
         if(!canDelete) return; 
         try { 
@@ -286,7 +283,6 @@ export default function App() {
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
-    // Gọi Bộ Não phân tích chuỗi JSON từ IG
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) {
             setSyncManualQty(''); setSyncManualRev(''); return;
@@ -332,10 +328,7 @@ export default function App() {
         return { ...ss, autoAdCost, realProfit, computedGiatUi };
     });
 
-    // Gọi Bộ Não tính toán Global (Dashboard)
     const { dashboardProfit, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon } = calculateGlobalStats(enrichedSessions);
-
-    // Gọi Bộ Não tính toán Detail
     const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE);
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
@@ -356,7 +349,7 @@ export default function App() {
     }
 
     return (
-        <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-32">
+        <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-36">
             {showFireworks && <Confetti />}
 
             <Toast toast={toast} />
@@ -384,6 +377,7 @@ export default function App() {
                 authUser={authUser} isAdmin={isAdmin} canEdit={canEdit} timeLeftDisplay={timeLeftDisplay}
                 view={view} setView={setView} handleCreateAutoSession={handleCreateAutoSession}
                 isProcessingCreate={isProcessingCreate} handleLogout={handleLogout}
+                activeTab={activeTab} setActiveTab={setActiveTab} 
             />
 
             <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} handleConfirmSync={handleConfirmSync} isProcessingEdit={isProcessingEdit} />
@@ -392,14 +386,17 @@ export default function App() {
             <DeleteSessionModal showDeleteModal={showDeleteModal} setShowDeleteModal={setShowDeleteModal} confirmDeleteSession={confirmDeleteSession} />
             <DeleteRowModal showDeleteRowModal={showDeleteRowModal} setShowDeleteRowModal={setShowDeleteRowModal} confirmDeleteRow={confirmDeleteRow} isProcessingDelete={isProcessingDelete} />
             <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
-
+            
             <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
                 {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
+                
                 {view === 'DASHBOARD' && (
                     <DashboardView 
+                        activeTab={activeTab}
                         dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
                     />
                 )}
+                
                 {view === 'DETAIL' && detailData && (
                     <DetailView 
                         detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}

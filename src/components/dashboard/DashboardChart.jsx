@@ -62,19 +62,17 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 soNgayThucTe = Math.max(1, Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)));
             }
             
-            // Lấy lợi nhuận thực tế làm mốc cơ bản
-            let loiNhuan15Ngay = ss.realProfit;
+            let loiNhuan15Ngay = Number(ss.realProfit) || 0;
 
-            // CHỈ NHÂN TỈ LỆ 15 NGÀY KHI SỐ NGÀY BÁN LỚN HƠN 4
             if (soNgayThucTe > 4) {
                 const tiLe = 15 / soNgayThucTe;
-                loiNhuan15Ngay = ss.realProfit * tiLe;
+                loiNhuan15Ngay = (Number(ss.realProfit) || 0) * tiLe;
             }
 
             data[year].push({
                 name: displayName,
                 profit15Days: Math.round(loiNhuan15Ngay), 
-                actualProfit: ss.realProfit,              
+                actualProfit: Number(ss.realProfit) || 0,              
                 days: soNgayThucTe,
                 fullDate: dateStr
             });
@@ -113,7 +111,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
     };
 
     return (
-        <div className="lg:col-span-7 bg-gradient-to-br from-[#FFFCF5] to-[#FFF3E0] rounded-[32px] p-5 md:p-8 text-[#3E2723] relative shadow-[0_12px_40px_rgba(255,140,0,0.12)] border border-[#FFE0B2] flex flex-col min-h-[350px] overflow-hidden hover:shadow-[0_12px_40px_rgba(255,140,0,0.2)] transition-shadow duration-500">
+        <div className="lg:col-span-7 bg-gradient-to-br from-[#FFFCF5] to-[#FFF3E0] rounded-[32px] p-5 md:p-8 text-[#3E2723] relative shadow-[0_12px_40px_rgba(255,140,0,0.12)] border border-[#FFE0B2] flex flex-col min-h-[400px] overflow-hidden hover:shadow-[0_12px_40px_rgba(255,140,0,0.2)] transition-shadow duration-500">
             <div className="absolute right-0 bottom-0 opacity-[0.06] transform translate-x-1/4 translate-y-1/4 pointer-events-none text-[#E65100]">
                 <TrendingUp size={240} strokeWidth={1} />
             </div>
@@ -140,9 +138,9 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 )}
             </div>
 
-            <div className="flex-1 w-full mt-4 z-10 relative min-h-[220px]">
+            <div className="flex-1 w-full mt-4 z-10 relative">
                 {currentChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={320}>
                         <BarChart data={currentChartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
@@ -166,7 +164,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-[#BCAAA4] text-[13px] font-medium border-2 border-dashed border-[#FFE0B2] rounded-2xl bg-white/40">
+                    <div className="h-[320px] w-full flex flex-col items-center justify-center text-[#BCAAA4] text-[13px] font-medium border-2 border-dashed border-[#FFE0B2] rounded-2xl bg-white/40">
                         <Calendar size={32} className="mb-2 opacity-50 text-[#FFB300]" />
                         Chưa có dữ liệu đợt bán chuẩn nào trong năm {selectedYear}
                     </div>
