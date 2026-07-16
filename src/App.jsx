@@ -36,7 +36,7 @@ export default function App() {
     });
 
     const [view, setView] = useState('DASHBOARD');
-    const [activeTab, setActiveTab] = useState('CHART'); // Biến điều khiển Tab
+    const [activeTab, setActiveTab] = useState('CHART');
     const [sessions, setSessions] = useState([]);
     const [currentId, setCurrentId] = useState(null);
     const [detailData, setDetailData] = useState(null);
@@ -217,7 +217,13 @@ export default function App() {
             const res = await axios.get(`${API_URL}/data/${id}`); 
             let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
             if(res.data) { 
-                setDetailData(res.data); setImportedBales(Array.isArray(balesData) ? balesData : []); setCurrentId(id); setView('DETAIL'); window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                // BỌC ÁO GIÁP BẢO VỆ: Đảm bảo daily luôn là một mảng dù API có trả về undefined
+                const safeData = { ...res.data, daily: Array.isArray(res.data.daily) ? res.data.daily : [] };
+                setDetailData(safeData); 
+                setImportedBales(Array.isArray(balesData) ? balesData : []); 
+                setCurrentId(id); 
+                setView('DETAIL'); 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
@@ -235,7 +241,7 @@ export default function App() {
     const handleDeleteSession = (e, id) => { if(!canDelete) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
-    const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
+    const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
     
     const updateSessionField = async (field, value) => { 
         if(!canEdit || !detailData) return; 
@@ -274,13 +280,13 @@ export default function App() {
 
     const handleAddItem = async (e) => { 
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) {} finally { setIsProcessingAdd(false); }
+        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem(prev => ({ ...prev, ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() })); } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
     const handleSaveEdit = async () => { 
         if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
-        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData(freshRes.data); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
+        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
     };
 
     useEffect(() => {
@@ -300,7 +306,7 @@ export default function App() {
             const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
             await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
             const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
-            if(freshRes.data) setDetailData(freshRes.data); 
+            if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); 
             setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');
         } catch (err) {} finally { setIsProcessingEdit(false); }
     };
@@ -329,7 +335,11 @@ export default function App() {
     });
 
     const { dashboardProfit, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon } = calculateGlobalStats(enrichedSessions);
-    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE);
+    
+    // TĂNG CƯỜNG BẢO VỆ: Đảm bảo biến detailData và enrichedDaily không bao giờ sập
+    const safeDetailData = detailData ? { ...detailData, daily: Array.isArray(detailData.daily) ? detailData.daily : [] } : null;
+    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = calculateDetailStats(safeDetailData, importedBales, AD_COST_PER_SALE);
+    const safeEnrichedDaily = Array.isArray(enrichedDaily) ? enrichedDaily : [];
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
@@ -340,7 +350,7 @@ export default function App() {
     const handleExport = () => { 
         if (!canExportExcel) { showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error"); return; }
         if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
-        enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
+        safeEnrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
@@ -397,13 +407,13 @@ export default function App() {
                     />
                 )}
                 
-                {view === 'DETAIL' && detailData && (
+                {view === 'DETAIL' && safeDetailData && (
                     <DetailView 
-                        detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
+                        detailData={safeDetailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
                         isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                         canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                         baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                        newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
+                        newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={safeEnrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
                         handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
                     />
                 )}
