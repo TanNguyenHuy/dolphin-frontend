@@ -97,6 +97,19 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
 
     return (
         <div className="flex-1 bg-gradient-to-br from-[#FFFCF5] to-[#FFF3E0] rounded-[32px] md:rounded-[48px] p-6 md:p-12 text-[#3E2723] relative shadow-[0_20px_60px_rgba(255,140,0,0.12)] border border-[#FFE0B2] flex flex-col h-full overflow-hidden hover:shadow-[0_20px_60px_rgba(255,140,0,0.2)] transition-shadow duration-500 group">
+            
+            {/* CSS & ANIMATED BLOBS CHO BIỂU ĐỒ */}
+            <style>{`
+                @keyframes float-chart {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    50% { transform: translateY(-20px) scale(1.05); }
+                }
+                .blob-chart-1 { animation: float-chart 8s ease-in-out infinite; }
+                .blob-chart-2 { animation: float-chart 12s ease-in-out infinite reverse; }
+            `}</style>
+            <div className="absolute top-10 left-20 w-72 h-72 bg-[#FFB74D]/20 rounded-full blur-[80px] blob-chart-1 pointer-events-none"></div>
+            <div className="absolute bottom-10 right-20 w-96 h-96 bg-[#FFCC80]/20 rounded-full blur-[100px] blob-chart-2 pointer-events-none"></div>
+            
             <div className="absolute right-0 bottom-0 opacity-[0.04] group-hover:scale-105 group-hover:opacity-[0.06] transition-all duration-700 transform translate-x-1/4 translate-y-1/4 pointer-events-none text-[#E65100]">
                 <TrendingUp size={400} strokeWidth={1} />
             </div>
@@ -109,13 +122,13 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                     <div className="text-[48px] md:text-[72px] font-black tracking-tighter tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-[#FF8F00] to-[#E65100] leading-none drop-shadow-sm">
                         {formatCurrency(yearlyTotal)}<span className="text-[24px] md:text-[32px] text-[#E65100]/60 ml-2 font-bold">đ</span>
                     </div>
-                    <div className="text-[13px] md:text-[15px] font-semibold mt-4 bg-[#FFE0B2]/60 text-[#D84315] inline-block px-4 py-2 rounded-xl border border-[#FFCC80] shadow-sm backdrop-blur-sm">
+                    <div className="text-[13px] md:text-[15px] font-semibold mt-4 bg-[#FFE0B2]/80 text-[#D84315] inline-block px-4 py-2 rounded-xl border border-[#FFCC80] shadow-sm backdrop-blur-sm">
                         TỔNG TẤT CẢ (ALL-TIME): <span className="font-black">{formatCurrency(dashboardProfit)}đ</span>
                     </div>
                 </div>
 
                 {availableYears.length > 1 && (
-                    <div className="flex items-center gap-1.5 bg-white/70 rounded-full p-1.5 border border-[#FFE0B2] shadow-inner backdrop-blur-md">
+                    <div className="flex items-center gap-1.5 bg-white/80 rounded-full p-1.5 border border-[#FFE0B2] shadow-inner backdrop-blur-md">
                         <button onClick={handlePrevYear} disabled={selectedYear === availableYears[availableYears.length - 1]} className="p-2 md:p-3 hover:bg-white rounded-full disabled:opacity-30 transition-all active:scale-95 shadow-sm text-[#D84315]"><ChevronLeft size={20}/></button>
                         <span className="font-black text-[16px] w-[50px] text-center tabular-nums text-[#D84315]">{selectedYear}</span>
                         <button onClick={handleNextYear} disabled={selectedYear === availableYears[0]} className="p-2 md:p-3 hover:bg-white rounded-full disabled:opacity-30 transition-all active:scale-95 shadow-sm text-[#D84315]"><ChevronRight size={20}/></button>
@@ -123,7 +136,7 @@ export default function DashboardChart({ enrichedSessions, dashboardProfit }) {
                 )}
             </div>
 
-            <div className="flex-1 w-full mt-4 z-10 relative">
+            <div className="flex-1 w-full mt-4 z-10 relative min-h-[350px] flex flex-col justify-end">
                 {currentChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={currentChartData} margin={{ top: 30, right: 0, left: 0, bottom: 0 }}>
