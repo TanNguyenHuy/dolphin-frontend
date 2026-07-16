@@ -184,7 +184,7 @@ export default function UserCard({
                             <option value="0">Web Bình thường</option>
                             <option value="1">Khóa Web 1 ngày</option>
                             <option value="2">Khóa Web 2 ngày</option>
-                            <option value="7">Khóa Web 7 ngày</option>
+                            <option value="7">Khóa Web 9 ngày</option>
                             <option value="forever">Khóa Web Vĩnh viễn</option>
                             {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
                         </select>
