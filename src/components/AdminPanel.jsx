@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { API_URL } from '../utils';
 
 // Import các Module đã bóc tách
@@ -178,39 +178,60 @@ export default function AdminPanel({ setView, authUser }) {
     }, []);
 
     return (
-        <div className="animate-fade-in-up pb-20">
+        <div className="relative animate-fade-in-up pb-24 pt-6 max-w-[1400px] mx-auto">
+            
+            {/* AMBIENT GLOW: Không gian chỉ huy bóng tối mờ ảo */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-[-1]">
+                <div className="absolute top-[5%] left-[-5%] w-[400px] h-[400px] bg-purple-400/15 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '8s' }}></div>
+                <div className="absolute top-[30%] right-[-5%] w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '12s', animationDirection: 'reverse' }}></div>
+            </div>
+
             <Toast toast={toast} />
             <ConfirmModal confirmModal={confirmModal} setConfirmModal={setConfirmModal} />
             <BillModal selectedBill={selectedBill} setSelectedBill={setSelectedBill} />
 
-            <div className="flex items-center justify-between mb-8">
-                <button onClick={() => setView('DASHBOARD')} className="flex items-center gap-2 text-gray-500 font-bold bg-white px-6 py-3 rounded-full shadow-sm border hover:text-[#26D0CE] transition-all"><ArrowLeft size={18} /> Dashboard</button>
-                <h2 className="text-[28px] font-black text-gray-800">Cài Đặt Hệ Thống</h2>
+            {/* HEADER: Kích thước Touch Target 44px chuẩn UI/UX */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4 relative z-10 px-2 md:px-0">
+                <button 
+                    onClick={() => setView('DASHBOARD')} 
+                    className="group h-11 flex items-center gap-2 text-[#1A5B82] hover:text-[#0B3B60] font-bold text-[15px] bg-white/60 hover:bg-white backdrop-blur-md px-6 rounded-full border border-white/80 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95"
+                >
+                    <ArrowLeft size={20} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" /> 
+                    Dashboard
+                </button>
+                <div className="flex items-center gap-3">
+                    <ShieldCheck size={32} strokeWidth={2.5} className="text-purple-600 drop-shadow-sm hidden md:block" />
+                    <h2 className="text-[32px] md:text-[40px] font-black text-[#1D1D1F] tracking-tight drop-shadow-sm leading-none">
+                        Cài Đặt Hệ Thống
+                    </h2>
+                </div>
             </div>
 
-            <div className="space-y-4">
-                {users.map(u => (
-                    <UserCard 
-                        key={u._id}
-                        u={u}
-                        getRestrictStatus={getRestrictStatus}
-                        getChatRestrictStatus={getChatRestrictStatus}
-                        getRemainingTime={getRemainingTime}
-                        handleDeleteUser={handleDeleteUser}
-                        setSelectedBill={setSelectedBill}
-                        handleApprove={handleApprove}
-                        togglePermission={togglePermission}
-                        handleChangePlan={handleChangePlan}
-                        editExpiryId={editExpiryId}
-                        setEditExpiryId={setEditExpiryId}
-                        expiryVal={expiryVal}
-                        setExpiryVal={setExpiryVal}
-                        expiryUnit={expiryUnit}
-                        setExpiryUnit={setExpiryUnit}
-                        submitCustomExpiry={submitCustomExpiry}
-                        handleRestrictChat={handleRestrictChat}
-                        handleRestrict={handleRestrict}
-                    />
+            {/* DANH SÁCH NGƯỜI DÙNG: Căn nhịp 8dp Rhythm (gap-6) */}
+            <div className="flex flex-col gap-6 relative z-10">
+                {users.map((u, index) => (
+                    <div key={u._id} className="transform transition-all duration-300 hover:-translate-y-1">
+                        <UserCard 
+                            u={u}
+                            getRestrictStatus={getRestrictStatus}
+                            getChatRestrictStatus={getChatRestrictStatus}
+                            getRemainingTime={getRemainingTime}
+                            handleDeleteUser={handleDeleteUser}
+                            setSelectedBill={setSelectedBill}
+                            handleApprove={handleApprove}
+                            togglePermission={togglePermission}
+                            handleChangePlan={handleChangePlan}
+                            editExpiryId={editExpiryId}
+                            setEditExpiryId={setEditExpiryId}
+                            expiryVal={expiryVal}
+                            setExpiryVal={setExpiryVal}
+                            expiryUnit={expiryUnit}
+                            setExpiryUnit={setExpiryUnit}
+                            submitCustomExpiry={submitCustomExpiry}
+                            handleRestrictChat={handleRestrictChat}
+                            handleRestrict={handleRestrict}
+                        />
+                    </div>
                 ))}
             </div>
         </div>

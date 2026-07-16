@@ -176,11 +176,17 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f0f4f9] p-4 font-sans box-border overflow-hidden relative">
+        <div className="min-h-screen flex items-center justify-center bg-aurora p-4 font-sans box-border overflow-hidden relative">
             
+            {/* AMBIENT GLOWS: Hiệu ứng ánh sáng lơ lửng chuẩn Pro Max */}
+            <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#38bdf8]/20 rounded-full blur-[120px] animate-pulse pointer-events-none" style={{ animationDuration: '8s' }}></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#2dd4bf]/20 rounded-full blur-[120px] animate-pulse pointer-events-none" style={{ animationDuration: '12s', animationDirection: 'reverse' }}></div>
+
             <Toast toast={toast} />
 
-            <div className={`relative w-full max-w-[1050px] min-h-[600px] md:min-h-[700px] bg-white rounded-[24px] shadow-[0_15px_40px_rgba(0,0,0,0.1)] overflow-hidden transition-all duration-700 ease-in-out`}>
+            {/* MAIN CARD: Chuyển thành mặt kính lơ lửng (Floating Glass) */}
+            <div className="relative w-full max-w-[1050px] min-h-[600px] md:min-h-[700px] liquid-glass bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[32px] md:rounded-[40px] shadow-[0_24px_80px_rgba(0,0,0,0.07)] overflow-hidden transition-all duration-700 ease-in-out z-10">
+                
                 <AuthForm 
                     step={step} isRightPanelActive={isRightPanelActive} togglePanel={togglePanel} 
                     view={view} setView={setView} otpStep={otpStep} setOtpStep={setOtpStep} 
