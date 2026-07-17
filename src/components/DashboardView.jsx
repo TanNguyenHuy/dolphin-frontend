@@ -3,7 +3,7 @@ import { ChevronDown, Calendar, Package, TrendingUp, Activity, Box } from 'lucid
 import DashboardChart from './dashboard/DashboardChart';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
-import { formatCurrency, formatDateDisplay } from '../../utils';
+import { formatCurrency, formatDateDisplay } from '../utils';
 
 // CẢM BIẾN HIỂN THỊ CỰC MƯỢT
 const ScrollReveal = ({ children, delay = 0 }) => {
