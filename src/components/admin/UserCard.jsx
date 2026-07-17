@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Trash2, Crown, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, MessageSquareOff } from 'lucide-react';
+import { Star, Trash2, Crown, Clock, ShieldAlert, Mail, Eye, X, TimerReset, Check, MessageSquareOff, Gem, Shield, Award } from 'lucide-react';
 
 export default function UserCard({
     u, getRestrictStatus, getChatRestrictStatus, getRemainingTime,
@@ -13,6 +13,50 @@ export default function UserCard({
     const isChatRestricted = chatRestrictStatus !== '0';
     const isAbandoned = !u.isApproved && !u.paymentImage && u.role !== 'admin';
 
+    // HÀM TẠO HUY HIỆU (BADGE) CHUẨN UI/UX PRO MAX
+    const renderPlanBadge = (role, plan) => {
+        const effectivePlan = role === 'admin' ? 'premium' : (plan || '10k');
+        
+        const config = {
+            premium: {
+                label: 'PREMIUM', icon: Gem,
+                bg: 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-purple-600',
+                border: 'border-purple-300/50',
+                shadow: 'shadow-[0_4px_15px_rgba(168,85,247,0.4)]',
+            },
+            '100k': {
+                label: 'VVIP', icon: Crown,
+                bg: 'bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500',
+                border: 'border-yellow-200/50',
+                shadow: 'shadow-[0_4px_15px_rgba(245,158,11,0.4)]',
+            },
+            '50k': {
+                label: 'VIP', icon: Shield,
+                bg: 'bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500',
+                border: 'border-cyan-200/50',
+                shadow: 'shadow-[0_4px_15px_rgba(6,182,212,0.4)]',
+            },
+            '10k': {
+                label: 'CƠ BẢN', icon: Award,
+                bg: 'bg-gradient-to-r from-slate-400 to-gray-500',
+                border: 'border-gray-300/50',
+                shadow: 'shadow-sm',
+            }
+        };
+
+        const cfg = config[effectivePlan] || config['10k'];
+        const Icon = cfg.icon;
+
+        return (
+            <div className={`flex items-center justify-center gap-1.5 px-3.5 h-8 rounded-full ${cfg.bg} ${cfg.border} border ${cfg.shadow} shrink-0 hover:scale-105 transition-transform duration-300 cursor-default`}>
+                <Icon size={14} strokeWidth={2.5} className="text-white drop-shadow-sm" />
+                <span className="text-[11px] font-black tracking-widest uppercase text-white drop-shadow-md mt-[1px]">
+                    {cfg.label}
+                </span>
+            </div>
+        );
+    };
+
     return (
         <div className={`liquid-glass bg-white/60 backdrop-blur-xl rounded-[28px] md:rounded-[32px] p-5 md:p-6 flex flex-col gap-5 border border-white/80 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ${isAbandoned ? 'border-gray-200/50 bg-gray-50/40 opacity-80' : (!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300/50 bg-orange-50/40' : '')}`}>
             
@@ -21,20 +65,11 @@ export default function UserCard({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-black text-[20px] text-[#1D1D1F] tracking-tight">{u.name}</h3>
+                        {/* Gọi hàm render huy hiệu ở đây */}
                         {isAbandoned ? (
                             <span className="h-8 flex items-center justify-center px-4 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 border border-gray-200/60 shadow-sm shrink-0">CHƯA CHỌN GÓI</span>
-                        ) : u.plan === 'premium' || u.role === 'admin' ? (
-                            <img src="/badge-premium.png" alt="PREMIUM" className="h-9 w-auto object-contain drop-shadow-sm shrink-0" />
                         ) : (
-                            <div className="flex items-center shrink-0">
-                                {u.plan === '100k' ? (
-                                    <img src="/badge-vvip.png" alt="VVIP" className="h-9 w-auto object-contain drop-shadow-sm shrink-0" />
-                                ) : u.plan === '50k' ? (
-                                    <img src="/badge-vip.png" alt="VIP" className="h-9 w-auto object-contain drop-shadow-sm shrink-0" />
-                                ) : (
-                                    <img src="/badge-coban.png" alt="CƠ BẢN" className="h-9 w-auto object-contain drop-shadow-sm shrink-0" />
-                                )}
-                            </div>
+                            renderPlanBadge(u.role, u.plan)
                         )}
                     </div>
                     
@@ -184,7 +219,7 @@ export default function UserCard({
                             <option value="0">Web Bình thường</option>
                             <option value="1">Khóa Web 1 ngày</option>
                             <option value="2">Khóa Web 2 ngày</option>
-                            <option value="7">Khóa Web 9 ngày</option>
+                            <option value="7">Khóa Web 7 ngày</option>
                             <option value="forever">Khóa Web Vĩnh viễn</option>
                             {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
                         </select>
