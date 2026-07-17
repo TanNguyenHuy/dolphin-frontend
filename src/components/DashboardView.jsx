@@ -47,7 +47,11 @@ export default function DashboardView({
             {/* TRẠM 1: LỢI NHUẬN */}
             <div id="section-loi-nhuan" className="scroll-mt-[120px] w-full">
                 <ScrollReveal delay={0}>
-                    <DashboardChart enrichedSessions={enrichedSessions} dashboardProfit={dashboardProfit} />
+                    {/* ĐÃ SỬA Ở ĐÂY: Chỉ đưa các đợt đã chốt sổ vào Biểu đồ */}
+                    <DashboardChart 
+                        enrichedSessions={enrichedSessions.filter(session => session.is_completed === true)} 
+                        dashboardProfit={dashboardProfit} 
+                    />
                 </ScrollReveal>
             </div>
 

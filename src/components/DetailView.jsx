@@ -33,6 +33,10 @@ export default function DetailView({
                     detailProfit={detailProfit}
                     dynamicTarget={dynamicTarget}
                     progressPercent={progressPercent}
+                    
+                    // --- ĐÃ THÊM 2 DÒNG NÀY ĐỂ HEADER NHẬN LỆNH CHỐT SỔ ---
+                    canEdit={canEdit}
+                    updateSessionField={updateSessionField}
                 />
 
                 {/* ---------- LƯỚI BỐ CỤC CHUẨN 8DP RHYTHM ---------- */}

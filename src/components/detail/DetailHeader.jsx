@@ -1,10 +1,11 @@
 import React from 'react';
-import { ChevronLeft, Download } from 'lucide-react';
+import { ChevronLeft, Download, Check } from 'lucide-react'; // Đã thêm icon Check
 import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
 
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate, 
-    isTargetReached, detailProfit, dynamicTarget, progressPercent
+    isTargetReached, detailProfit, dynamicTarget, progressPercent,
+    canEdit, updateSessionField // Đã nhận Props từ DetailView truyền xuống
 }) {
     const calculateDaysDiff = (start, end) => { 
         if (!start || !end) return 0; 
@@ -24,7 +25,38 @@ export default function DetailHeader({
                     <ChevronLeft size={20} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" /> 
                     Trở về
                 </button>
-                <div className="w-full sm:w-auto">
+                
+                {/* Nhóm Nút Hành Động (Chốt Sổ + Xuất Excel) */}
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
+                    
+                    {/* NÚT CHỐT SỔ ĐỢT BÁN */}
+                    {canEdit && (
+                        !detailData?.is_completed ? (
+                            <button 
+                                onClick={() => {
+                                    if(window.confirm('Bạn có chắc chắn muốn chốt sổ đợt bán này? Lợi nhuận sẽ được cập nhật lên biểu đồ tổng.')) {
+                                        updateSessionField('is_completed', true);
+                                    }
+                                }}
+                                className="w-full sm:w-auto h-11 px-6 bg-gradient-to-r from-[#1DB2A0] to-[#26D0CE] text-white font-bold rounded-full shadow-[0_4px_12px_rgba(29,178,160,0.3)] hover:shadow-md transition-all duration-300 text-[14px] flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <Check size={18} strokeWidth={3}/> CHỐT SỔ ĐỢT NÀY
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => {
+                                    if(window.confirm('Bạn muốn mở lại đợt bán này? Dữ liệu sẽ tạm ẩn khỏi biểu đồ tổng.')) {
+                                        updateSessionField('is_completed', false);
+                                    }
+                                }}
+                                className="w-full sm:w-auto h-11 px-6 bg-teal-50 text-teal-600 border border-teal-200 font-bold rounded-full shadow-sm hover:bg-teal-100 transition-all duration-300 text-[14px] flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <Check size={18} strokeWidth={3}/> ĐÃ CHỐT SỔ
+                            </button>
+                        )
+                    )}
+
+                    {/* Nút Xuất Excel */}
                     <button 
                         onClick={handleExport} 
                         className="w-full sm:w-auto h-11 px-6 bg-gradient-to-r from-white/60 to-white/40 hover:from-white/80 hover:to-white/60 text-[#1D1D1F] font-bold rounded-full border border-white/60 shadow-sm hover:shadow-md transition-all duration-300 text-[14px] flex items-center justify-center gap-2 active:scale-95"

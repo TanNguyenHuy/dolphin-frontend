@@ -376,8 +376,20 @@ export default function App() {
 
     let dashboardProfit = 0, totalRevenueForTax = 0, taxAmount = 0, showTax = false, displayRevenueTr = 0, globalTongNhap = 0, globalTongBan = 0, globalVonTon = 0, globalTongCon = 0;
     try {
-        const gStats = calculateGlobalStats(enrichedSessions) || {};
-        dashboardProfit = gStats.dashboardProfit || 0; totalRevenueForTax = gStats.totalRevenueForTax || 0; taxAmount = gStats.taxAmount || 0; showTax = gStats.showTax || false; displayRevenueTr = gStats.displayRevenueTr || 0; globalTongNhap = gStats.globalTongNhap || 0; globalTongBan = gStats.globalTongBan || 0; globalVonTon = gStats.globalVonTon || 0; globalTongCon = gStats.globalTongCon || 0;
+        // LỌC: Chỉ lấy những đợt bán đã bấm nút "Chốt sổ"
+        const completedSessions = enrichedSessions.filter(ss => ss.is_completed === true);
+        
+        // Đưa danh sách đã lọc vào hàm tính tổng
+        const gStats = calculateGlobalStats(completedSessions) || {};
+        dashboardProfit = gStats.dashboardProfit || 0; 
+        totalRevenueForTax = gStats.totalRevenueForTax || 0; 
+        taxAmount = gStats.taxAmount || 0; 
+        showTax = gStats.showTax || false; 
+        displayRevenueTr = gStats.displayRevenueTr || 0; 
+        globalTongNhap = gStats.globalTongNhap || 0; 
+        globalTongBan = gStats.globalTongBan || 0; 
+        globalVonTon = gStats.globalVonTon || 0; 
+        globalTongCon = gStats.globalTongCon || 0;
     } catch(e) { console.error("Global Stats Crash", e); }
 
     let detailProfit = 0, mvpRowId = null, enrichedDaily = [], detailAutoAdCost = 0, actualStartDate = null, actualEndDate = null, dynamicTarget = 0, isTargetReached = false;
