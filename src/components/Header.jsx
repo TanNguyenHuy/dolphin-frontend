@@ -1,5 +1,6 @@
 import React from 'react';
 import { Fish, Crown, Clock, Users, Plus, RefreshCw, LogOut, TrendingUp, Package, List } from 'lucide-react';
+import PlanBadge from './admin/PlanBadge'; // Nhớ kiểm tra đúng đường dẫn đến file PlanBadge nhé!
 
 export default function Header({
     authUser, isAdmin, canEdit, timeLeftDisplay, view, setView,
@@ -51,20 +52,11 @@ export default function Header({
                     </div>
                 </a>
                 
-                <div className="flex items-center gap-2">
-                    {authUser?.plan === 'premium' || authUser?.role === 'admin' ? (
-                        <img src="/badge-premium.png" alt="PREMIUM" className="mt-2 md:ml-14 h-[44px] md:h-[52px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
-                    ) : (
-                        <div className="mt-2 md:ml-14 flex items-center shrink-0">
-                            {authUser?.plan === '100k' ? (
-                                <img src="/badge-vvip.png" alt="VVIP" className="h-[44px] md:h-[52px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
-                            ) : authUser?.plan === '50k' ? (
-                                <img src="/badge-vip.png" alt="VIP" className="h-[44px] md:h-[52px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
-                            ) : (
-                                <img src="/badge-coban.png" alt="CƠ BẢN" className="h-[44px] md:h-[52px] w-auto object-contain shrink-0 hover:scale-105 transition-transform drop-shadow-md cursor-pointer" />
-                            )}
-                        </div>
-                    )}
+                {/* HUY HIỆU KIM LOẠI LẮP VÀO ĐÂY */}
+                <div className="mt-3 md:mt-2 md:ml-[60px] flex items-center shrink-0">
+                    <div className="transform scale-110 md:scale-125 origin-left hover:scale-[1.15] md:hover:scale-[1.3] transition-transform duration-300">
+                        <PlanBadge plan={isAdmin ? 'premium' : authUser?.plan} />
+                    </div>
                 </div>
             </div>
 
