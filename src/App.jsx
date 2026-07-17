@@ -112,6 +112,42 @@ export default function App() {
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
+    // ============================================================================
+    // BỘ ĐIỀU HƯỚNG THÔNG MINH (HISTORY API) - XỬ LÝ VUỐT/BACK TRÊN ĐIỆN THOẠI
+    // ============================================================================
+    useEffect(() => {
+        // Khởi tạo lịch sử mặc định khi mới vào web
+        if (!window.history.state || !window.history.state.view) {
+            window.history.replaceState({ view: 'DASHBOARD' }, '');
+        }
+
+        const handlePopState = (event) => {
+            if (event.state && event.state.view) {
+                const targetView = event.state.view;
+                setView(targetView);
+                
+                // Nếu quay về Dashboard thì tải lại dữ liệu mới nhất
+                if (targetView === 'DASHBOARD') {
+                    fetchDashboard();
+                    setDetailData(null);
+                    setImportedBales([]);
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    // Hàm chuyển trang mượt mà có lưu lịch sử
+    const handleNavigate = (newView) => {
+        if (view !== newView) {
+            window.history.pushState({ view: newView }, '');
+            setView(newView);
+        }
+    };
+    // ============================================================================
+
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
@@ -168,7 +204,7 @@ export default function App() {
         return () => clearInterval(radar); 
     }, [authUser, isExpiredState]);
 
-    const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); setView('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
+    const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); handleNavigate('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
     const fetchDashboard = async () => { 
         try { 
@@ -224,7 +260,6 @@ export default function App() {
             const res = await axios.get(`${API_URL}/data/${id}`); 
             let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
             
-            // ÉP KIỂU TUYỆT ĐỐI CHỐNG UNDEFINED CHO MỌI BIẾN
             if(res.data && typeof res.data === 'object' && !Array.isArray(res.data)) { 
                 const safeData = { 
                     ...res.data, 
@@ -236,6 +271,9 @@ export default function App() {
                 setDetailData(safeData); 
                 setImportedBales(Array.isArray(balesData) ? balesData : []); 
                 setCurrentId(id); 
+                
+                // Ghi lại lịch sử khi vào trang chi tiết
+                window.history.pushState({ view: 'DETAIL', id: id }, '');
                 setView('DETAIL'); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
@@ -315,7 +353,17 @@ export default function App() {
         } catch (err) {} 
     };
     
-    const handleBack = () => { fetchDashboard(); setView('DASHBOARD'); setDetailData(null); setImportedBales([]); };
+    // Đã thay đổi: Khi bấm nút Trở Về trên web, nó sẽ ra lệnh cho trình duyệt lùi lại (y hệt như bạn vuốt mép điện thoại)
+    const handleBack = () => { 
+        if (window.history.state) {
+            window.history.back();
+        } else {
+            handleNavigate('DASHBOARD');
+            fetchDashboard(); 
+            setDetailData(null); 
+            setImportedBales([]); 
+        }
+    };
 
     // TÍNH TOÁN DỮ LIỆU ĐƯỢC BỌC KỸ CÀNG
     const safeSessions = Array.isArray(sessions) ? sessions : [];
@@ -357,7 +405,8 @@ export default function App() {
     }
 
     return (
-        <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-24 md:pt-36">
+        // Đã thay đổi: Tăng padding-top cực rộng (pt-[220px]) trên điện thoại để Header không bao giờ đè lên nút Trở về!
+        <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-[220px] sm:pt-[180px] md:pt-[120px]">
             {showFireworks && <Confetti />}
 
             <Toast toast={toast} />
@@ -383,7 +432,7 @@ export default function App() {
 
             <Header 
                 authUser={authUser} isAdmin={isAdmin} canEdit={canEdit} timeLeftDisplay={timeLeftDisplay}
-                view={view} setView={setView} handleCreateAutoSession={handleCreateAutoSession}
+                view={view} setView={handleNavigate} handleCreateAutoSession={handleCreateAutoSession}
                 isProcessingCreate={isProcessingCreate} handleLogout={handleLogout}
                 activeTab={activeTab} setActiveTab={setActiveTab} 
             />
@@ -397,7 +446,7 @@ export default function App() {
             
             <ErrorBoundary>
                 <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
-                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={setView} authUser={authUser} /> )}
+                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
                     
                     {view === 'DASHBOARD' && (
                         <DashboardView 
