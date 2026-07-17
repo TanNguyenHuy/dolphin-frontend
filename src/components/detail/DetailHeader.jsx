@@ -1,12 +1,15 @@
-import React from 'react';
-import { ChevronLeft, Download, Check } from 'lucide-react'; // Đã thêm icon Check
+import React, { useState } from 'react';
+import { ChevronLeft, Download, Check, AlertCircle } from 'lucide-react'; 
 import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
 
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate, 
     isTargetReached, detailProfit, dynamicTarget, progressPercent,
-    canEdit, updateSessionField // Đã nhận Props từ DetailView truyền xuống
+    canEdit, updateSessionField
 }) {
+    // STATE: Quản lý hộp thoại xác nhận xịn xò
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null });
+
     const calculateDaysDiff = (start, end) => { 
         if (!start || !end) return 0; 
         const d1 = new Date(start); const d2 = new Date(end); 
@@ -14,9 +17,58 @@ export default function DetailHeader({
         return Math.max(0, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24))); 
     };
 
+    const handleConfirmAction = () => {
+        // action === 'complete' -> true (Chốt sổ) | 'reopen' -> false (Mở lại)
+        updateSessionField('is_completed', confirmModal.action === 'complete');
+        setConfirmModal({ isOpen: false, action: null });
+    };
+
     return (
         <div className="flex flex-col gap-6 md:gap-8">
-            {/* Thanh công cụ: Nút bấm chuẩn Touch Target >= 44px */}
+            {/* HỘP THOẠI XÁC NHẬN (CUSTOM MODAL PRO MAX) */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Lớp nền mờ */}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setConfirmModal({ isOpen: false, action: null })}></div>
+                    
+                    {/* Nội dung hộp thoại */}
+                    <div className="bg-white/90 backdrop-blur-xl rounded-[28px] p-6 md:p-8 w-full max-w-sm relative z-10 animate-scale-up shadow-[0_20px_60px_rgba(0,0,0,0.2)] border border-white">
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner ${confirmModal.action === 'complete' ? 'bg-teal-50 text-teal-500 border border-teal-100' : 'bg-orange-50 text-orange-500 border border-orange-100'}`}>
+                                {confirmModal.action === 'complete' ? <Check size={32} strokeWidth={3} /> : <AlertCircle size={32} strokeWidth={3} />}
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-[20px] font-black text-[#1D1D1F] mb-2 tracking-tight">
+                                    {confirmModal.action === 'complete' ? 'Chốt sổ đợt bán này?' : 'Mở lại đợt bán?'}
+                                </h3>
+                                <p className="text-[14px] text-gray-500 font-medium px-2">
+                                    {confirmModal.action === 'complete' 
+                                        ? 'Lợi nhuận của đợt này sẽ được ghi nhận chính thức lên biểu đồ tổng ở Dashboard.' 
+                                        : 'Dữ liệu đợt này sẽ tạm thời ẩn khỏi biểu đồ tổng cho đến khi bạn chốt sổ lại.'}
+                                </p>
+                            </div>
+                            
+                            <div className="flex w-full gap-3 mt-4">
+                                <button 
+                                    onClick={() => setConfirmModal({ isOpen: false, action: null })}
+                                    className="flex-1 h-12 bg-gray-100 text-gray-600 font-bold rounded-[16px] hover:bg-gray-200 transition-colors active:scale-95"
+                                >
+                                    Hủy bỏ
+                                </button>
+                                <button 
+                                    onClick={handleConfirmAction}
+                                    className={`flex-1 h-12 text-white font-bold rounded-[16px] shadow-sm hover:opacity-90 transition-all active:scale-95 ${confirmModal.action === 'complete' ? 'bg-gradient-to-r from-[#1DB2A0] to-[#26D0CE] shadow-[0_4px_12px_rgba(29,178,160,0.3)]' : 'bg-gradient-to-r from-orange-500 to-rose-500 shadow-[0_4px_12px_rgba(249,115,22,0.3)]'}`}
+                                >
+                                    Xác nhận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Thanh công cụ */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/40 pb-6">
                 <button 
                     onClick={handleBack} 
@@ -26,29 +78,19 @@ export default function DetailHeader({
                     Trở về
                 </button>
                 
-                {/* Nhóm Nút Hành Động (Chốt Sổ + Xuất Excel) */}
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
-                    
-                    {/* NÚT CHỐT SỔ ĐỢT BÁN */}
+                    {/* NÚT KÍCH HOẠT HỘP THOẠI */}
                     {canEdit && (
                         !detailData?.is_completed ? (
                             <button 
-                                onClick={() => {
-                                    if(window.confirm('Bạn có chắc chắn muốn chốt sổ đợt bán này? Lợi nhuận sẽ được cập nhật lên biểu đồ tổng.')) {
-                                        updateSessionField('is_completed', true);
-                                    }
-                                }}
+                                onClick={() => setConfirmModal({ isOpen: true, action: 'complete' })}
                                 className="w-full sm:w-auto h-11 px-6 bg-gradient-to-r from-[#1DB2A0] to-[#26D0CE] text-white font-bold rounded-full shadow-[0_4px_12px_rgba(29,178,160,0.3)] hover:shadow-md transition-all duration-300 text-[14px] flex items-center justify-center gap-2 active:scale-95"
                             >
                                 <Check size={18} strokeWidth={3}/> CHỐT SỔ ĐỢT NÀY
                             </button>
                         ) : (
                             <button 
-                                onClick={() => {
-                                    if(window.confirm('Bạn muốn mở lại đợt bán này? Dữ liệu sẽ tạm ẩn khỏi biểu đồ tổng.')) {
-                                        updateSessionField('is_completed', false);
-                                    }
-                                }}
+                                onClick={() => setConfirmModal({ isOpen: true, action: 'reopen' })}
                                 className="w-full sm:w-auto h-11 px-6 bg-teal-50 text-teal-600 border border-teal-200 font-bold rounded-full shadow-sm hover:bg-teal-100 transition-all duration-300 text-[14px] flex items-center justify-center gap-2 active:scale-95"
                             >
                                 <Check size={18} strokeWidth={3}/> ĐÃ CHỐT SỔ
@@ -77,9 +119,8 @@ export default function DetailHeader({
                     </div>
                 </div>
                 
-                {/* Thẻ Lợi Nhuận Glassmorphism chuẩn */}
+                {/* Thẻ Lợi Nhuận */}
                 <div className={`relative liquid-glass p-6 rounded-[32px] w-full lg:w-auto min-w-[300px] shrink-0 overflow-hidden transition-all duration-500 border ${isTargetReached ? 'border-[#1DB2A0]/40 shadow-[0_10px_40px_rgba(29,178,160,0.15)]' : 'border-white/60 shadow-lg'}`}>
-                    {/* Hiệu ứng chớp sáng khi đạt mục tiêu */}
                     {isTargetReached && <div className="absolute inset-0 bg-gradient-to-tr from-[#1DB2A0]/10 to-transparent animate-pulse-slow"></div>}
                     
                     <div className="relative z-10 text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2 whitespace-nowrap">
@@ -103,7 +144,6 @@ export default function DetailHeader({
                                 className="h-full bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] rounded-full transition-all duration-1000 ease-out relative" 
                                 style={{ width: `${progressPercent}%` }}
                             >
-                                {/* Tia sáng lướt qua Progress Bar */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
