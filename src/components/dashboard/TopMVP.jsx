@@ -1,18 +1,15 @@
 import React, { useMemo } from 'react';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, getSessionName } from '../../utils';
 import { Target, Zap } from 'lucide-react';
 
 export default function TopMVP({ sessions }) {
     const { normalTop, specialTop } = useMemo(() => {
-        // Thuật toán: Quy đổi lợi nhuận về chuẩn 15 ngày
         const calculate15DayProfit = (s) => {
             if (!s.actual_start_date || !s.actual_end_date) return 0;
             const d1 = new Date(s.actual_start_date);
             const d2 = new Date(s.actual_end_date);
             
-            // Tính số ngày chạy (cộng 1 để tính cả ngày bắt đầu và kết thúc)
             const days = Math.max(1, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
-            
             const dailyProfit = (s.realProfit || 0) / days;
             return dailyProfit * 15;
         };
@@ -25,7 +22,6 @@ export default function TopMVP({ sessions }) {
         const normal = [];
         const special = [];
 
-        // Phân loại nhóm
         processed.forEach(s => {
             const nameLower = (s.name || '').toLowerCase();
             if (nameLower.includes('sale') || nameLower.includes('đăng lại')) {
@@ -35,7 +31,6 @@ export default function TopMVP({ sessions }) {
             }
         });
 
-        // Sắp xếp giảm dần theo lợi nhuận 15 ngày
         normal.sort((a, b) => b.projected15d - a.projected15d);
         special.sort((a, b) => b.projected15d - a.projected15d);
 
@@ -63,16 +58,23 @@ export default function TopMVP({ sessions }) {
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                                <div className="text-[13px] font-black text-[#1D1D1F] truncate pr-2">{session.name}</div>
+                                {/* SỬ DỤNG getSessionName Ở ĐÂY ĐỂ HIỂN THỊ TÊN CHUẨN */}
+                                <div className="text-[13px] font-black text-[#1D1D1F] truncate pr-2">
+                                    {getSessionName(session.name, session.actual_start_date, session.actual_end_date)}
+                                </div>
+                                {/* TIỀN ƯỚC TÍNH 15 NGÀY ĐƯỢC CHUYỂN XUỐNG DƯỚI TÊN */}
                                 <div className="text-[10px] font-bold text-gray-400 mt-0.5">
-                                    Thực tế: <span className={session.realProfit >= 0 ? "text-[#1DB2A0]" : "text-rose-500"}>{formatCurrency(session.realProfit || 0)}đ</span>
+                                    Ước tính 15 ngày: <span className={session.projected15d >= 0 ? "text-[#33A1FD]" : "text-rose-500"}>
+                                        {session.projected15d >= 0 ? '+' : ''}{formatCurrency(session.projected15d)}đ
+                                    </span>
                                 </div>
                             </div>
                             
+                            {/* TIỀN THỰC TẾ ĐƯỢC CHUYỂN RA BÊN PHẢI (MÀU XANH TO RÕ RÀNG) */}
                             <div className="flex flex-col items-end shrink-0 pl-2 border-l border-gray-100">
-                                <div className="text-[9px] font-bold text-gray-400 uppercase">Ước tính 15 ngày</div>
-                                <div className={`text-[14px] font-black ${session.projected15d >= 0 ? "text-[#33A1FD]" : "text-rose-500"}`}>
-                                    {session.projected15d >= 0 ? '+' : ''}{formatCurrency(session.projected15d)}đ
+                                <div className="text-[9px] font-bold text-gray-400 uppercase">Thực tế</div>
+                                <div className={`text-[14px] font-black ${session.realProfit >= 0 ? "text-[#1DB2A0]" : "text-rose-500"}`}>
+                                    {session.realProfit >= 0 ? '+' : ''}{formatCurrency(session.realProfit || 0)}đ
                                 </div>
                             </div>
                         </div>
@@ -88,7 +90,7 @@ export default function TopMVP({ sessions }) {
                 <h3 className="text-[18px] font-black text-[#1D1D1F] flex items-center gap-2">
                     Bảng Xếp Hạng Đợt Bán
                 </h3>
-                <p className="text-[12px] font-bold text-gray-400 mt-1">Hiệu suất được quy đổi về <span className="text-[#33A1FD] font-black">tiêu chuẩn 15 ngày</span> để so sánh công bằng</p>
+                <p className="text-[12px] font-bold text-gray-400 mt-1">Hiệu suất được quy đổi về <span className="text-[#33A1FD] font-black">tiêu chuẩn 15 ngày</span> để xếp hạng, nhưng vẫn hiển thị <span className="text-[#1DB2A0] font-black">Lợi nhuận Thực tế</span></p>
             </div>
 
             <div className="flex flex-col xl:flex-row gap-6 flex-1">
