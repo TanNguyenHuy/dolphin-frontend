@@ -424,8 +424,8 @@ export default function App() {
             id="main-app-container"
             className={`font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 ${
                 view === 'DASHBOARD' 
-                    ? 'h-screen w-full overflow-y-scroll overflow-x-hidden scroll-smooth snap-y snap-proximity' 
-                    : 'min-h-screen overflow-x-hidden pt-[220px] sm:pt-[180px] md:pt-[120px]'
+                    ? 'min-h-screen w-full overflow-x-hidden scroll-smooth' 
+    : 'min-h-screen overflow-x-hidden pt-[220px] sm:pt-[180px] md:pt-[120px]'
             }`}
         >
             {showFireworks && <Confetti />}
@@ -470,12 +470,12 @@ export default function App() {
                 {view === 'DASHBOARD' ? (
                     <>
                         {/* KHUNG 1: BÉ CÁ HEO 3D */}
-                        <section className="h-screen w-full snap-start relative flex-shrink-0">
+                        <section className="h-screen w-full relative flex-shrink-0">
                             <Hero3D />
                         </section>
 
                         {/* KHUNG 2: BẢNG TÍNH TIỀN */}
-                        <section id="main-dashboard" className="min-h-screen w-full snap-start relative pt-[220px] sm:pt-[180px] md:pt-[120px] pb-20">
+                        <section id="main-dashboard" className="min-h-screen w-full relative pt-[220px] sm:pt-[180px] md:pt-[120px] pb-20">
                             <div className="w-[96%] max-w-[1600px] mx-auto p-3 sm:p-6 md:p-8">
                                 <DashboardView 
                                     activeTab={activeTab}
