@@ -424,7 +424,7 @@ export default function App() {
             id="main-app-container"
             className={`font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 ${
                 view === 'DASHBOARD' 
-                    ? 'h-screen w-full overflow-y-scroll overflow-x-hidden scroll-smooth snap-y snap-mandatory' 
+                    ? 'h-screen w-full overflow-y-scroll overflow-x-hidden scroll-smooth snap-y snap-proximity' 
                     : 'min-h-screen overflow-x-hidden pt-[220px] sm:pt-[180px] md:pt-[120px]'
             }`}
         >
