@@ -222,7 +222,7 @@ export default function App() {
                         computedDoanhThu += (Number(item.so_tien_ban_duoc) || 0);
                     });
 
-                    ss.tong_sl_nhap = computedTongNhap; ss.tong_sl_ban = computedTongBan; ss.tong_doanh_thu = computedDoanhThu; ss.quang_cao = dailyList.length * AD_COST_PER_SALE;
+                    ss.tong_sl_nhap = computedTongNhap; ss.tong_sl_ban = computedTongBan; ss.tong_doanh_thu = computedDoanhThu; ss.quang_cao = dailyList.length * AD_COST_PER_SALE; ss.daily = dailyList;
 
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const safeBalesData = Array.isArray(balesData) ? balesData : [];
