@@ -1,72 +1,58 @@
 import React from 'react';
-import { Package, Percent, AlertCircle, TrendingUp, Layers } from 'lucide-react';
-import { formatCurrency, formatInput } from '../../utils';
+import { formatCurrency } from '../../utils';
+import { Package, Percent, FileText } from 'lucide-react';
 
-export default function DashboardStats({ globalTongCon, globalTongNhap, globalVonTon, displayRevenueTr, taxAmount, totalRevenueForTax }) {
-    const taxThreshold = 500000000;
-    const taxPercent = Math.min((totalRevenueForTax / taxThreshold) * 100, 100);
-    const isWarning = taxPercent > 80;
+export default function DashboardStats({ globalTongCon, globalTongNhap, globalVonTon, taxAmount }) {
+    // Tính phần trăm đã bán
+    const sellProgress = globalTongNhap > 0 ? ((globalTongNhap - globalTongCon) / globalTongNhap) * 100 : 0;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 w-full">
-            <style>{`
-                @keyframes shine { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
-                .animate-shine { background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.6) 50%, transparent 80%); background-size: 200% auto; animation: shine 3s linear infinite; }
-            `}</style>
-
-            {/* CARD 1: KHO & VỐN */}
-            <div className="relative overflow-hidden rounded-[32px] md:rounded-[40px] p-6 md:p-10 bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE] border border-blue-100 shadow-[0_8px_30px_rgba(33,150,243,0.08)] group hover:shadow-[0_12px_40px_rgba(33,150,243,0.15)] hover:-translate-y-1 transition-all duration-300 min-h-[280px] flex flex-col justify-between">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-300/20 rounded-full blur-[80px] pointer-events-none"></div>
-                <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none text-blue-600"><Layers size={220} strokeWidth={1} /></div>
-                
-                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start mb-6 gap-3">
-                    <h3 className="text-[13px] md:text-[14px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2.5 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20"><Package size={18} strokeWidth={2.5} /> KHO & VỐN</h3>
-                    <div className="text-[13px] font-bold text-blue-700 bg-white/70 backdrop-blur-md px-4 py-1.5 rounded-xl shadow-sm border border-blue-100">
-                        {formatInput(globalTongCon)} / {formatInput(globalTongNhap)} <span className="text-gray-500 font-medium ml-1">món</span>
+        <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 lg:p-8 shadow-sm flex flex-col gap-8 h-full">
+            <h3 className="text-[18px] font-black text-[#1D1D1F]">Kho, Vốn & Thuế</h3>
+            
+            {/* Tiến độ Kho */}
+            <div>
+                <div className="flex justify-between items-end mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-inner">
+                            <Package size={20} />
+                        </div>
+                        <div>
+                            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Tồn kho</div>
+                            <div className="text-[22px] font-black text-[#1D1D1F] leading-none">{globalTongCon} <span className="text-[12px] font-bold text-gray-400">sp</span></div>
+                        </div>
                     </div>
+                    <span className="text-[16px] font-black text-blue-500">{sellProgress.toFixed(1)}%</span>
                 </div>
+                <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner p-[2px]">
+                    <div className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full transition-all duration-1000" style={{ width: `${Math.min(sellProgress, 100)}%` }}></div>
+                </div>
+                <div className="text-[12px] font-bold text-gray-400 mt-2 text-right">Tổng nhập: {globalTongNhap}</div>
+            </div>
 
-                <div className="relative z-10 mt-auto">
-                    <div className="text-[14px] font-semibold text-blue-900/50 mb-1">Tổng vốn tồn kho:</div>
-                    <div className="text-[40px] md:text-[48px] font-black tracking-tighter tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-cyan-600 leading-none">
-                        {formatCurrency(globalVonTon)}<span className="text-[20px] text-blue-600/50 ml-1.5 font-bold">đ</span>
-                    </div>
+            <div className="w-full h-[1px] bg-gray-100"></div>
+
+            {/* Vốn Tồn */}
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 shadow-inner">
+                    <Percent size={24} />
+                </div>
+                <div>
+                    <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Vốn Tồn Kho</div>
+                    <div className="text-[20px] font-black text-[#1D1D1F]">{formatCurrency(globalVonTon)}đ</div>
                 </div>
             </div>
 
-            {/* CARD 2: ƯỚC TÍNH THUẾ */}
-            <div className="relative overflow-hidden rounded-[32px] md:rounded-[40px] p-6 md:p-10 bg-gradient-to-br from-[#FFF5F5] to-[#FFE4E6] border border-rose-100 shadow-[0_8px_30px_rgba(225,29,72,0.08)] group hover:shadow-[0_12px_40px_rgba(225,29,72,0.15)] hover:-translate-y-1 transition-all duration-300 min-h-[280px] flex flex-col justify-between">
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-300/20 rounded-full blur-[80px] pointer-events-none"></div>
-                <div className="absolute -right-8 -bottom-8 opacity-[0.03] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none text-rose-600"><Percent size={220} strokeWidth={1} /></div>
-
-                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start mb-6 gap-3">
-                    <h3 className="text-[13px] md:text-[14px] font-black text-rose-700 uppercase tracking-widest flex items-center gap-2.5 bg-rose-500/10 px-4 py-2 rounded-full border border-rose-500/20"><AlertCircle size={18} strokeWidth={2.5} /> ƯỚC TÍNH THUẾ</h3>
-                    <div className="text-[13px] font-bold text-rose-700 bg-white/70 backdrop-blur-md px-4 py-1.5 rounded-xl shadow-sm border border-rose-100 flex items-center gap-1.5">
-                        <TrendingUp size={14} /> {displayRevenueTr} / 500Tr
-                    </div>
+            {/* Thuế */}
+            <div className="flex items-center gap-4 mt-auto pt-4">
+                <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shadow-inner">
+                    <FileText size={24} />
                 </div>
-
-                <div className="relative z-10 mt-auto space-y-5">
-                    <div>
-                        <div className="text-[40px] md:text-[48px] font-black tracking-tighter tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-rose-700 to-pink-500 leading-none">
-                            {formatCurrency(taxAmount)}<span className="text-[20px] text-rose-500/50 ml-1.5 font-bold">đ</span>
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-2.5">
-                        <div className="flex justify-between text-[13px] font-bold text-rose-900/50">
-                            <span>Tiến độ hạn mức (1.5%)</span>
-                            <span className={isWarning ? 'text-rose-600 animate-pulse font-black' : 'text-rose-700 font-black'}>{taxPercent.toFixed(1)}%</span>
-                        </div>
-                        <div className="h-4 bg-white/60 rounded-full overflow-hidden border border-rose-200/50 shadow-inner p-[2px]">
-                            <div className={`h-full rounded-full shadow-sm relative overflow-hidden transition-all duration-1000 ease-out ${isWarning ? 'bg-gradient-to-r from-rose-400 to-red-600' : 'bg-gradient-to-r from-pink-300 to-rose-400'}`} style={{ width: `${taxPercent}%` }}>
-                                <div className="absolute inset-0 animate-shine"></div>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ước tính Thuế (1.5%)</div>
+                    <div className="text-[20px] font-black text-[#1D1D1F]">{formatCurrency(taxAmount)}đ</div>
                 </div>
             </div>
-
         </div>
     );
 }

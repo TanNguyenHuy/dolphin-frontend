@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Calendar, Package, TrendingUp, Activity, Box, ShoppingBag } from 'lucide-react';
 import DashboardChart from './dashboard/DashboardChart';
 import SmartCalendar from './dashboard/SmartCalendar';
+import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
 import { formatCurrency, formatDateDisplay, API_URL, AD_COST_PER_SALE } from '../utils';
@@ -97,22 +98,35 @@ export default function DashboardView({
             
             {/* GRID BỐ CỤC CHÍNH (Cột 8 - Cột 4) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                
+                {/* CỘT TRÁI (8 phần): BIỂU ĐỒ CHÍNH & MINI CHARTS */}
                 <div className="lg:col-span-8 space-y-6 lg:space-y-8 flex flex-col">
                     <div className="h-[400px]">
                         <ScrollReveal delay={0}>
                             <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
                         </ScrollReveal>
                     </div>
-                    <div className="flex-1">
-                        <ScrollReveal delay={150}>
-                            <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} displayRevenueTr={displayRevenueTr} taxAmount={taxAmount} totalRevenueForTax={totalRevenueForTax} />
+                    
+                    {/* BƯỚC 3: MINI CHARTS */}
+                    <div>
+                        <ScrollReveal delay={100}>
+                            <MiniCharts sessions={completedSessions} />
                         </ScrollReveal>
                     </div>
                 </div>
+
+                {/* CỘT PHẢI (4 phần): LỊCH & THỐNG KÊ DỌC */}
                 <div className="lg:col-span-4 space-y-6 lg:space-y-8 flex flex-col">
                     <div className="h-[400px]">
                         <ScrollReveal delay={200}>
                             <SmartCalendar sessions={completedSessions} />
+                        </ScrollReveal>
+                    </div>
+                    
+                    {/* BƯỚC 4: THỐNG KÊ KHO VỐN DỌC */}
+                    <div className="flex-1">
+                        <ScrollReveal delay={300}>
+                            <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
                         </ScrollReveal>
                     </div>
                 </div>

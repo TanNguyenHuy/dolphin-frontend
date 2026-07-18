@@ -1,37 +1,12 @@
 import React from 'react';
-import { Fish, Crown, Clock, Users, Plus, RefreshCw, LogOut, TrendingUp, Package, List } from 'lucide-react';
+import { Fish, Crown, Users, Plus, RefreshCw, LogOut } from 'lucide-react';
 import PlanBadge from './admin/PlanBadge'; 
+import MiniCharts from './dashboard/MiniCharts';
 
 export default function Header({
     authUser, isAdmin, canEdit, timeLeftDisplay, view, setView,
     handleCreateAutoSession, isProcessingCreate, handleLogout
 }) {
-    // Động cơ cuộn trang mềm mại (Custom Easing Scroll)
-    const scrollToSection = (id) => {
-        const element = document.getElementById(id);
-        if (!element) return;
-        
-        const targetPosition = element.getBoundingClientRect().top + window.scrollY - 110;
-        const startPosition = window.scrollY;
-        const distance = targetPosition - startPosition;
-        const duration = 1200; // Thời gian lướt 1.2 giây (rất êm)
-        let start = null;
-
-        const easeInOutQuart = (time, begin, change, duration) => {
-            if ((time /= duration / 2) < 1) return change / 2 * time * time * time * time + begin;
-            return -change / 2 * ((time -= 2) * time * time * time - 2) + begin;
-        };
-
-        const animation = (currentTime) => {
-            if (start === null) start = currentTime;
-            const timeElapsed = currentTime - start;
-            const run = easeInOutQuart(timeElapsed, startPosition, distance, duration);
-            window.scrollTo(0, run);
-            if (timeElapsed < duration) requestAnimationFrame(animation);
-        };
-        requestAnimationFrame(animation);
-    };
-
     return (
         <>
             {/* KHỐI ĐỆM TÀNG HÌNH: Đẩy nội dung bên dưới xuống để không bị che mất */}
@@ -61,14 +36,6 @@ export default function Header({
                         </div>
                     </div>
                 </div>
-
-                {view === 'DASHBOARD' && (
-                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full md:w-auto pb-2 md:pb-0">
-                        <button onClick={() => scrollToSection('section-loi-nhuan')} className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-[#FFE0B2] text-[#E65100] hover:bg-white hover:-translate-y-0.5"><TrendingUp size={16} strokeWidth={2.5} /> Lợi Nhuận</button>
-                        <button onClick={() => scrollToSection('section-kho-thue')} className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-blue-200 text-[#1A5B82] hover:bg-white hover:-translate-y-0.5"><Package size={16} strokeWidth={2.5} /> Kho, Vốn & Thuế</button>
-                        <button onClick={() => scrollToSection('section-danh-sach')} className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] text-[13px] font-black whitespace-nowrap transition-all active:scale-95 shadow-sm border bg-white/80 border-teal-200 text-[#00695C] hover:bg-white hover:-translate-y-0.5"><List size={16} strokeWidth={2.5} /> Đợt Bán</button>
-                    </div>
-                )}
                 
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0 self-end md:self-center">
                     {view === 'DASHBOARD' && (
