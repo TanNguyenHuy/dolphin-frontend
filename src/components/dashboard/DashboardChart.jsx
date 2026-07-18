@@ -20,7 +20,6 @@ export default function DashboardChart({ enrichedSessions }) {
         return filtered.reverse().map(s => ({
             name: new Date(s.actual_start_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
             profit: s.realProfit || 0,
-            // SỬ DỤNG getSessionName ĐỂ HIỂN THỊ TÊN NGÀY THÁNG CHUẨN XÁC
             fullName: getSessionName(s.name, s.actual_start_date, s.actual_end_date)
         }));
     }, [enrichedSessions, selectedYear]);
@@ -37,7 +36,7 @@ export default function DashboardChart({ enrichedSessions }) {
                     <div className="text-[12px] font-bold text-gray-500 mt-1">Lợi nhuận đợt thường ({selectedYear}): <span className="text-[#1D1D1F] text-[14px]">{formatCurrency(chartTotalProfit)}đ</span></div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-full p-1 shadow-inner">
+                <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-full p-1 shadow-inner shrink-0">
                     <button onClick={() => setSelectedYear(y => y - 1)} className="p-1.5 hover:bg-white rounded-full transition-all text-gray-500 hover:shadow-sm active:scale-95">
                         <ChevronLeft size={16} strokeWidth={3} />
                     </button>
@@ -53,7 +52,8 @@ export default function DashboardChart({ enrichedSessions }) {
                     <div className="flex items-center justify-center h-full text-gray-400 font-bold text-[13px]">Chưa có dữ liệu đợt bán bình thường trong năm {selectedYear}</div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        {/* ĐÃ SỬA: Đổi left: 0 thành left: 10 để chống tràn viền trên mobile */}
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#33A1FD" stopOpacity={0.4}/>
