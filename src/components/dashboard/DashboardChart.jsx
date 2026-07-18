@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, getSessionName } from '../../utils';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 
 export default function DashboardChart({ enrichedSessions }) {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-    // Thuật toán lọc: Đúng năm và KHÔNG chứa chữ Sale/Đăng lại
     const chartData = useMemo(() => {
         const filtered = enrichedSessions.filter(s => {
             if (!s.actual_start_date) return false;
@@ -21,11 +20,11 @@ export default function DashboardChart({ enrichedSessions }) {
         return filtered.reverse().map(s => ({
             name: new Date(s.actual_start_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
             profit: s.realProfit || 0,
-            fullName: s.name
+            // SỬ DỤNG getSessionName ĐỂ HIỂN THỊ TÊN NGÀY THÁNG CHUẨN XÁC
+            fullName: getSessionName(s.name, s.actual_start_date, s.actual_end_date)
         }));
     }, [enrichedSessions, selectedYear]);
 
-    // Tính tổng lợi nhuận của các đợt đang hiển thị trên biểu đồ
     const chartTotalProfit = chartData.reduce((sum, item) => sum + item.profit, 0);
 
     return (
