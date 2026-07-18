@@ -5,6 +5,7 @@ import SmartCalendar from './dashboard/SmartCalendar';
 import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
+import TopMVP from './dashboard/TopMVP';
 import { formatCurrency, formatDateDisplay, API_URL, AD_COST_PER_SALE } from '../utils';
 import { calculateDetailStats } from '../logic';
 import axios from 'axios';
@@ -99,7 +100,7 @@ export default function DashboardView({
             {/* GRID BỐ CỤC CHÍNH (Cột 8 - Cột 4) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                 
-                {/* CỘT TRÁI (8 phần): BIỂU ĐỒ CHÍNH & MINI CHARTS */}
+                {/* CỘT TRÁI (8 phần): BIỂU ĐỒ CHÍNH, MINI CHARTS & TOP MVP */}
                 <div className="lg:col-span-8 space-y-6 lg:space-y-8 flex flex-col">
                     <div className="h-[400px]">
                         <ScrollReveal delay={0}>
@@ -113,6 +114,13 @@ export default function DashboardView({
                             <MiniCharts sessions={completedSessions} />
                         </ScrollReveal>
                     </div>
+
+                    {/* BƯỚC 5: TOP ĐỢT BÁN (MVP) NẰM Ở ĐÂY */}
+                    <div className="flex-1">
+                        <ScrollReveal delay={150}>
+                            <TopMVP sessions={completedSessions} />
+                        </ScrollReveal>
+                    </div>
                 </div>
 
                 {/* CỘT PHẢI (4 phần): LỊCH & THỐNG KÊ DỌC */}
@@ -123,7 +131,7 @@ export default function DashboardView({
                         </ScrollReveal>
                     </div>
                     
-                    {/* BƯỚC 4: THỐNG KÊ KHO VỐN DỌC */}
+                    {/* BƯỚC 4: THỐNG KÊ KHO VỐN DỌC (Đã bỏ thanh %) */}
                     <div className="flex-1">
                         <ScrollReveal delay={300}>
                             <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
