@@ -4,10 +4,10 @@ import { Package, Percent, FileText } from 'lucide-react';
 
 export default function DashboardStats({ globalTongCon, globalTongNhap, globalVonTon, taxAmount }) {
     return (
-        <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 lg:p-8 shadow-sm flex flex-col gap-6 h-full">
+        <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 lg:p-8 shadow-sm flex flex-col justify-center gap-8 h-full">
             <h3 className="text-[18px] font-black text-[#1D1D1F] mb-2">Kho, Vốn & Thuế</h3>
             
-            {/* Tồn kho (Đã bỏ thanh %) */}
+            {/* Tồn kho */}
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-inner shrink-0">
                     <Package size={22} strokeWidth={2.5} />
@@ -33,8 +33,11 @@ export default function DashboardStats({ globalTongCon, globalTongNhap, globalVo
                 </div>
             </div>
 
+            {/* Thêm một đường phân cách nữa để bố cục cân đối */}
+            <div className="w-full h-[1px] bg-gray-100"></div>
+
             {/* Thuế */}
-            <div className="flex items-center gap-4 mt-auto pt-2">
+            <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shadow-inner shrink-0">
                     <FileText size={22} strokeWidth={2.5} />
                 </div>

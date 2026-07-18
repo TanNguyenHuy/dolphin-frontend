@@ -4,16 +4,14 @@ import { formatCurrency } from '../../utils';
 
 export default function SmartCalendar({ sessions }) {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [hoveredDate, setHoveredDate] = useState(null); // Quản lý ngày đang rê chuột
+    const [hoveredDate, setHoveredDate] = useState(null);
 
-    // THUẬT TOÁN ĐỌC CHI TIẾT: Lọc chính xác các ngày CÓ ĐƠN HÀNG
     const dailyDataByDate = useMemo(() => {
         const map = {};
         sessions?.forEach(session => {
             if (session.daily && Array.isArray(session.daily)) {
                 session.daily.forEach(item => {
                     if (!item.ngay_ban) return;
-                    // Chuyển đổi ngày an toàn
                     const d = new Date(item.ngay_ban);
                     const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     
@@ -37,9 +35,13 @@ export default function SmartCalendar({ sessions }) {
     const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
     const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
+    // Hàm xử lý nhảy về tháng hiện tại
+    const handleJumpToToday = () => {
+        setCurrentDate(new Date());
+    };
+
     return (
         <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 shadow-sm flex flex-col h-full relative z-10">
-            {/* Header Lịch */}
             <div className="flex justify-between items-center mb-6 px-2">
                 <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors active:scale-95 text-gray-500">
                     <ChevronLeft size={20} strokeWidth={2.5} />
@@ -56,7 +58,6 @@ export default function SmartCalendar({ sessions }) {
                 {dayNames.map(day => <div key={day} className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{day}</div>)}
             </div>
 
-            {/* Lưới ngày */}
             <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
                 {[...Array(startingDay)].map((_, i) => <div key={`empty-${i}`} className="h-8"></div>)}
                 
@@ -64,7 +65,7 @@ export default function SmartCalendar({ sessions }) {
                     const day = i + 1;
                     const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayData = dailyDataByDate[dateString];
-                    const isActive = !!dayData; // Có dữ liệu chi tiết thì mới sáng lên
+                    const isActive = !!dayData; 
                     const isToday = new Date().toISOString().split('T')[0] === dateString;
 
                     return (
@@ -81,7 +82,6 @@ export default function SmartCalendar({ sessions }) {
                                 {day}
                             </span>
 
-                            {/* TOOLTIP CHI TIẾT SẢN PHẨM TRONG NGÀY */}
                             {hoveredDate === dateString && isActive && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[150] p-4 pointer-events-none animate-fade-in-up">
                                     <div className="text-[12px] font-black text-[#1D1D1F] mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
@@ -89,7 +89,6 @@ export default function SmartCalendar({ sessions }) {
                                         <span className="bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full text-[10px]">{dayData.length} đơn</span>
                                     </div>
                                     <div className="flex flex-col gap-2.5">
-                                        {/* Chỉ hiện max 5 sản phẩm tránh che tràn màn hình */}
                                         {dayData.slice(0, 5).map((item, idx) => (
                                             <div key={idx} className="flex justify-between items-center text-[11px]">
                                                 <div className="flex-1 pr-2 truncate font-bold text-gray-700">
@@ -115,8 +114,11 @@ export default function SmartCalendar({ sessions }) {
             </div>
             
             <div className="mt-auto pt-6">
-                <button className="w-full bg-[#33A1FD] hover:bg-[#208bea] text-white font-bold py-3.5 rounded-[16px] text-[13px] transition-all active:scale-95 shadow-[0_4px_12px_rgba(51,161,253,0.3)]">
-                    Xem báo cáo tháng
+                <button 
+                    onClick={handleJumpToToday}
+                    className="w-full bg-[#33A1FD] hover:bg-[#208bea] text-white font-bold py-3.5 rounded-[16px] text-[13px] transition-all active:scale-95 shadow-[0_4px_12px_rgba(51,161,253,0.3)]"
+                >
+                    Trở về tháng hiện tại
                 </button>
             </div>
         </div>
