@@ -44,12 +44,16 @@ export default function DashboardView({
     setSalarySession, setShowSalaryModal, handleStartEditSession, handleDeleteSession
 }) {
     const [visibleCount, setVisibleCount] = useState(6);
-    const visibleSessions = enrichedSessions.slice(0, visibleCount);
-    const hasMore = visibleCount < enrichedSessions.length;
-    const completedSessions = enrichedSessions.filter(s => s.is_completed === true);
+    
+    // Tấm khiên an toàn (chống lỗi crash khi dữ liệu chưa tải kịp)
+    const safeEnrichedSessions = enrichedSessions || []; 
+    
+    const visibleSessions = safeEnrichedSessions.slice(0, visibleCount);
+    const hasMore = visibleCount < safeEnrichedSessions.length;
+    const completedSessions = safeEnrichedSessions.filter(s => s.is_completed === true);
 
     // =========================================================
-    // STATE: KHÔI PHỤC LẠI QUICK VIEW (BẢNG XEM NHANH BÊN PHẢI)
+    // STATE: QUICK VIEW (BẢNG XEM NHANH BÊN PHẢI)
     // =========================================================
     const [quickViewData, setQuickViewData] = useState(null);
     const [quickViewDetails, setQuickViewDetails] = useState([]);
@@ -95,14 +99,18 @@ export default function DashboardView({
     };
 
     return (
-        <div className="space-y-10 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-6 relative">
+        // ĐÃ ÉP GỌN: space-y-10 -> space-y-6, pt-6 -> pt-3
+        <div className="space-y-6 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-3 relative">
             
-            {/* GRID BỐ CỤC CHÍNH (Cột 8 - Cột 4) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            {/* GRID BỐ CỤC CHÍNH */}
+            {/* ĐÃ ÉP GỌN: gap-8 -> gap-5 */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-5">
                 
-                {/* CỘT TRÁI (8 phần): BIỂU ĐỒ CHÍNH, MINI CHARTS & TOP MVP */}
-                <div className="lg:col-span-8 space-y-6 lg:space-y-8 flex flex-col">
-                    <div className="h-[400px]">
+                {/* CỘT TRÁI (8 phần) */}
+                {/* ĐÃ ÉP GỌN: space-y-8 -> space-y-5 */}
+                <div className="lg:col-span-8 space-y-5 flex flex-col">
+                    {/* ĐÃ ÉP GỌN CHIỀU CAO: h-[400px] -> h-[330px] */}
+                    <div className="h-[330px]">
                         <ScrollReveal delay={0}>
                             <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
                         </ScrollReveal>
@@ -115,7 +123,7 @@ export default function DashboardView({
                         </ScrollReveal>
                     </div>
 
-                    {/* BƯỚC 5: TOP ĐỢT BÁN (MVP) NẰM Ở ĐÂY */}
+                    {/* BƯỚC 5: TOP ĐỢT BÁN (MVP) */}
                     <div className="flex-1">
                         <ScrollReveal delay={150}>
                             <TopMVP sessions={completedSessions} />
@@ -123,15 +131,17 @@ export default function DashboardView({
                     </div>
                 </div>
 
-                {/* CỘT PHẢI (4 phần): LỊCH & THỐNG KÊ DỌC */}
-                <div className="lg:col-span-4 space-y-6 lg:space-y-8 flex flex-col">
-                    <div className="h-[400px]">
+                {/* CỘT PHẢI (4 phần) */}
+                {/* ĐÃ ÉP GỌN: space-y-8 -> space-y-5 */}
+                <div className="lg:col-span-4 space-y-5 flex flex-col">
+                    {/* ĐÃ ÉP GỌN CHIỀU CAO: h-[400px] -> h-[330px] */}
+                    <div className="h-[330px]">
                         <ScrollReveal delay={200}>
                             <SmartCalendar sessions={completedSessions} />
                         </ScrollReveal>
                     </div>
                     
-                    {/* BƯỚC 4: THỐNG KÊ KHO VỐN DỌC (Đã bỏ thanh %) */}
+                    {/* BƯỚC 4: THỐNG KÊ KHO VỐN DỌC */}
                     <div className="flex-1">
                         <ScrollReveal delay={300}>
                             <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
@@ -140,8 +150,8 @@ export default function DashboardView({
                 </div>
             </div>
 
-            {/* DANH SÁCH ĐỢT BÁN (BẮT SỰ KIỆN RÊ CHUỘT) */}
-            <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-8">
+            {/* DANH SÁCH ĐỢT BÁN */}
+            <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
                     <div 
                         className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40"
@@ -150,7 +160,7 @@ export default function DashboardView({
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
                         <div className="flex justify-between items-center mb-8 px-2 md:px-0 relative z-10">
                             <h2 className="text-[22px] md:text-[28px] font-black text-[#1D1D1F] tracking-tight">Danh sách đợt bán</h2>
-                            <span className="text-[13px] md:text-[14px] font-bold bg-white/80 backdrop-blur-md border border-gray-200 text-[#1D1D1F] px-4 py-1.5 rounded-full shadow-sm">Tổng: {enrichedSessions.length}</span>
+                            <span className="text-[13px] md:text-[14px] font-bold bg-white/80 backdrop-blur-md border border-gray-200 text-[#1D1D1F] px-4 py-1.5 rounded-full shadow-sm">Tổng: {safeEnrichedSessions.length}</span>
                         </div>
                         <div className="flex flex-col gap-4 relative z-10">
                             {visibleSessions.map((session, index) => (
@@ -159,7 +169,7 @@ export default function DashboardView({
                                     className="transform transition-all duration-300 hover:-translate-y-1 hover:shadow-md rounded-[24px]"
                                     onMouseEnter={() => handleMouseEnterRow(session)}
                                 >
-                                    <SessionCard session={session} index={index} totalCount={enrichedSessions.length} fetchDetail={fetchDetail} canPay={canPay} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession} />
+                                    <SessionCard session={session} index={index} totalCount={safeEnrichedSessions.length} fetchDetail={fetchDetail} canPay={canPay} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession} />
                                 </div>
                             ))}
                         </div>
