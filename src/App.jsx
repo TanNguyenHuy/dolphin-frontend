@@ -23,6 +23,8 @@ import BlockModal from './components/modals/BlockModal';
 // Import Utils và Bộ Não Logic
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
+// Thêm vào khu vực Import
+import Hero3D from './components/dashboard/Hero3D'; // (Hoặc './components/Hero3D' nếu bạn để trong thư mục components)
 
 // ============================================================================
 // LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY) - NGĂN CHẶN LỖI TRẮNG TRANG
@@ -417,8 +419,15 @@ export default function App() {
     }
 
     return (
-        // Đã thay đổi: Tăng padding-top cực rộng (pt-[220px]) trên điện thoại để Header không bao giờ đè lên nút Trở về!
-        <div className="min-h-screen font-sans text-[#1D1D1F] relative overflow-x-hidden selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 pt-[220px] sm:pt-[180px] md:pt-[120px]">
+        // BƯỚC NHẢY LOGIC: Nếu đang ở DASHBOARD -> Bật cuộn nam châm. Nếu ở trang khác -> Giữ nguyên Padding cũ.
+        <div 
+            id="main-app-container"
+            className={`font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 ${
+                view === 'DASHBOARD' 
+                    ? 'h-screen w-full overflow-y-scroll overflow-x-hidden scroll-smooth snap-y snap-mandatory' 
+                    : 'min-h-screen overflow-x-hidden pt-[220px] sm:pt-[180px] md:pt-[120px]'
+            }`}
+        >
             {showFireworks && <Confetti />}
 
             <Toast toast={toast} />
@@ -457,27 +466,40 @@ export default function App() {
             <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
             
             <ErrorBoundary>
-                <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
-                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
-                    
-                    {view === 'DASHBOARD' && (
-                        <DashboardView 
-                            activeTab={activeTab}
-                            dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
-                        />
-                    )}
-                    
-                    {view === 'DETAIL' && detailData && (
-                        <DetailView 
-                            detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                            isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
-                            canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
-                            baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                            newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                            handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
-                        />
-                    )}
-                </div>
+                {/* NẾU ĐANG Ở TRANG CHỦ -> CHIA LÀM 2 KHUNG CÓ NAM CHÂM */}
+                {view === 'DASHBOARD' ? (
+                    <>
+                        {/* KHUNG 1: BÉ CÁ HEO 3D */}
+                        <section className="h-screen w-full snap-start relative flex-shrink-0">
+                            <Hero3D />
+                        </section>
+
+                        {/* KHUNG 2: BẢNG TÍNH TIỀN */}
+                        <section id="main-dashboard" className="min-h-screen w-full snap-start relative pt-[220px] sm:pt-[180px] md:pt-[120px] pb-20">
+                            <div className="w-[96%] max-w-[1600px] mx-auto p-3 sm:p-6 md:p-8">
+                                <DashboardView 
+                                    activeTab={activeTab}
+                                    dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
+                                />
+                            </div>
+                        </section>
+                    </>
+                ) : (
+                    /* NẾU LÀ TRANG KHÁC (USERS, DETAIL) -> GIỮ NGUYÊN CODE CŨ CỦA BẠN */
+                    <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
+                        {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
+                        {view === 'DETAIL' && detailData && (
+                            <DetailView 
+                                detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
+                                isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                                canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
+                                baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
+                                newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
+                                handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
+                            />
+                        )}
+                    </div>
+                )}
             </ErrorBoundary>
             <ChatBox authUser={authUser} />
         </div>
