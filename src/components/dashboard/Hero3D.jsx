@@ -50,7 +50,7 @@ export default function Hero3D() {
       <div className="relative z-10 w-full h-[60%] flex items-end justify-center pointer-events-none mt-10">
         <div className="w-full h-full max-w-5xl cursor-default pointer-events-auto">
             {/* NHỚ DÁN LẠI LINK SPLINE CỦA BẠN VÀO ĐÂY */}
-            <Spline scene="https://prod.spline.design/yE0Td21FERbxVs-j/scene.splinecode" />
+            <Spline scene="https://prod.spline.design/VyNZ79T8K-G8wS2W/scene.splinecode" />
         </div>
       </div>
 
