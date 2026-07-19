@@ -165,7 +165,7 @@ export default function DashboardView({
             </div>
 
             {/* BẢNG XEM NHANH (QUICK VIEW) */}
-            <<div className={`hidden xl:block fixed right-6 top-[110px] w-[370px] z-[100] transition-all duration-[600ms] cubic-bezier(0.16, 1, 0.3, 1) pointer-events-none ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[120%] blur-sm'}`}>
+            <div className={`hidden xl:block fixed right-6 top-[110px] w-[370px] z-[100] transition-all duration-[600ms] cubic-bezier(0.16, 1, 0.3, 1) pointer-events-none ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[120%] blur-sm'}`}>
     {quickViewData && (
         <div className="flex flex-col gap-3 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[calc(100vh-130px)]">
                         <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 shrink-0">
