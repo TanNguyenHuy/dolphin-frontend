@@ -419,13 +419,12 @@ export default function App() {
     }
 
     return (
-        // BƯỚC NHẢY LOGIC: Nếu đang ở DASHBOARD -> Bật cuộn nam châm. Nếu ở trang khác -> Giữ nguyên Padding cũ.
         <div 
             id="main-app-container"
             className={`font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 ${
                 view === 'DASHBOARD' 
                     ? 'min-h-screen w-full overflow-x-hidden scroll-smooth' 
-    : 'min-h-screen overflow-x-hidden pt-[220px] sm:pt-[180px] md:pt-[120px]'
+                    : 'min-h-screen overflow-x-hidden pt-[120px]' // Trả lại khoảng cách vừa đủ cho các trang con
             }`}
         >
             {showFireworks && <Confetti />}
@@ -439,7 +438,6 @@ export default function App() {
                 .tabular-nums { font-variant-numeric: tabular-nums; }
                 @keyframes scale-up { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 .animate-scale-up { animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                .bg-aurora { background: linear-gradient(135deg, #E0F7FA 0%, #E0F2FE 50%, #F0FDFA 100%); }
                 .liquid-glass { background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
                 .liquid-glass-dark { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.2); color: white; }
                 .liquid-input { background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); transition: all 0.3s; }
@@ -449,7 +447,12 @@ export default function App() {
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
-            <div className="fixed inset-0 z-[-2] bg-aurora pointer-events-none"></div>
+
+            {/* --- NỀN ĐẠI DƯƠNG VÀ SÓNG BIỂN CSS ÁP DỤNG TOÀN TRANG --- */}
+            <div className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden">
+                <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
+                <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/30 rounded-[40%] animate-[spin_15s_linear_infinite_reverse] -bottom-[185vw] sm:-bottom-[135vw] left-1/2 -translate-x-1/2"></div>
+            </div>
 
             <Header 
                 authUser={authUser} isAdmin={isAdmin} canEdit={canEdit} timeLeftDisplay={timeLeftDisplay}
@@ -466,17 +469,16 @@ export default function App() {
             <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
             
             <ErrorBoundary>
-                {/* NẾU ĐANG Ở TRANG CHỦ -> CHIA LÀM 2 KHUNG CÓ NAM CHÂM */}
                 {view === 'DASHBOARD' ? (
                     <>
-                        {/* KHUNG 1: BÉ CÁ HEO 3D */}
-                        <section className="h-screen w-full relative flex-shrink-0">
+                        {/* KHUNG 1: MÀN HÌNH CHÀO CÁ HEO (CHIẾM TRỌN MÀN HÌNH) */}
+                        <section className="h-[100vh] min-h-[700px] w-full relative flex-shrink-0">
                             <Hero3D />
                         </section>
 
-                        {/* KHUNG 2: BẢNG TÍNH TIỀN */}
-                        <section id="main-dashboard" className="min-h-screen w-full relative pt-[220px] sm:pt-[180px] md:pt-[120px] pb-20">
-                            <div className="w-[96%] max-w-[1600px] mx-auto p-3 sm:p-6 md:p-8">
+                        {/* KHUNG 2: BẢNG TÍNH TIỀN ĐÃ ĐƯỢC KÉO LÊN (Thay pt-[220px] bằng pt-20) */}
+                        <section id="main-dashboard" className="min-h-screen w-full relative pt-20 pb-20">
+                            <div className="w-[96%] max-w-[1600px] mx-auto p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50">
                                 <DashboardView 
                                     activeTab={activeTab}
                                     dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
@@ -485,8 +487,8 @@ export default function App() {
                         </section>
                     </>
                 ) : (
-                    /* NẾU LÀ TRANG KHÁC (USERS, DETAIL) -> GIỮ NGUYÊN CODE CŨ CỦA BẠN */
-                    <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8">
+                    /* CÁC TRANG KHÁC (USERS, DETAIL) BỌC TRONG KHUNG KÍNH MỜ */
+                    <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50 mt-4">
                         {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
                         {view === 'DETAIL' && detailData && (
                             <DetailView 
