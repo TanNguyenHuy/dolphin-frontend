@@ -17,8 +17,14 @@ const formatDateTime = (dateString) => {
 
 export default function TransactionList({
     enrichedDaily, detailData, mvpRowId, canEdit, canDelete,
-    isProcessingEdit, isProcessingDelete, handleStartEdit, handleDeleteRow
+    isProcessingEdit, isProcessingDelete, handleStartEdit, handleDeleteRow,
+    importedBales // ĐÃ THÊM PROP NÀY ĐỂ TÍNH GIÁ TRUNG BÌNH CHÍNH XÁC
 }) {
+    // TÍNH LẠI GIÁ TRUNG BÌNH Ở ĐÂY ĐỂ DÙNG CHO CÔNG THỨC BÊN DƯỚI
+    const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0) || (detailData?.so_tien_cua_kien || 0);
+    const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0) || (detailData?.computed?.tong_sl_nhap || 1);
+    const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
+
     return (
         <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] p-4 sm:p-8 min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
             <div className="flex justify-between items-center mb-6 md:mb-8 px-2">
@@ -34,18 +40,17 @@ export default function TransactionList({
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                     const isMVP = row.id === mvpRowId && index !== 0; 
                     
-                    // TÍNH TOÁN LỜI TRUNG BÌNH THEO CÔNG THỨC MỚI
-                    const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * 60000 + 350000);
+                    // CÔNG THỨC LỜI TRUNG BÌNH MỚI: Doanh thu - (SL Nhập * Giá TB + 350.000)
+                    const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
                     
                     return (
                         <div 
                             key={row.id || index} 
-                            // KHUNG NGOÀI: Tự động dàn dòng (flex-wrap), ưu tiên 1 dòng trên màn hình cực rộng
                             className={`group relative bg-white/70 hover:bg-white backdrop-blur-md rounded-[20px] md:rounded-[28px] p-4 transition-all duration-500 ease-out flex flex-col xl:flex-row xl:flex-wrap items-start xl:items-center justify-between gap-4 xl:gap-5 w-full min-w-0 overflow-hidden ${isMVP ? 'border-2 border-[#FF9500]/50 shadow-[0_8px_24px_rgba(255,149,0,0.15)]' : 'border border-white/80 hover:shadow-[0_15px_40px_rgba(38,208,206,0.12)] hover:border-[#26D0CE]/30'}`}
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#26D0CE]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-                            {/* KHỐI TRÁI: Thông tin SP (Tự co giãn) */}
+                            {/* KHỐI TRÁI: Thông tin SP */}
                             <div className="flex items-center gap-3 w-full xl:w-auto xl:flex-1 min-w-[200px] relative z-10">
                                 <div className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-[13px] md:text-[14px] shrink-0 tabular-nums shadow-sm ${isMVP ? 'bg-gradient-to-br from-[#FF9500] to-[#FFCC00] text-white' : 'bg-gradient-to-br from-gray-100 to-white text-gray-600 border border-gray-200/50'}`}>
                                     {row.stt || 0}
@@ -100,7 +105,8 @@ export default function TransactionList({
                                             <span className="text-gray-400 font-bold whitespace-nowrap">V.tồn</span>
                                             <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(row.tien_ton || 0)}</span>
                                         </div>
-                                        {/* KHU VỰC THÊM MỚI: LỜI TRUNG BÌNH */}
+                                        
+                                        {/* HIỂN THỊ LỜI TRUNG BÌNH */}
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-1 bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 shadow-sm w-fit sm:ml-auto">
                                             <span className="text-gray-500 font-bold whitespace-nowrap">Lời TB</span>
                                             <span className={`font-black tabular-nums ${loiTrungBinh >= 0 ? "text-teal-600" : "text-rose-600"}`}>

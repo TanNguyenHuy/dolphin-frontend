@@ -78,6 +78,7 @@ export default function DetailView({
                             isProcessingDelete={isProcessingDelete}
                             handleStartEdit={handleStartEdit}
                             handleDeleteRow={handleDeleteRow}
+                            importedBales={importedBales} /* <-- DÒNG NÀY VỪA ĐƯỢC THÊM VÀO NÈ */
                         />
                     </div>
                 </div>

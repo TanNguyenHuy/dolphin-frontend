@@ -7,10 +7,13 @@ export default function CapitalManagement({
     baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
     importedBales, handleDeleteBale
 }) {
-    // TÍNH TOÁN GIÁ TRUNG BÌNH SẢN PHẨM
+    // TÍNH TOÁN THEO ĐÚNG CÔNG THỨC: (Tổng tiền 1 + ... + n) / (Số lượng 1 + ... + n)
+    const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
+    const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
+    const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
+    
+    // Tính tổng vốn nhập kho (Bao gồm cả phí giặt ủi và ads)
     const totalCapital = (detailData?.so_tien_cua_kien || 0) + (detailData?.so_tien_giat_ui || 0) + (detailAutoAdCost || 0);
-    const totalQty = detailData?.computed?.tong_sl_nhap || 0;
-    const avgPrice = totalQty > 0 ? totalCapital / totalQty : 0;
 
     return (
         <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col h-full min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
@@ -35,7 +38,7 @@ export default function CapitalManagement({
                         <span className="text-[20px] text-orange-600/70 ml-1.5 font-bold">đ</span>
                     </div>
                     
-                    {/* KHU VỰC THÊM MỚI: GIÁ TRUNG BÌNH SẢN PHẨM */}
+                    {/* DÒNG HIỂN THỊ GIÁ TRUNG BÌNH SẢN PHẨM */}
                     <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center relative z-10">
                         <span className="text-[11px] font-bold text-orange-700/80 uppercase tracking-wide">Giá TB / Sản phẩm</span>
                         <span className="text-[15px] font-black text-[#663C00]">
