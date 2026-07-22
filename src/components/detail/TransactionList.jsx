@@ -34,6 +34,9 @@ export default function TransactionList({
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                     const isMVP = row.id === mvpRowId && index !== 0; 
                     
+                    // TÍNH TOÁN LỜI TRUNG BÌNH THEO CÔNG THỨC MỚI
+                    const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * 60000 + 350000);
+                    
                     return (
                         <div 
                             key={row.id || index} 
@@ -66,10 +69,10 @@ export default function TransactionList({
                                 </div>
                             </div>
 
-                            {/* KHỐI PHẢI: Số liệu & Tài chính (Được gộp chung để kiểm soát Wrap tốt hơn) */}
+                            {/* KHỐI PHẢI: Số liệu & Tài chính */}
                             <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10 shrink-0">
                                 
-                                {/* 2.1 Các ô Nhập Bán Còn (Đã thu gọn tinh tế) */}
+                                {/* 2.1 Các ô Nhập Bán Còn */}
                                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                                     <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Nhập</div>
@@ -85,7 +88,7 @@ export default function TransactionList({
                                     </div>
                                 </div>
 
-                                {/* 2.2 Tài chính & Nút bấm (Đã làm nhỏ chữ và ép khoảng cách) */}
+                                {/* 2.2 Tài chính & Nút bấm */}
                                 <div className="flex flex-wrap xs:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto shrink-0 pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
                                     
                                     <div className="flex flex-col justify-center text-left sm:text-right shrink-0">
@@ -96,6 +99,13 @@ export default function TransactionList({
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-0.5">
                                             <span className="text-gray-400 font-bold whitespace-nowrap">V.tồn</span>
                                             <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(row.tien_ton || 0)}</span>
+                                        </div>
+                                        {/* KHU VỰC THÊM MỚI: LỜI TRUNG BÌNH */}
+                                        <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-1 bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 shadow-sm w-fit sm:ml-auto">
+                                            <span className="text-gray-500 font-bold whitespace-nowrap">Lời TB</span>
+                                            <span className={`font-black tabular-nums ${loiTrungBinh >= 0 ? "text-teal-600" : "text-rose-600"}`}>
+                                                {loiTrungBinh >= 0 ? "+" : ""}{formatCurrency(loiTrungBinh)}
+                                            </span>
                                         </div>
                                     </div>
 
