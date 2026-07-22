@@ -26,6 +26,10 @@ export default function Hero3D() {
         .animate-bubble-1 { animation: rise-bubble 6s ease-in infinite; animation-delay: 1s; }
         .animate-bubble-2 { animation: rise-bubble 9s ease-in infinite; animation-delay: 3s; }
         .animate-bubble-3 { animation: rise-bubble 7s ease-in infinite; animation-delay: 5s; }
+        /* THÊM 4 DÒNG NÀY VÀO ĐỂ ẨN LOGO SPLINE */
+  a[href*="spline.design"] {
+      display: none !important;
+  }
       `}} />
 
       {/* ÁNH NẮNG MẶT TRỜI (Góc trên trái) */}
