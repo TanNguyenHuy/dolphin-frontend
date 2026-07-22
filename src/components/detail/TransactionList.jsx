@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock } from 'lucide-react';
+import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { formatCurrency, formatInput, formatDateDisplay } from '../../utils';
 
 const formatDateTime = (dateString) => {
@@ -18,12 +18,19 @@ const formatDateTime = (dateString) => {
 export default function TransactionList({
     enrichedDaily, detailData, mvpRowId, canEdit, canDelete,
     isProcessingEdit, isProcessingDelete, handleStartEdit, handleDeleteRow,
-    importedBales // ĐÃ THÊM PROP NÀY ĐỂ TÍNH GIÁ TRUNG BÌNH CHÍNH XÁC
+    importedBales
 }) {
-    // TÍNH LẠI GIÁ TRUNG BÌNH Ở ĐÂY ĐỂ DÙNG CHO CÔNG THỨC BÊN DƯỚI
+    // 1. TÍNH GIÁ TRUNG BÌNH SẢN PHẨM
     const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0) || (detailData?.so_tien_cua_kien || 0);
     const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0) || (detailData?.computed?.tong_sl_nhap || 1);
     const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
+
+    // 2. TÍNH TỔNG LỜI TRUNG BÌNH (Cộng dồn tất cả các dòng)
+    const tongLoiTrungBinh = (enrichedDaily || []).reduce((total, row) => {
+        if (!row) return total;
+        const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
+        return total + loiTrungBinh;
+    }, 0);
 
     return (
         <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] p-4 sm:p-8 min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
@@ -40,7 +47,7 @@ export default function TransactionList({
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                     const isMVP = row.id === mvpRowId && index !== 0; 
                     
-                    // CÔNG THỨC LỜI TRUNG BÌNH MỚI: Doanh thu - (SL Nhập * Giá TB + 350.000)
+                    // Lời trung bình từng dòng
                     const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
                     
                     return (
@@ -77,7 +84,6 @@ export default function TransactionList({
                             {/* KHỐI PHẢI: Số liệu & Tài chính */}
                             <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10 shrink-0">
                                 
-                                {/* 2.1 Các ô Nhập Bán Còn */}
                                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                                     <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Nhập</div>
@@ -93,9 +99,7 @@ export default function TransactionList({
                                     </div>
                                 </div>
 
-                                {/* 2.2 Tài chính & Nút bấm */}
                                 <div className="flex flex-wrap xs:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto shrink-0 pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
-                                    
                                     <div className="flex flex-col justify-center text-left sm:text-right shrink-0">
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[11px] md:text-[12px]">
                                             <span className="text-gray-400 font-bold whitespace-nowrap">D.thu</span>
@@ -106,7 +110,6 @@ export default function TransactionList({
                                             <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(row.tien_ton || 0)}</span>
                                         </div>
                                         
-                                        {/* HIỂN THỊ LỜI TRUNG BÌNH */}
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-1 bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 shadow-sm w-fit sm:ml-auto">
                                             <span className="text-gray-500 font-bold whitespace-nowrap">Lời TB</span>
                                             <span className={`font-black tabular-nums ${loiTrungBinh >= 0 ? "text-teal-600" : "text-rose-600"}`}>
@@ -137,12 +140,32 @@ export default function TransactionList({
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     );
                 })}
             </div>
+
+            {/* KHỐI MỚI: TỔNG LỜI TRUNG BÌNH TOÀN BỘ SẢN PHẨM */}
+            {(enrichedDaily || []).length > 0 && (
+                <div className="mt-6 pt-2">
+                    <div className="bg-gradient-to-r from-gray-50/80 to-white border border-gray-200/60 rounded-[20px] p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
+                                <TrendingUp size={20} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h3 className="text-[14px] md:text-[15px] font-black text-gray-700 uppercase tracking-wider">Tổng Lời Trung Bình</h3>
+                                <p className="text-[12px] text-gray-500 font-medium mt-0.5">Cộng dồn tất cả các lần bán</p>
+                            </div>
+                        </div>
+                        <div className={`text-[24px] md:text-[32px] font-black tracking-tighter tabular-nums drop-shadow-sm whitespace-nowrap ${tongLoiTrungBinh >= 0 ? 'text-[#1DB2A0]' : 'text-rose-600'}`}>
+                            {tongLoiTrungBinh >= 0 ? "+" : ""}{formatCurrency(tongLoiTrungBinh)}
+                            <span className="text-[16px] opacity-70 ml-1.5">đ</span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
