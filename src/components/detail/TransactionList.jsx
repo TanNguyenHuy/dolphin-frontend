@@ -146,8 +146,8 @@ export default function TransactionList({
                 })}
             </div>
 
-            {/* KHỐI MỚI: TỔNG LỜI TRUNG BÌNH - ẨN KHI ĐÃ CHỐT SỔ */}
-            {(enrichedDaily || []).length > 0 && !detailData?.is_completed && (
+            {/* KHỐI TỔNG LỜI TRUNG BÌNH - LUÔN LUÔN HIỂN THỊ KHI CÓ DỮ LIỆU */}
+            {(enrichedDaily || []).length > 0 && (
                 <div className="mt-6 pt-2">
                     <div className="bg-gradient-to-r from-gray-50/80 to-white border border-gray-200/60 rounded-[20px] p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-3">
