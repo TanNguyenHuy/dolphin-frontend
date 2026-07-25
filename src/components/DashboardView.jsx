@@ -48,6 +48,7 @@ export default function DashboardView({
     
     const visibleSessions = safeEnrichedSessions.slice(0, visibleCount);
     const hasMore = visibleCount < safeEnrichedSessions.length;
+    // Lọc ra các đợt ĐÃ CHỐT SỔ để dùng cho Biểu đồ
     const completedSessions = safeEnrichedSessions.filter(s => s.is_completed === true);
 
     const [quickViewData, setQuickViewData] = useState(null);
@@ -102,6 +103,7 @@ export default function DashboardView({
                 <div className="lg:col-span-8 space-y-5 flex flex-col">
                     <div className="h-[380px] md:h-[420px]">
                         <ScrollReveal delay={0}>
+                            {/* Biểu đồ vẫn dùng completedSessions */}
                             <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
                         </ScrollReveal>
                     </div>
@@ -123,7 +125,8 @@ export default function DashboardView({
                 <div className="lg:col-span-4 space-y-5 flex flex-col">
                     <div className="h-auto">
                         <ScrollReveal delay={200}>
-                            <SmartCalendar sessions={completedSessions} />
+                            {/* DÒNG NÀY ĐÃ ĐƯỢC SỬA: Đổi từ completedSessions sang safeEnrichedSessions để lấy TẤT CẢ các ngày bán */}
+                            <SmartCalendar sessions={safeEnrichedSessions} />
                         </ScrollReveal>
                     </div>
                     
