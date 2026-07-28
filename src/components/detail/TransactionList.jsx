@@ -1,6 +1,7 @@
-import React from 'react';
-import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock, TrendingUp } from 'lucide-react';
-import { formatCurrency, formatInput, formatDateDisplay } from '../../utils';
+import React, { useState } from 'react';
+import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock, TrendingUp, FileText, X, Save } from 'lucide-react';
+import { formatCurrency, formatInput, formatDateDisplay, API_URL } from '../../utils';
+import axios from 'axios';
 
 const formatDateTime = (dateString) => {
     try {
@@ -25,12 +26,50 @@ export default function TransactionList({
     const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0) || (detailData?.computed?.tong_sl_nhap || 1);
     const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
 
-    // 2. TÍNH TỔNG LỜI TRUNG BÌNH (Cộng dồn tất cả các dòng)
+    // 2. TÍNH TỔNG LỜI TRUNG BÌNH
     const tongLoiTrungBinh = (enrichedDaily || []).reduce((total, row) => {
         if (!row) return total;
         const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
         return total + loiTrungBinh;
     }, 0);
+
+    // ==========================================
+    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN
+    // ==========================================
+    const [rawModal, setRawModal] = useState({ isOpen: false, rowData: null, text: '' });
+    const [isSavingRaw, setIsSavingRaw] = useState(false);
+
+    const handleOpenRawModal = (e, row) => {
+        e.stopPropagation();
+        setRawModal({
+            isOpen: true,
+            rowData: row,
+            text: row.hidden_raw_data || '' // Lấy dữ liệu cũ nếu có
+        });
+    };
+
+    const handleSaveRawData = async () => {
+        if (!rawModal.rowData) return;
+        setIsSavingRaw(true);
+        try {
+            // Cập nhật trường hidden_raw_data vào database cho sản phẩm này
+            // (Lưu ý: Bạn kiểm tra lại endpoint '/daily/' xem đã khớp với backend của bạn chưa nhé)
+            await axios.put(`${API_URL}/daily/${rawModal.rowData.id}`, { 
+                ...rawModal.rowData, 
+                hidden_raw_data: rawModal.text 
+            });
+            
+            // Cập nhật Optimistic UI (để hiển thị ngay mà không cần load lại trang)
+            rawModal.rowData.hidden_raw_data = rawModal.text; 
+            
+            setRawModal({ isOpen: false, rowData: null, text: '' });
+        } catch (error) {
+            console.error("Lỗi khi lưu dữ liệu ẩn:", error);
+            alert("Có lỗi xảy ra khi lưu dữ liệu thô!");
+        } finally {
+            setIsSavingRaw(false);
+        }
+    };
 
     return (
         <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] p-4 sm:p-8 min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
@@ -47,7 +86,6 @@ export default function TransactionList({
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                     const isMVP = row.id === mvpRowId && index !== 0; 
                     
-                    // Lời trung bình từng dòng
                     const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
                     
                     return (
@@ -127,6 +165,14 @@ export default function TransactionList({
                                         </div>
 
                                         <div className="flex items-center gap-1.5 bg-gray-50/80 p-1 rounded-full border border-gray-200/50">
+                                            
+                                            {/* NÚT MỚI: DỮ LIỆU THÔ */}
+                                            {canEdit && (
+                                                <button onClick={(e) => handleOpenRawModal(e, row)} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Kho dữ liệu ẩn">
+                                                    <FileText size={14} strokeWidth={2.5}/>
+                                                </button>
+                                            )}
+
                                             {canEdit && (
                                                 <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-[#33A1FD] hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Sửa bản ghi">
                                                     <Pencil size={14} strokeWidth={2.5}/>
@@ -146,8 +192,8 @@ export default function TransactionList({
                 })}
             </div>
 
-            {/* KHỐI MỚI: TỔNG LỜI TRUNG BÌNH - ẨN KHI ĐÃ CHỐT SỔ */}
-            {(enrichedDaily || []).length > 0 && !detailData?.is_completed && (
+            {/* KHỐI TỔNG LỜI TRUNG BÌNH */}
+            {(enrichedDaily || []).length > 0 && (
                 <div className="mt-6 pt-2">
                     <div className="bg-gradient-to-r from-gray-50/80 to-white border border-gray-200/60 rounded-[20px] p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-3">
@@ -162,6 +208,71 @@ export default function TransactionList({
                         <div className={`text-[24px] md:text-[32px] font-black tracking-tighter tabular-nums drop-shadow-sm whitespace-nowrap ${tongLoiTrungBinh >= 0 ? 'text-[#1DB2A0]' : 'text-rose-600'}`}>
                             {tongLoiTrungBinh >= 0 ? "+" : ""}{formatCurrency(tongLoiTrungBinh)}
                             <span className="text-[16px] opacity-70 ml-1.5">đ</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ==========================================
+                MODAL NHẬP DỮ LIỆU THÔ ẨN DÀNH CHO SẢN PHẨM 
+                ========================================== */}
+            {rawModal.isOpen && (
+                <div 
+                    className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                    onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })}
+                >
+                    <div 
+                        className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up"
+                        onClick={(e) => e.stopPropagation()} // Chặn click ra ngoài tắt Modal
+                    >
+                        {/* Header Modal */}
+                        <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                    <FileText size={18} strokeWidth={2.5}/>
+                                </div>
+                                <div>
+                                    <h3 className="text-[16px] md:text-[18px] font-black text-gray-800 leading-tight">
+                                        Dữ liệu Instagram - {rawModal.rowData?.ten_san_pham || 'Sản phẩm'}
+                                    </h3>
+                                    <p className="text-[12px] text-gray-500 font-medium">Lưu trữ caption gốc (Chỉ Admin nhìn thấy)</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
+                                <X size={18}/>
+                            </button>
+                        </div>
+                        
+                        {/* Khu vực Textarea */}
+                        <div className="p-5 md:p-6 bg-white">
+                            <textarea 
+                                className="w-full h-[300px] md:h-[400px] bg-gray-50 border border-gray-200 rounded-[16px] p-4 text-[14px] font-medium text-gray-700 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none transition-all resize-none leading-relaxed"
+                                placeholder="Dán toàn bộ caption bài đăng IG vào đây..."
+                                value={rawModal.text}
+                                onChange={(e) => setRawModal({...rawModal, text: e.target.value})}
+                            ></textarea>
+                        </div>
+
+                        {/* Footer Modal */}
+                        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+                            <button 
+                                onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })}
+                                className="px-6 py-2.5 rounded-[12px] font-bold text-[14px] text-gray-600 hover:bg-gray-200 transition-colors"
+                            >
+                                Đóng
+                            </button>
+                            <button 
+                                onClick={handleSaveRawData}
+                                disabled={isSavingRaw}
+                                className="px-6 py-2.5 rounded-[12px] font-bold text-[14px] text-white bg-indigo-600 hover:bg-indigo-700 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
+                            >
+                                {isSavingRaw ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                    <Save size={16} strokeWidth={2.5} />
+                                )}
+                                Lưu dữ liệu
+                            </button>
                         </div>
                     </div>
                 </div>
