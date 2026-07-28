@@ -1,43 +1,30 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../utils';
+import { SolarDate } from 'lunar-date-vn'; // Thư viện Âm lịch Việt Nam chuẩn
 
-// Thuật toán siêu nhẹ: Tận dụng API Lịch của trình duyệt để lấy Ngày Âm
+// Thuật toán lấy ngày Âm chuẩn xác 100%
 const getLunarString = (year, month, day) => {
     try {
-        const date = new Date(year, month, day);
-        // Sử dụng mã ca-chinese (Lịch mặt trăng) được tích hợp sẵn trong trình duyệt
-        const dStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
-        const mStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { month: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+        const solar = new SolarDate(new Date(year, month, day));
+        const lunar = solar.toLunarDate();
         
-        // Bóc tách lấy đúng con số
-        const dMatch = dStr.match(/\d+/);
-        const mMatch = mStr.match(/\d+/);
-        
-        const d = dMatch ? dMatch[0] : '';
-        const m = mMatch ? mMatch[0] : '';
-        
-        // Mùng 1 thì hiển thị cả tháng (VD: 1/6), bình thường chỉ hiện ngày âm
-        if (d === '1' && m) {
-            return `${d}/${m}`;
+        // Mùng 1 thì hiển thị cả tháng (VD: 1/1), bình thường chỉ hiện ngày
+        if (lunar.day === 1) {
+            return `${lunar.day}/${lunar.month}`;
         }
-        return d;
+        return lunar.day;
     } catch (e) {
-        return ''; // An toàn tuyệt đối, nếu trình duyệt cũ không hỗ trợ sẽ tự ẩn đi
+        return ''; 
     }
 };
 
 // Hàm lấy full ngày/tháng Âm lịch dùng cho bảng Tooltip khi rê chuột
 const getFullLunarString = (year, month, day) => {
     try {
-        const date = new Date(year, month, day);
-        const dStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
-        const mStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { month: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
-        
-        const dMatch = dStr.match(/\d+/);
-        const mMatch = mStr.match(/\d+/);
-        
-        return `${dMatch ? dMatch[0] : ''}/${mMatch ? mMatch[0] : ''}`;
+        const solar = new SolarDate(new Date(year, month, day));
+        const lunar = solar.toLunarDate();
+        return `${lunar.day}/${lunar.month}`;
     } catch (e) {
         return '';
     }
@@ -99,7 +86,6 @@ export default function SmartCalendar({ sessions }) {
             </div>
 
             <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
-                {/* Chỉnh lại chiều cao ô rỗng h-10 để khớp với giao diện mới */}
                 {[...Array(startingDay)].map((_, i) => <div key={`empty-${i}`} className="h-10"></div>)}
                 
                 {[...Array(daysInMonth)].map((_, i) => {
@@ -116,7 +102,6 @@ export default function SmartCalendar({ sessions }) {
                             onMouseEnter={() => isActive && setHoveredDate(dateString)}
                             onMouseLeave={() => setHoveredDate(null)}
                         >
-                            {/* Cấu trúc 2 dòng: Ngày dương bên trên, ngày âm bên dưới */}
                             <div className={`w-[38px] h-[38px] flex flex-col items-center justify-center rounded-full z-10 transition-all cursor-default
                                 ${isActive ? 'bg-[#33A1FD] text-white shadow-[0_4px_10px_rgba(51,161,253,0.4)] hover:bg-[#208bea] hover:scale-110' : 
                                  isToday ? 'bg-gray-100 text-[#1D1D1F]' : 'text-gray-600 group-hover:bg-gray-50'}
@@ -127,7 +112,6 @@ export default function SmartCalendar({ sessions }) {
                                 </span>
                             </div>
 
-                            {/* Bảng nổi (Tooltip) hiển thị khi rê chuột */}
                             {hoveredDate === dateString && isActive && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[150] p-4 pointer-events-none animate-fade-in-up">
                                     <div className="text-[12px] font-black text-[#1D1D1F] mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
