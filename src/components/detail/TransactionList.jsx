@@ -16,15 +16,16 @@ const formatDateTime = (dateString) => {
     } catch (e) { return '---'; }
 };
 
-// 🚀 THUẬT TOÁN MỚI: Tách dữ liệu cực kỳ chính xác dựa trên tiền tố "Số X"
+// 🚀 THUẬT TOÁN MỚI: Vừa phân tách, vừa sắp xếp từ A-Z (nhỏ đến lớn)
 const splitRawData = (text) => {
     if (!text) return { avail: [], sold: [] };
     
-    // Tách các sản phẩm bằng cách tìm chữ "Số " + "con số" hoặc "cuối" ở ĐẦU DÒNG.
+    // 1. Tách các sản phẩm bằng cách tìm chữ "Số " + "con số" hoặc "cuối" ở ĐẦU DÒNG.
     const blocks = text.split(/(?=(?:^|\n)\s*Số\s+(?:\d+|cuối))/i);
     const avail = [];
     const sold = [];
     
+    // 2. Phân loại CÒN HÀNG và ĐÃ BÁN
     blocks.forEach(b => {
         const trimmed = b.trim();
         if (!trimmed) return;
@@ -34,8 +35,23 @@ const splitRawData = (text) => {
             avail.push(trimmed);
         }
     });
+
+    // 3. Hàm cốt lõi để So sánh & Sắp xếp thứ tự
+    const sorter = (a, b) => {
+        const getVal = (str) => {
+            const match = str.match(/^Số\s*(\d+)/i); // Lấy con số sau chữ "Số"
+            if (match) return parseInt(match[1], 10);
+            if (/^Số\s*cuối/i.test(str)) return Infinity; // "Số cuối" luôn đẩy xuống đáy
+            return -1; // Những text linh tinh (nếu có) đẩy lên đầu
+        };
+        return getVal(a) - getVal(b);
+    };
     
-    return { avail, sold };
+    // Trả về mảng đã được sắp xếp
+    return { 
+        avail: avail.sort(sorter), 
+        sold: sold.sort(sorter) 
+    };
 };
 
 export default function TransactionList({
@@ -66,6 +82,7 @@ export default function TransactionList({
     });
     const [isSavingRaw, setIsSavingRaw] = useState(false);
 
+    // Mở Modal: Dữ liệu tự động được sắp xếp ngay khi mở
     const handleOpenRawModal = (e, row) => {
         e.stopPropagation();
         const { avail, sold } = splitRawData(row.hidden_raw_data || '');
@@ -99,7 +116,7 @@ export default function TransactionList({
         }
     };
 
-    // HÀM XỬ LÝ DÁN (PASTE) THÔNG MINH
+    // HÀM XỬ LÝ DÁN (PASTE) SIÊU THÔNG MINH
     const handleSmartPaste = (e) => {
         e.preventDefault(); 
         const pastedText = e.clipboardData.getData('text');
@@ -110,38 +127,28 @@ export default function TransactionList({
         const end = target.selectionEnd;
         const isAvailBox = target.name === 'avail';
         
-        // Lấy text đang có sẵn trong ô hiện tại
+        // 1. Lấy text của ô đang dán (trừ đi phần text đang bị bôi đen đen nếu có)
         const currentText = isAvailBox ? rawModal.textAvail : rawModal.textSold;
         const textBefore = currentText.substring(0, start);
         const textAfter = currentText.substring(end);
         
-        // Phân loại tự động phần text vừa Copy
-        const { avail: pastedAvailArr, sold: pastedSoldArr } = splitRawData(pastedText);
-        const pastedAvail = pastedAvailArr.join('\n\n');
-        const pastedSold = pastedSoldArr.join('\n\n');
+        // 2. Chèn đoạn text mới dán vào đúng vị trí con trỏ chuột
+        const newBoxText = textBefore + '\n\n' + pastedText + '\n\n' + textAfter;
         
-        // Chèn thông minh vào 2 cột
-        if (isAvailBox) {
-            // Dán vào ô CÒN HÀNG
-            let newAvailStr = textBefore;
-            if (pastedAvail) newAvailStr += (newAvailStr ? '\n\n' : '') + pastedAvail;
-            if (textAfter) newAvailStr += (textAfter.startsWith('\n') ? '' : '\n\n') + textAfter;
+        // 3. Gom TẤT CẢ văn bản của CẢ 2 CỘT lại thành một cục siêu to
+        const combinedEverything = isAvailBox 
+            ? (newBoxText + '\n\n' + rawModal.textSold)
+            : (rawModal.textAvail + '\n\n' + newBoxText);
 
-            let newSoldStr = rawModal.textSold;
-            if (pastedSold) newSoldStr += (newSoldStr ? '\n\n' : '') + pastedSold;
+        // 4. Quẳng cục siêu to đó vào hàm splitRawData để nó vừa chia cột, vừa sắp xếp lại A-Z
+        const { avail, sold } = splitRawData(combinedEverything);
 
-            setRawModal(prev => ({ ...prev, textAvail: newAvailStr, textSold: newSoldStr }));
-        } else {
-            // Dán vào ô ĐÃ BÁN
-            let newSoldStr = textBefore;
-            if (pastedSold) newSoldStr += (newSoldStr ? '\n\n' : '') + pastedSold;
-            if (textAfter) newSoldStr += (textAfter.startsWith('\n') ? '' : '\n\n') + textAfter;
-
-            let newAvailStr = rawModal.textAvail;
-            if (pastedAvail) newAvailStr += (newAvailStr ? '\n\n' : '') + pastedAvail;
-
-            setRawModal(prev => ({ ...prev, textAvail: newAvailStr, textSold: newSoldStr }));
-        }
+        // 5. Cập nhật lại giao diện ngay tức thì
+        setRawModal(prev => ({ 
+            ...prev, 
+            textAvail: avail.join('\n\n'), 
+            textSold: sold.join('\n\n') 
+        }));
     };
 
     return (
@@ -305,7 +312,7 @@ export default function TransactionList({
                                     <h3 className="text-[18px] md:text-[20px] font-black text-gray-800 leading-tight">
                                         Dữ liệu Instagram - {rawModal.rowData?.ten_san_pham || 'Sản phẩm'}
                                     </h3>
-                                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">Dán Text từ Bookmarklet V7.0 vào bất kỳ ô nào, hệ thống sẽ tự động phân loại!</p>
+                                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">Dán Text từ Bookmarklet V7.0 vào, hệ thống sẽ tự động phân loại và sắp xếp!</p>
                                 </div>
                             </div>
                             <button onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors bg-white shadow-sm border border-gray-100">
@@ -341,7 +348,7 @@ export default function TransactionList({
                                 <textarea 
                                     name="sold"
                                     className="flex-1 w-full bg-transparent p-5 text-[14px] font-medium text-gray-700 focus:bg-white focus:ring-4 focus:ring-rose-100/50 outline-none transition-all resize-none leading-relaxed"
-                                    placeholder="Danh sách sản phẩm có chứa từ khóa ❌hết❌..."
+                                    placeholder="Danh sách sản phẩm đã bán..."
                                     value={rawModal.textSold}
                                     onChange={(e) => setRawModal({...rawModal, textSold: e.target.value})}
                                     onPaste={handleSmartPaste}
