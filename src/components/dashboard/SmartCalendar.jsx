@@ -2,6 +2,47 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../utils';
 
+// Thuật toán siêu nhẹ: Tận dụng API Lịch của trình duyệt để lấy Ngày Âm
+const getLunarString = (year, month, day) => {
+    try {
+        const date = new Date(year, month, day);
+        // Sử dụng mã ca-chinese (Lịch mặt trăng) được tích hợp sẵn trong trình duyệt
+        const dStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+        const mStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { month: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+        
+        // Bóc tách lấy đúng con số
+        const dMatch = dStr.match(/\d+/);
+        const mMatch = mStr.match(/\d+/);
+        
+        const d = dMatch ? dMatch[0] : '';
+        const m = mMatch ? mMatch[0] : '';
+        
+        // Mùng 1 thì hiển thị cả tháng (VD: 1/6), bình thường chỉ hiện ngày âm
+        if (d === '1' && m) {
+            return `${d}/${m}`;
+        }
+        return d;
+    } catch (e) {
+        return ''; // An toàn tuyệt đối, nếu trình duyệt cũ không hỗ trợ sẽ tự ẩn đi
+    }
+};
+
+// Hàm lấy full ngày/tháng Âm lịch dùng cho bảng Tooltip khi rê chuột
+const getFullLunarString = (year, month, day) => {
+    try {
+        const date = new Date(year, month, day);
+        const dStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+        const mStr = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { month: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+        
+        const dMatch = dStr.match(/\d+/);
+        const mMatch = mStr.match(/\d+/);
+        
+        return `${dMatch ? dMatch[0] : ''}/${mMatch ? mMatch[0] : ''}`;
+    } catch (e) {
+        return '';
+    }
+};
+
 export default function SmartCalendar({ sessions }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [hoveredDate, setHoveredDate] = useState(null);
@@ -35,7 +76,6 @@ export default function SmartCalendar({ sessions }) {
     const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
     const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
-    // Hàm xử lý nhảy về tháng hiện tại
     const handleJumpToToday = () => {
         setCurrentDate(new Date());
     };
@@ -59,7 +99,8 @@ export default function SmartCalendar({ sessions }) {
             </div>
 
             <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
-                {[...Array(startingDay)].map((_, i) => <div key={`empty-${i}`} className="h-8"></div>)}
+                {/* Chỉnh lại chiều cao ô rỗng h-10 để khớp với giao diện mới */}
+                {[...Array(startingDay)].map((_, i) => <div key={`empty-${i}`} className="h-10"></div>)}
                 
                 {[...Array(daysInMonth)].map((_, i) => {
                     const day = i + 1;
@@ -71,21 +112,26 @@ export default function SmartCalendar({ sessions }) {
                     return (
                         <div 
                             key={day} 
-                            className="flex justify-center items-center h-8 relative"
+                            className="flex justify-center items-center h-10 relative group"
                             onMouseEnter={() => isActive && setHoveredDate(dateString)}
                             onMouseLeave={() => setHoveredDate(null)}
                         >
-                            <span className={`w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-bold z-10 transition-all cursor-default
+                            {/* Cấu trúc 2 dòng: Ngày dương bên trên, ngày âm bên dưới */}
+                            <div className={`w-[38px] h-[38px] flex flex-col items-center justify-center rounded-full z-10 transition-all cursor-default
                                 ${isActive ? 'bg-[#33A1FD] text-white shadow-[0_4px_10px_rgba(51,161,253,0.4)] hover:bg-[#208bea] hover:scale-110' : 
-                                 isToday ? 'bg-gray-100 text-[#1D1D1F]' : 'text-gray-600 hover:bg-gray-50'}
+                                 isToday ? 'bg-gray-100 text-[#1D1D1F]' : 'text-gray-600 group-hover:bg-gray-50'}
                             `}>
-                                {day}
-                            </span>
+                                <span className="text-[13px] font-bold leading-none">{day}</span>
+                                <span className={`text-[9px] mt-[3px] font-medium leading-none ${isActive ? 'text-white/90' : isToday ? 'text-gray-500' : 'text-gray-400'}`}>
+                                    {getLunarString(year, month, day)}
+                                </span>
+                            </div>
 
+                            {/* Bảng nổi (Tooltip) hiển thị khi rê chuột */}
                             {hoveredDate === dateString && isActive && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[150] p-4 pointer-events-none animate-fade-in-up">
                                     <div className="text-[12px] font-black text-[#1D1D1F] mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
-                                        <span>Ngày {day}/{month+1}/{year}</span>
+                                        <span>Ngày {day}/{month+1}/{year} <span className="text-gray-400 font-medium ml-1">(ÂL: {getFullLunarString(year, month, day)})</span></span>
                                         <span className="bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full text-[10px]">{dayData.length} đơn</span>
                                     </div>
                                     <div className="flex flex-col gap-2.5">
