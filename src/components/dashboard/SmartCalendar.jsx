@@ -1,34 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../utils';
-import { SolarDate } from 'lunar-date-vn'; // Thư viện Âm lịch Việt Nam chuẩn
-
-// Thuật toán lấy ngày Âm chuẩn xác 100%
-const getLunarString = (year, month, day) => {
-    try {
-        const solar = new SolarDate(new Date(year, month, day));
-        const lunar = solar.toLunarDate();
-        
-        // Mùng 1 thì hiển thị cả tháng (VD: 1/1), bình thường chỉ hiện ngày
-        if (lunar.day === 1) {
-            return `${lunar.day}/${lunar.month}`;
-        }
-        return lunar.day;
-    } catch (e) {
-        return ''; 
-    }
-};
-
-// Hàm lấy full ngày/tháng Âm lịch dùng cho bảng Tooltip khi rê chuột
-const getFullLunarString = (year, month, day) => {
-    try {
-        const solar = new SolarDate(new Date(year, month, day));
-        const lunar = solar.toLunarDate();
-        return `${lunar.day}/${lunar.month}`;
-    } catch (e) {
-        return '';
-    }
-};
+import { SolarDate } from 'lunar-date-vn';
 
 export default function SmartCalendar({ sessions }) {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -95,6 +68,43 @@ export default function SmartCalendar({ sessions }) {
                     const isActive = !!dayData; 
                     const isToday = new Date().toISOString().split('T')[0] === dateString;
 
+                    // Tính toán Âm Lịch chuẩn VN
+                    let lunarDay = '';
+                    let lunarMonth = '';
+                    try {
+                        const solar = new SolarDate(new Date(year, month, day));
+                        const lunar = solar.toLunarDate();
+                        lunarDay = lunar.day;
+                        lunarMonth = lunar.month;
+                    } catch(e) {}
+
+                    const lunarStr = lunarDay === 1 ? `${lunarDay}/${lunarMonth}` : lunarDay;
+                    const fullLunarStr = `${lunarDay}/${lunarMonth}`;
+
+                    // Nhận diện Ngày Lễ
+                    const isSolarHoliday = ['1/1', '30/4', '1/5', '2/9'].includes(`${day}/${month + 1}`);
+                    const isLunarHoliday = ['1/1', '2/1', '3/1', '10/3'].includes(`${lunarDay}/${lunarMonth}`);
+                    const isHoliday = isSolarHoliday || isLunarHoliday;
+
+                    // Xử lý Class CSS cho màu nền và chữ Dương lịch
+                    let bgClass = '';
+                    if (isActive) {
+                        bgClass = isHoliday 
+                            ? 'bg-gradient-to-br from-rose-500 to-red-500 text-white shadow-[0_4px_10px_rgba(244,63,94,0.4)] hover:scale-110'
+                            : 'bg-[#33A1FD] text-white shadow-[0_4px_10px_rgba(51,161,253,0.4)] hover:bg-[#208bea] hover:scale-110';
+                    } else if (isToday) {
+                        bgClass = `bg-gray-100 ${isHoliday ? 'text-rose-600' : 'text-[#1D1D1F]'}`;
+                    } else {
+                        bgClass = isHoliday ? 'text-rose-500 font-black hover:bg-rose-50' : 'text-gray-600 group-hover:bg-gray-50';
+                    }
+
+                    // Xử lý Class CSS cho màu chữ Âm lịch
+                    let lunarTextClass = '';
+                    if (isActive) lunarTextClass = 'text-white/90';
+                    else if (isToday) lunarTextClass = 'text-gray-500';
+                    else if (isHoliday) lunarTextClass = 'text-rose-400 font-bold';
+                    else lunarTextClass = 'text-gray-400';
+
                     return (
                         <div 
                             key={day} 
@@ -102,20 +112,17 @@ export default function SmartCalendar({ sessions }) {
                             onMouseEnter={() => isActive && setHoveredDate(dateString)}
                             onMouseLeave={() => setHoveredDate(null)}
                         >
-                            <div className={`w-[38px] h-[38px] flex flex-col items-center justify-center rounded-full z-10 transition-all cursor-default
-                                ${isActive ? 'bg-[#33A1FD] text-white shadow-[0_4px_10px_rgba(51,161,253,0.4)] hover:bg-[#208bea] hover:scale-110' : 
-                                 isToday ? 'bg-gray-100 text-[#1D1D1F]' : 'text-gray-600 group-hover:bg-gray-50'}
-                            `}>
+                            <div className={`w-[38px] h-[38px] flex flex-col items-center justify-center rounded-full z-10 transition-all cursor-default ${bgClass}`}>
                                 <span className="text-[13px] font-bold leading-none">{day}</span>
-                                <span className={`text-[9px] mt-[3px] font-medium leading-none ${isActive ? 'text-white/90' : isToday ? 'text-gray-500' : 'text-gray-400'}`}>
-                                    {getLunarString(year, month, day)}
+                                <span className={`text-[9px] mt-[3px] font-medium leading-none ${lunarTextClass}`}>
+                                    {lunarStr}
                                 </span>
                             </div>
 
                             {hoveredDate === dateString && isActive && (
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[150] p-4 pointer-events-none animate-fade-in-up">
                                     <div className="text-[12px] font-black text-[#1D1D1F] mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
-                                        <span>Ngày {day}/{month+1}/{year} <span className="text-gray-400 font-medium ml-1">(ÂL: {getFullLunarString(year, month, day)})</span></span>
+                                        <span>Ngày {day}/{month+1}/{year} <span className={`${isHoliday ? 'text-rose-500' : 'text-gray-400'} font-medium ml-1`}>(ÂL: {fullLunarStr})</span></span>
                                         <span className="bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full text-[10px]">{dayData.length} đơn</span>
                                     </div>
                                     <div className="flex flex-col gap-2.5">
