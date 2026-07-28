@@ -16,19 +16,26 @@ const formatDateTime = (dateString) => {
     } catch (e) { return '---'; }
 };
 
-// HÀM HỖ TRỢ: Tách dữ liệu thô thành 2 mảng (Còn hàng và Đã bán)
+// 🚀 THUẬT TOÁN MỚI: Tách dữ liệu cực kỳ chính xác dựa trên tiền tố "Số X"
 const splitRawData = (text) => {
-    if (!text) return { avail: '', sold: '' };
-    // Tách các sản phẩm dựa trên 2 dấu xuống dòng liên tiếp (\n\n) từ Bookmarklet V7.0
-    const blocks = text.split(/\n\n+/);
+    if (!text) return { avail: [], sold: [] };
+    
+    // Tách các sản phẩm bằng cách tìm chữ "Số " + "con số" hoặc "cuối" ở ĐẦU DÒNG.
+    const blocks = text.split(/(?=(?:^|\n)\s*Số\s+(?:\d+|cuối))/i);
     const avail = [];
     const sold = [];
+    
     blocks.forEach(b => {
-        if (!b.trim()) return;
-        if (b.includes('❌hết❌')) sold.push(b.trim());
-        else avail.push(b.trim());
+        const trimmed = b.trim();
+        if (!trimmed) return;
+        if (trimmed.includes('❌hết❌')) {
+            sold.push(trimmed);
+        } else {
+            avail.push(trimmed);
+        }
     });
-    return { avail: avail.join('\n\n'), sold: sold.join('\n\n') };
+    
+    return { avail, sold };
 };
 
 export default function TransactionList({
@@ -49,7 +56,7 @@ export default function TransactionList({
     }, 0);
 
     // ==========================================
-    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN (SMART COLUMNS)
+    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN
     // ==========================================
     const [rawModal, setRawModal] = useState({ 
         isOpen: false, 
@@ -65,8 +72,8 @@ export default function TransactionList({
         setRawModal({
             isOpen: true,
             rowData: row,
-            textAvail: avail,
-            textSold: sold
+            textAvail: avail.join('\n\n'),
+            textSold: sold.join('\n\n')
         });
     };
 
@@ -94,7 +101,7 @@ export default function TransactionList({
 
     // HÀM XỬ LÝ DÁN (PASTE) THÔNG MINH
     const handleSmartPaste = (e) => {
-        e.preventDefault(); // Ngăn hành vi dán mặc định để xử lý bằng code
+        e.preventDefault(); 
         const pastedText = e.clipboardData.getData('text');
         if (!pastedText) return;
 
@@ -103,33 +110,37 @@ export default function TransactionList({
         const end = target.selectionEnd;
         const isAvailBox = target.name === 'avail';
         
-        // Lấy đoạn text trước và sau vị trí con trỏ chuột trong ô hiện tại
+        // Lấy text đang có sẵn trong ô hiện tại
         const currentText = isAvailBox ? rawModal.textAvail : rawModal.textSold;
         const textBefore = currentText.substring(0, start);
         const textAfter = currentText.substring(end);
         
-        // Chẻ nhỏ dữ liệu dán vào và phân loại
-        const blocks = pastedText.split(/\n\n+/);
-        const newAvail = [];
-        const newSold = [];
+        // Phân loại tự động phần text vừa Copy
+        const { avail: pastedAvailArr, sold: pastedSoldArr } = splitRawData(pastedText);
+        const pastedAvail = pastedAvailArr.join('\n\n');
+        const pastedSold = pastedSoldArr.join('\n\n');
         
-        blocks.forEach(b => {
-            if (!b.trim()) return;
-            if (b.includes('❌hết❌')) newSold.push(b.trim());
-            else newAvail.push(b.trim());
-        });
-        
-        // Gộp dữ liệu thông minh
+        // Chèn thông minh vào 2 cột
         if (isAvailBox) {
-            // Nếu dán vào ô Còn Hàng: Phần còn hàng chèn ngay vị trí chuột, phần đã bán đẩy sang ô bên kia
-            const combinedAvail = textBefore + newAvail.join('\n\n') + (newAvail.length > 0 ? '\n\n' : '') + textAfter;
-            const combinedSold = [rawModal.textSold, newSold.join('\n\n')].filter(t=>t.trim()).join('\n\n');
-            setRawModal(prev => ({ ...prev, textAvail: combinedAvail, textSold: combinedSold }));
+            // Dán vào ô CÒN HÀNG
+            let newAvailStr = textBefore;
+            if (pastedAvail) newAvailStr += (newAvailStr ? '\n\n' : '') + pastedAvail;
+            if (textAfter) newAvailStr += (textAfter.startsWith('\n') ? '' : '\n\n') + textAfter;
+
+            let newSoldStr = rawModal.textSold;
+            if (pastedSold) newSoldStr += (newSoldStr ? '\n\n' : '') + pastedSold;
+
+            setRawModal(prev => ({ ...prev, textAvail: newAvailStr, textSold: newSoldStr }));
         } else {
-            // Nếu dán vào ô Đã Bán: Phần đã bán chèn ngay vị trí chuột, phần còn hàng đẩy sang ô bên kia
-            const combinedSold = textBefore + newSold.join('\n\n') + (newSold.length > 0 ? '\n\n' : '') + textAfter;
-            const combinedAvail = [rawModal.textAvail, newAvail.join('\n\n')].filter(t=>t.trim()).join('\n\n');
-            setRawModal(prev => ({ ...prev, textAvail: combinedAvail, textSold: combinedSold }));
+            // Dán vào ô ĐÃ BÁN
+            let newSoldStr = textBefore;
+            if (pastedSold) newSoldStr += (newSoldStr ? '\n\n' : '') + pastedSold;
+            if (textAfter) newSoldStr += (textAfter.startsWith('\n') ? '' : '\n\n') + textAfter;
+
+            let newAvailStr = rawModal.textAvail;
+            if (pastedAvail) newAvailStr += (newAvailStr ? '\n\n' : '') + pastedAvail;
+
+            setRawModal(prev => ({ ...prev, textAvail: newAvailStr, textSold: newSoldStr }));
         }
     };
 
