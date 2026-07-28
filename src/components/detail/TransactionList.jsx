@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock, TrendingUp, FileText, X, Save } from 'lucide-react';
+import { Crown, Link as LinkIcon, Pencil, Trash2, Calendar, Clock, TrendingUp, FileText, X, Save, CheckCircle2, XCircle } from 'lucide-react';
 import { formatCurrency, formatInput, formatDateDisplay, API_URL } from '../../utils';
 import axios from 'axios';
 
@@ -14,6 +14,21 @@ const formatDateTime = (dateString) => {
         const mo = String(d.getMonth() + 1).padStart(2, '0');
         return `${hh}:${mm} ${dd}/${mo}`;
     } catch (e) { return '---'; }
+};
+
+// HÀM HỖ TRỢ: Tách dữ liệu thô thành 2 mảng (Còn hàng và Đã bán)
+const splitRawData = (text) => {
+    if (!text) return { avail: '', sold: '' };
+    // Tách các sản phẩm dựa trên 2 dấu xuống dòng liên tiếp (\n\n) từ Bookmarklet V7.0
+    const blocks = text.split(/\n\n+/);
+    const avail = [];
+    const sold = [];
+    blocks.forEach(b => {
+        if (!b.trim()) return;
+        if (b.includes('❌hết❌')) sold.push(b.trim());
+        else avail.push(b.trim());
+    });
+    return { avail: avail.join('\n\n'), sold: sold.join('\n\n') };
 };
 
 export default function TransactionList({
@@ -34,17 +49,24 @@ export default function TransactionList({
     }, 0);
 
     // ==========================================
-    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN
+    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN (SMART COLUMNS)
     // ==========================================
-    const [rawModal, setRawModal] = useState({ isOpen: false, rowData: null, text: '' });
+    const [rawModal, setRawModal] = useState({ 
+        isOpen: false, 
+        rowData: null, 
+        textAvail: '', 
+        textSold: '' 
+    });
     const [isSavingRaw, setIsSavingRaw] = useState(false);
 
     const handleOpenRawModal = (e, row) => {
         e.stopPropagation();
+        const { avail, sold } = splitRawData(row.hidden_raw_data || '');
         setRawModal({
             isOpen: true,
             rowData: row,
-            text: row.hidden_raw_data || '' // Lấy dữ liệu cũ nếu có
+            textAvail: avail,
+            textSold: sold
         });
     };
 
@@ -52,22 +74,62 @@ export default function TransactionList({
         if (!rawModal.rowData) return;
         setIsSavingRaw(true);
         try {
-            // Cập nhật trường hidden_raw_data vào database cho sản phẩm này
-            // (Lưu ý: Bạn kiểm tra lại endpoint '/daily/' xem đã khớp với backend của bạn chưa nhé)
+            // Gộp 2 cột lại để lưu vào DB
+            const combinedText = [rawModal.textAvail, rawModal.textSold].filter(t => t.trim() !== '').join('\n\n');
+            
             await axios.put(`${API_URL}/daily/${rawModal.rowData.id}`, { 
                 ...rawModal.rowData, 
-                hidden_raw_data: rawModal.text 
+                hidden_raw_data: combinedText 
             });
             
-            // Cập nhật Optimistic UI (để hiển thị ngay mà không cần load lại trang)
-            rawModal.rowData.hidden_raw_data = rawModal.text; 
-            
-            setRawModal({ isOpen: false, rowData: null, text: '' });
+            rawModal.rowData.hidden_raw_data = combinedText; 
+            setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' });
         } catch (error) {
             console.error("Lỗi khi lưu dữ liệu ẩn:", error);
             alert("Có lỗi xảy ra khi lưu dữ liệu thô!");
         } finally {
             setIsSavingRaw(false);
+        }
+    };
+
+    // HÀM XỬ LÝ DÁN (PASTE) THÔNG MINH
+    const handleSmartPaste = (e) => {
+        e.preventDefault(); // Ngăn hành vi dán mặc định để xử lý bằng code
+        const pastedText = e.clipboardData.getData('text');
+        if (!pastedText) return;
+
+        const target = e.target;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const isAvailBox = target.name === 'avail';
+        
+        // Lấy đoạn text trước và sau vị trí con trỏ chuột trong ô hiện tại
+        const currentText = isAvailBox ? rawModal.textAvail : rawModal.textSold;
+        const textBefore = currentText.substring(0, start);
+        const textAfter = currentText.substring(end);
+        
+        // Chẻ nhỏ dữ liệu dán vào và phân loại
+        const blocks = pastedText.split(/\n\n+/);
+        const newAvail = [];
+        const newSold = [];
+        
+        blocks.forEach(b => {
+            if (!b.trim()) return;
+            if (b.includes('❌hết❌')) newSold.push(b.trim());
+            else newAvail.push(b.trim());
+        });
+        
+        // Gộp dữ liệu thông minh
+        if (isAvailBox) {
+            // Nếu dán vào ô Còn Hàng: Phần còn hàng chèn ngay vị trí chuột, phần đã bán đẩy sang ô bên kia
+            const combinedAvail = textBefore + newAvail.join('\n\n') + (newAvail.length > 0 ? '\n\n' : '') + textAfter;
+            const combinedSold = [rawModal.textSold, newSold.join('\n\n')].filter(t=>t.trim()).join('\n\n');
+            setRawModal(prev => ({ ...prev, textAvail: combinedAvail, textSold: combinedSold }));
+        } else {
+            // Nếu dán vào ô Đã Bán: Phần đã bán chèn ngay vị trí chuột, phần còn hàng đẩy sang ô bên kia
+            const combinedSold = textBefore + newSold.join('\n\n') + (newSold.length > 0 ? '\n\n' : '') + textAfter;
+            const combinedAvail = [rawModal.textAvail, newAvail.join('\n\n')].filter(t=>t.trim()).join('\n\n');
+            setRawModal(prev => ({ ...prev, textAvail: combinedAvail, textSold: combinedSold }));
         }
     };
 
@@ -165,14 +227,11 @@ export default function TransactionList({
                                         </div>
 
                                         <div className="flex items-center gap-1.5 bg-gray-50/80 p-1 rounded-full border border-gray-200/50">
-                                            
-                                            {/* NÚT MỚI: DỮ LIỆU THÔ */}
                                             {canEdit && (
-                                                <button onClick={(e) => handleOpenRawModal(e, row)} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Kho dữ liệu ẩn">
+                                                <button onClick={(e) => handleOpenRawModal(e, row)} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Kho dữ liệu Instagram">
                                                     <FileText size={14} strokeWidth={2.5}/>
                                                 </button>
                                             )}
-
                                             {canEdit && (
                                                 <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-[#33A1FD] hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Sửa bản ghi">
                                                     <Pencil size={14} strokeWidth={2.5}/>
@@ -214,64 +273,91 @@ export default function TransactionList({
             )}
 
             {/* ==========================================
-                MODAL NHẬP DỮ LIỆU THÔ ẨN DÀNH CHO SẢN PHẨM 
+                MODAL NHẬP DỮ LIỆU THÔ IG (2 CỘT SMART)
                 ========================================== */}
             {rawModal.isOpen && (
                 <div 
-                    className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-                    onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })}
+                    className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-8 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })}
                 >
                     <div 
-                        className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up"
-                        onClick={(e) => e.stopPropagation()} // Chặn click ra ngoài tắt Modal
+                        className="bg-white rounded-[28px] w-full max-w-[1200px] h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-scale-up"
+                        onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header Modal */}
-                        <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/50">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                                    <FileText size={18} strokeWidth={2.5}/>
+                        <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                            <div className="flex items-center gap-3 md:gap-4">
+                                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                    <FileText size={22} strokeWidth={2.5}/>
                                 </div>
                                 <div>
-                                    <h3 className="text-[16px] md:text-[18px] font-black text-gray-800 leading-tight">
+                                    <h3 className="text-[18px] md:text-[20px] font-black text-gray-800 leading-tight">
                                         Dữ liệu Instagram - {rawModal.rowData?.ten_san_pham || 'Sản phẩm'}
                                     </h3>
-                                    <p className="text-[12px] text-gray-500 font-medium">Lưu trữ caption gốc (Chỉ Admin nhìn thấy)</p>
+                                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">Dán Text từ Bookmarklet V7.0 vào bất kỳ ô nào, hệ thống sẽ tự động phân loại!</p>
                                 </div>
                             </div>
-                            <button onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors">
-                                <X size={18}/>
+                            <button onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-full transition-colors bg-white shadow-sm border border-gray-100">
+                                <X size={20} strokeWidth={2.5}/>
                             </button>
                         </div>
                         
-                        {/* Khu vực Textarea */}
-                        <div className="p-5 md:p-6 bg-white">
-                            <textarea 
-                                className="w-full h-[300px] md:h-[400px] bg-gray-50 border border-gray-200 rounded-[16px] p-4 text-[14px] font-medium text-gray-700 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none transition-all resize-none leading-relaxed"
-                                placeholder="Dán toàn bộ caption bài đăng IG vào đây..."
-                                value={rawModal.text}
-                                onChange={(e) => setRawModal({...rawModal, text: e.target.value})}
-                            ></textarea>
+                        {/* Khu vực 2 Cột Textarea */}
+                        <div className="flex-1 flex flex-col lg:flex-row gap-5 md:gap-6 p-5 md:p-6 bg-white overflow-hidden">
+                            
+                            {/* CỘT 1: CÒN HÀNG */}
+                            <div className="flex-1 flex flex-col h-full overflow-hidden bg-emerald-50/30 rounded-[20px] border border-emerald-100/60 shadow-inner">
+                                <div className="px-5 py-3.5 bg-emerald-100/50 border-b border-emerald-100 flex items-center gap-2">
+                                    <CheckCircle2 size={18} className="text-emerald-600" strokeWidth={2.5} />
+                                    <span className="font-black text-emerald-800 text-[14px] uppercase tracking-wide">🛒 Còn hàng</span>
+                                </div>
+                                <textarea 
+                                    name="avail"
+                                    className="flex-1 w-full bg-transparent p-5 text-[14px] font-medium text-gray-700 focus:bg-white focus:ring-4 focus:ring-emerald-100/50 outline-none transition-all resize-none leading-relaxed"
+                                    placeholder="Danh sách sản phẩm còn hàng..."
+                                    value={rawModal.textAvail}
+                                    onChange={(e) => setRawModal({...rawModal, textAvail: e.target.value})}
+                                    onPaste={handleSmartPaste}
+                                ></textarea>
+                            </div>
+
+                            {/* CỘT 2: ĐÃ BÁN */}
+                            <div className="flex-1 flex flex-col h-full overflow-hidden bg-rose-50/30 rounded-[20px] border border-rose-100/60 shadow-inner">
+                                <div className="px-5 py-3.5 bg-rose-100/50 border-b border-rose-100 flex items-center gap-2">
+                                    <XCircle size={18} className="text-rose-600" strokeWidth={2.5} />
+                                    <span className="font-black text-rose-800 text-[14px] uppercase tracking-wide">❌ Đã bán</span>
+                                </div>
+                                <textarea 
+                                    name="sold"
+                                    className="flex-1 w-full bg-transparent p-5 text-[14px] font-medium text-gray-700 focus:bg-white focus:ring-4 focus:ring-rose-100/50 outline-none transition-all resize-none leading-relaxed"
+                                    placeholder="Danh sách sản phẩm có chứa từ khóa ❌hết❌..."
+                                    value={rawModal.textSold}
+                                    onChange={(e) => setRawModal({...rawModal, textSold: e.target.value})}
+                                    onPaste={handleSmartPaste}
+                                ></textarea>
+                            </div>
+
                         </div>
 
                         {/* Footer Modal */}
-                        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+                        <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0">
                             <button 
-                                onClick={() => setRawModal({ isOpen: false, rowData: null, text: '' })}
-                                className="px-6 py-2.5 rounded-[12px] font-bold text-[14px] text-gray-600 hover:bg-gray-200 transition-colors"
+                                onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })}
+                                className="px-8 py-3 rounded-[16px] font-bold text-[14px] text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 transition-colors shadow-sm"
                             >
                                 Đóng
                             </button>
                             <button 
                                 onClick={handleSaveRawData}
                                 disabled={isSavingRaw}
-                                className="px-6 py-2.5 rounded-[12px] font-bold text-[14px] text-white bg-indigo-600 hover:bg-indigo-700 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
+                                className="px-8 py-3 rounded-[16px] font-bold text-[14px] text-white bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
                             >
                                 {isSavingRaw ? (
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
-                                    <Save size={16} strokeWidth={2.5} />
+                                    <Save size={18} strokeWidth={2.5} />
                                 )}
-                                Lưu dữ liệu
+                                Lưu thay đổi
                             </button>
                         </div>
                     </div>
