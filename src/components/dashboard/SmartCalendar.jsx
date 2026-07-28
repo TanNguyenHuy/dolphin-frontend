@@ -82,7 +82,7 @@ export default function SmartCalendar({ sessions }) {
                     const fullLunarStr = `${lunarDay}/${lunarMonth}`;
 
                     // Nhận diện Ngày Lễ
-                    const isSolarHoliday = ['1/1', '30/4', '1/5', '2/9'].includes(`${day}/${month + 1}`);
+                    const isSolarHoliday = ['1/1', '30/4', '1/5', '2/9', '5/5', '13/12'].includes(`${day}/${month + 1}`);
                     const isLunarHoliday = ['1/1', '2/1', '3/1', '10/3'].includes(`${lunarDay}/${lunarMonth}`);
                     const isHoliday = isSolarHoliday || isLunarHoliday;
 
