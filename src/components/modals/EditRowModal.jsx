@@ -28,14 +28,44 @@ export default function EditRowModal({ editingRow, setEditingRow, handleSaveEdit
     };
 
     const handlePasteSync = (e) => {
-        const text = e.target.value; setSyncText(text);
+        const text = e.target.value; 
+        setSyncText(text);
         if (!text.trim()) return;
+
         try {
-            const { q, r } = parseIGSyncText(text);
-            if (q > 0 || r > 0) {
-                setEditingRow(prev => ({ ...prev, so_luong: q > 0 ? q : prev.so_luong, so_tien_ban_duoc: r > 0 ? r : prev.so_tien_ban_duoc }));
+            // 1. ƯU TIÊN XỬ LÝ MÃ JSON TỪ TOOL BẰNG THUẬT TOÁN MỚI
+            const data = JSON.parse(text);
+            
+            if (Array.isArray(data)) {
+                // Lọc lấy chính xác những món ĐÃ BÁN
+                const soldItems = data.filter(item => item.is_sold === true);
+                
+                // Đếm SL Bán và tính Tổng Doanh Thu
+                const slBan = soldItems.length;
+                const tongDoanhThu = soldItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                
+                // Bắn dữ liệu chuẩn xác lên Form
+                setEditingRow(prev => ({ 
+                    ...prev, 
+                    so_luong: slBan, 
+                    so_tien_ban_duoc: tongDoanhThu 
+                }));
             }
-        } catch (err) {}
+        } catch (err) {
+            // 2. DỰ PHÒNG: Nếu bạn không dán JSON mà dán Text thường, sẽ dùng lại logic cũ
+            try {
+                const { q, r } = parseIGSyncText(text);
+                if (q > 0 || r > 0) {
+                    setEditingRow(prev => ({ 
+                        ...prev, 
+                        so_luong: q > 0 ? q : prev.so_luong, 
+                        so_tien_ban_duoc: r > 0 ? r : prev.so_tien_ban_duoc 
+                    }));
+                }
+            } catch (fallbackErr) {
+                // Bỏ qua nếu lỗi
+            }
+        }
     };
 
     return (
