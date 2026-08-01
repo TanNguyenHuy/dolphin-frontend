@@ -16,13 +16,16 @@ const formatDateTime = (dateString) => {
     } catch (e) { return '---'; }
 };
 
-// Thuật toán Vừa phân tách, vừa sắp xếp từ A-Z
+// 🚀 THUẬT TOÁN MỚI: Vừa phân tách, vừa sắp xếp từ A-Z (nhỏ đến lớn)
 const splitRawData = (text) => {
     if (!text) return { avail: [], sold: [] };
+    
+    // 1. Tách các sản phẩm bằng cách tìm chữ "Số " + "con số" hoặc "cuối" ở ĐẦU DÒNG.
     const blocks = text.split(/(?=(?:^|\n)\s*Số\s+(?:\d+|cuối))/i);
     const avail = [];
     const sold = [];
     
+    // 2. Phân loại CÒN HÀNG và ĐÃ BÁN
     blocks.forEach(b => {
         const trimmed = b.trim();
         if (!trimmed) return;
@@ -33,17 +36,22 @@ const splitRawData = (text) => {
         }
     });
 
+    // 3. Hàm cốt lõi để So sánh & Sắp xếp thứ tự
     const sorter = (a, b) => {
         const getVal = (str) => {
-            const match = str.match(/^Số\s*(\d+)/i);
+            const match = str.match(/^Số\s*(\d+)/i); // Lấy con số sau chữ "Số"
             if (match) return parseInt(match[1], 10);
-            if (/^Số\s*cuối/i.test(str)) return Infinity;
-            return -1; 
+            if (/^Số\s*cuối/i.test(str)) return Infinity; // "Số cuối" luôn đẩy xuống đáy
+            return -1; // Những text linh tinh (nếu có) đẩy lên đầu
         };
         return getVal(a) - getVal(b);
     };
     
-    return { avail: avail.sort(sorter), sold: sold.sort(sorter) };
+    // Trả về mảng đã được sắp xếp
+    return { 
+        avail: avail.sort(sorter), 
+        sold: sold.sort(sorter) 
+    };
 };
 
 export default function TransactionList({
@@ -51,19 +59,30 @@ export default function TransactionList({
     isProcessingEdit, isProcessingDelete, handleStartEdit, handleDeleteRow,
     importedBales
 }) {
+    // 1. TÍNH GIÁ TRUNG BÌNH SẢN PHẨM
     const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0) || (detailData?.so_tien_cua_kien || 0);
     const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0) || (detailData?.computed?.tong_sl_nhap || 1);
     const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
 
+    // 2. TÍNH TỔNG LỜI TRUNG BÌNH
     const tongLoiTrungBinh = (enrichedDaily || []).reduce((total, row) => {
         if (!row) return total;
         const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
         return total + loiTrungBinh;
     }, 0);
 
-    const [rawModal, setRawModal] = useState({ isOpen: false, rowData: null, textAvail: '', textSold: '' });
+    // ==========================================
+    // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN
+    // ==========================================
+    const [rawModal, setRawModal] = useState({ 
+        isOpen: false, 
+        rowData: null, 
+        textAvail: '', 
+        textSold: '' 
+    });
     const [isSavingRaw, setIsSavingRaw] = useState(false);
 
+    // Mở Modal: Dữ liệu tự động được sắp xếp ngay khi mở
     const handleOpenRawModal = (e, row) => {
         e.stopPropagation();
         const { avail, sold } = splitRawData(row.hidden_raw_data || '');
@@ -79,21 +98,25 @@ export default function TransactionList({
         if (!rawModal.rowData) return;
         setIsSavingRaw(true);
         try {
+            // Gộp 2 cột lại để lưu vào DB
             const combinedText = [rawModal.textAvail, rawModal.textSold].filter(t => t.trim() !== '').join('\n\n');
+            
             await axios.put(`${API_URL}/daily/${rawModal.rowData.id}`, { 
                 ...rawModal.rowData, 
                 hidden_raw_data: combinedText 
             });
+            
             rawModal.rowData.hidden_raw_data = combinedText; 
             setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' });
         } catch (error) {
-            console.error("Lỗi khi lưu dữ liệu:", error);
+            console.error("Lỗi khi lưu dữ liệu ẩn:", error);
             alert("Có lỗi xảy ra khi lưu dữ liệu thô!");
         } finally {
             setIsSavingRaw(false);
         }
     };
 
+    // HÀM XỬ LÝ DÁN (PASTE) SIÊU THÔNG MINH
     const handleSmartPaste = (e) => {
         e.preventDefault(); 
         const pastedText = e.clipboardData.getData('text');
@@ -104,15 +127,28 @@ export default function TransactionList({
         const end = target.selectionEnd;
         const isAvailBox = target.name === 'avail';
         
+        // 1. Lấy text của ô đang dán (trừ đi phần text đang bị bôi đen đen nếu có)
         const currentText = isAvailBox ? rawModal.textAvail : rawModal.textSold;
         const textBefore = currentText.substring(0, start);
         const textAfter = currentText.substring(end);
         
+        // 2. Chèn đoạn text mới dán vào đúng vị trí con trỏ chuột
         const newBoxText = textBefore + '\n\n' + pastedText + '\n\n' + textAfter;
-        const combinedEverything = isAvailBox ? (newBoxText + '\n\n' + rawModal.textSold) : (rawModal.textAvail + '\n\n' + newBoxText);
+        
+        // 3. Gom TẤT CẢ văn bản của CẢ 2 CỘT lại thành một cục siêu to
+        const combinedEverything = isAvailBox 
+            ? (newBoxText + '\n\n' + rawModal.textSold)
+            : (rawModal.textAvail + '\n\n' + newBoxText);
+
+        // 4. Quẳng cục siêu to đó vào hàm splitRawData để nó vừa chia cột, vừa sắp xếp lại A-Z
         const { avail, sold } = splitRawData(combinedEverything);
 
-        setRawModal(prev => ({ ...prev, textAvail: avail.join('\n\n'), textSold: sold.join('\n\n') }));
+        // 5. Cập nhật lại giao diện ngay tức thì
+        setRawModal(prev => ({ 
+            ...prev, 
+            textAvail: avail.join('\n\n'), 
+            textSold: sold.join('\n\n') 
+        }));
     };
 
     return (
@@ -129,12 +165,13 @@ export default function TransactionList({
                     if (!row) return null;
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
                     const isMVP = row.id === mvpRowId && index !== 0; 
+                    
                     const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
                     
                     return (
                         <div 
                             key={row.id || index} 
-                            className={`group relative bg-white/70 hover:bg-white backdrop-blur-md rounded-[20px] md:rounded-[28px] p-4 transition-all duration-500 ease-out flex flex-col xl:flex-row xl:items-center justify-between gap-4 xl:gap-5 w-full min-w-0 overflow-hidden ${isMVP ? 'border-2 border-[#FF9500]/50 shadow-[0_8px_24px_rgba(255,149,0,0.15)]' : 'border border-white/80 hover:shadow-[0_15px_40px_rgba(38,208,206,0.12)] hover:border-[#26D0CE]/30'}`}
+                            className={`group relative bg-white/70 hover:bg-white backdrop-blur-md rounded-[20px] md:rounded-[28px] p-4 transition-all duration-500 ease-out flex flex-col xl:flex-row xl:flex-wrap items-start xl:items-center justify-between gap-4 xl:gap-5 w-full min-w-0 overflow-hidden ${isMVP ? 'border-2 border-[#FF9500]/50 shadow-[0_8px_24px_rgba(255,149,0,0.15)]' : 'border border-white/80 hover:shadow-[0_15px_40px_rgba(38,208,206,0.12)] hover:border-[#26D0CE]/30'}`}
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#26D0CE]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
@@ -162,30 +199,28 @@ export default function TransactionList({
                                 </div>
                             </div>
 
-                            {/* KHỐI PHẢI: Số liệu & Tài chính đã được chốt cứng width để thẳng cột */}
-                            <div className="flex flex-row flex-wrap lg:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10 shrink-0">
+                            {/* KHỐI PHẢI: */}
+                            <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10">
                                 
-                                {/* 1. Khối Nhập/Bán/Còn */}
-                                <div className="flex items-center justify-between sm:justify-start gap-1.5 md:gap-2 w-full sm:w-auto shrink-0">
-                                    <div className="flex-1 sm:flex-none w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
+                                <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                                    <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Nhập</div>
                                         <div className="font-black text-gray-800 text-[13px] md:text-[14px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div>
                                     </div>
-                                    <div className={`flex-1 sm:flex-none w-[55px] md:w-[65px] border rounded-[14px] py-1.5 text-center transition-colors shadow-sm ${isBanGreater ? 'bg-teal-50/80 border-teal-200/60 group-hover:bg-teal-50' : 'bg-gray-50/80 border-gray-200/60 group-hover:bg-white'}`}>
+                                    <div className={`w-[55px] md:w-[65px] border rounded-[14px] py-1.5 text-center transition-colors shadow-sm ${isBanGreater ? 'bg-teal-50/80 border-teal-200/60 group-hover:bg-teal-50' : 'bg-gray-50/80 border-gray-200/60 group-hover:bg-white'}`}>
                                         <div className={`text-[9px] font-black uppercase tracking-wider mb-0.5 ${isBanGreater ? 'text-teal-600' : 'text-gray-400'}`}>Bán</div>
                                         <div className={`font-black text-[13px] md:text-[14px] tabular-nums ${isBanGreater ? 'text-teal-700' : 'text-gray-800'}`}>{formatInput(row.so_luong || 0)}</div>
                                     </div>
-                                    <div className="flex-1 sm:flex-none w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
+                                    <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Còn</div>
                                         <div className="font-black text-gray-800 text-[13px] md:text-[14px] tabular-nums">{formatInput(row.sl_con || 0)}</div>
                                     </div>
                                 </div>
 
-                                {/* Vùng gom Tài chính & Nút bấm - Sử dụng flex rời để thẳng cột */}
-                                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-4 md:gap-5 w-full sm:w-auto shrink-0 pl-0 sm:border-l border-gray-200/60 sm:pl-4 md:pl-5 mt-2 sm:mt-0">
+                                <div className="flex flex-wrap xs:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
                                     
-                                    {/* 2. Khối D.thu / V.tồn / Lời TB (Cột cố định min 120px) */}
-                                    <div className="flex flex-col justify-center text-left sm:text-right min-w-[120px] shrink-0">
+                                    {/* CỘT DOANH THU: Cố định độ rộng 130px để luôn thẳng hàng */}
+                                    <div className="flex flex-col justify-center text-left sm:text-right w-[120px] md:w-[130px] shrink-0">
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[11px] md:text-[12px]">
                                             <span className="text-gray-400 font-bold whitespace-nowrap">D.thu</span>
                                             <span className="font-black text-gray-800 tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span>
@@ -194,6 +229,7 @@ export default function TransactionList({
                                             <span className="text-gray-400 font-bold whitespace-nowrap">V.tồn</span>
                                             <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(row.tien_ton || 0)}</span>
                                         </div>
+                                        
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-1 bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 shadow-sm w-fit sm:ml-auto">
                                             <span className="text-gray-500 font-bold whitespace-nowrap">Lời TB</span>
                                             <span className={`font-black tabular-nums ${loiTrungBinh >= 0 ? "text-teal-600" : "text-rose-600"}`}>
@@ -202,33 +238,33 @@ export default function TransactionList({
                                         </div>
                                     </div>
 
-                                    {/* 3. Khối Lợi Nhuận (Cột cố định min 110px để không bao giờ bị ép) */}
-                                    <div className="flex flex-col items-start sm:items-end min-w-[110px] shrink-0">
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Lợi Nhuận</div>
-                                        <div className={`text-[15px] md:text-[16px] font-black tracking-tight tabular-nums ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>
-                                            {formatCurrency(row.loi || 0)}
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        {/* CỘT LỢI NHUẬN: Cố định độ rộng 100px để không xô lệch */}
+                                        <div className="flex flex-col items-start sm:items-end w-[85px] md:w-[100px] shrink-0">
+                                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Lợi Nhuận</div>
+                                            <div className={`text-[15px] md:text-[16px] font-black tracking-tight tabular-nums ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>
+                                                {formatCurrency(row.loi || 0)}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 bg-gray-50/80 p-1 rounded-full border border-gray-200/50">
+                                            {canEdit && (
+                                                <button onClick={(e) => handleOpenRawModal(e, row)} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Kho dữ liệu Instagram">
+                                                    <FileText size={14} strokeWidth={2.5}/>
+                                                </button>
+                                            )}
+                                            {canEdit && (
+                                                <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-[#33A1FD] hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Sửa bản ghi">
+                                                    <Pencil size={14} strokeWidth={2.5}/>
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Xóa bản ghi">
+                                                    <Trash2 size={14} strokeWidth={2.5}/>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-
-                                    {/* 4. Khối Nút Bấm (Đứng độc lập để không chèn ép các khối khác) */}
-                                    <div className="flex items-center gap-1.5 bg-gray-50/80 p-1.5 rounded-full border border-gray-200/50 shrink-0">
-                                        {canEdit && (
-                                            <button onClick={(e) => handleOpenRawModal(e, row)} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Kho dữ liệu Instagram">
-                                                <FileText size={14} strokeWidth={2.5}/>
-                                            </button>
-                                        )}
-                                        {canEdit && (
-                                            <button onClick={(e) => { e.stopPropagation(); handleStartEdit(row); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-[#33A1FD] hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Sửa bản ghi">
-                                                <Pencil size={14} strokeWidth={2.5}/>
-                                            </button>
-                                        )}
-                                        {canDelete && (
-                                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRow(row.id); }} disabled={isProcessingEdit || isProcessingDelete} className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white hover:shadow-sm rounded-full transition-all active:scale-90" title="Xóa bản ghi">
-                                                <Trash2 size={14} strokeWidth={2.5}/>
-                                            </button>
-                                        )}
-                                    </div>
-
                                 </div>
                             </div>
                         </div>
@@ -257,7 +293,9 @@ export default function TransactionList({
                 </div>
             )}
 
-            {/* MODAL NHẬP DỮ LIỆU THÔ IG */}
+            {/* ==========================================
+                MODAL NHẬP DỮ LIỆU THÔ IG (2 CỘT SMART)
+                ========================================== */}
             {rawModal.isOpen && (
                 <div 
                     className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-8 bg-black/50 backdrop-blur-sm"
@@ -267,6 +305,7 @@ export default function TransactionList({
                         className="bg-white rounded-[28px] w-full max-w-[1200px] h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-scale-up"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Header Modal */}
                         <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
                             <div className="flex items-center gap-3 md:gap-4">
                                 <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -284,7 +323,10 @@ export default function TransactionList({
                             </button>
                         </div>
                         
+                        {/* Khu vực 2 Cột Textarea */}
                         <div className="flex-1 flex flex-col lg:flex-row gap-5 md:gap-6 p-5 md:p-6 bg-white overflow-hidden">
+                            
+                            {/* CỘT 1: CÒN HÀNG */}
                             <div className="flex-1 flex flex-col h-full overflow-hidden bg-emerald-50/30 rounded-[20px] border border-emerald-100/60 shadow-inner">
                                 <div className="px-5 py-3.5 bg-emerald-100/50 border-b border-emerald-100 flex items-center gap-2">
                                     <CheckCircle2 size={18} className="text-emerald-600" strokeWidth={2.5} />
@@ -300,6 +342,7 @@ export default function TransactionList({
                                 ></textarea>
                             </div>
 
+                            {/* CỘT 2: ĐÃ BÁN */}
                             <div className="flex-1 flex flex-col h-full overflow-hidden bg-rose-50/30 rounded-[20px] border border-rose-100/60 shadow-inner">
                                 <div className="px-5 py-3.5 bg-rose-100/50 border-b border-rose-100 flex items-center gap-2">
                                     <XCircle size={18} className="text-rose-600" strokeWidth={2.5} />
@@ -314,8 +357,10 @@ export default function TransactionList({
                                     onPaste={handleSmartPaste}
                                 ></textarea>
                             </div>
+
                         </div>
 
+                        {/* Footer Modal */}
                         <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0">
                             <button 
                                 onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })}
