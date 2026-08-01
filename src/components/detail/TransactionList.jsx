@@ -199,26 +199,29 @@ export default function TransactionList({
                                 </div>
                             </div>
 
-                            {/* KHỐI PHẢI: Số liệu & Tài chính */}
-                            <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10 shrink-0">
+                            {/* KHỐI PHẢI: Được phân bổ kích thước cứng để tạo các cột thẳng hàng */}
+                            <div className="flex flex-row flex-wrap lg:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10 shrink-0">
                                 
-                                <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                                    <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
+                                {/* Khối Nhập/Bán/Còn: Chốt chiều rộng ~210px */}
+                                <div className="flex items-center justify-between sm:justify-start gap-1.5 md:gap-2 w-full sm:w-[210px] shrink-0">
+                                    <div className="flex-1 sm:flex-none w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Nhập</div>
                                         <div className="font-black text-gray-800 text-[13px] md:text-[14px] tabular-nums">{formatInput(row.sl_nhap || 0)}</div>
                                     </div>
-                                    <div className={`w-[55px] md:w-[65px] border rounded-[14px] py-1.5 text-center transition-colors shadow-sm ${isBanGreater ? 'bg-teal-50/80 border-teal-200/60 group-hover:bg-teal-50' : 'bg-gray-50/80 border-gray-200/60 group-hover:bg-white'}`}>
+                                    <div className={`flex-1 sm:flex-none w-[55px] md:w-[65px] border rounded-[14px] py-1.5 text-center transition-colors shadow-sm ${isBanGreater ? 'bg-teal-50/80 border-teal-200/60 group-hover:bg-teal-50' : 'bg-gray-50/80 border-gray-200/60 group-hover:bg-white'}`}>
                                         <div className={`text-[9px] font-black uppercase tracking-wider mb-0.5 ${isBanGreater ? 'text-teal-600' : 'text-gray-400'}`}>Bán</div>
                                         <div className={`font-black text-[13px] md:text-[14px] tabular-nums ${isBanGreater ? 'text-teal-700' : 'text-gray-800'}`}>{formatInput(row.so_luong || 0)}</div>
                                     </div>
-                                    <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
+                                    <div className="flex-1 sm:flex-none w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Còn</div>
                                         <div className="font-black text-gray-800 text-[13px] md:text-[14px] tabular-nums">{formatInput(row.sl_con || 0)}</div>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap xs:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto shrink-0 pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
-                                    <div className="flex flex-col justify-center text-left sm:text-right shrink-0">
+                                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto shrink-0 pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
+                                    
+                                    {/* Khối D.thu / V.tồn / Lời TB: Chốt chiều rộng 140px */}
+                                    <div className="flex flex-col justify-center text-left sm:text-right w-full sm:w-[140px] shrink-0">
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[11px] md:text-[12px]">
                                             <span className="text-gray-400 font-bold whitespace-nowrap">D.thu</span>
                                             <span className="font-black text-gray-800 tabular-nums">+{formatCurrency(row.so_tien_ban_duoc || 0)}</span>
@@ -236,7 +239,8 @@ export default function TransactionList({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 shrink-0">
+                                    {/* Khối Lợi nhuận + Bộ Nút Bấm: Chốt chiều rộng 170px */}
+                                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-[170px] shrink-0">
                                         <div className="flex flex-col items-start sm:items-end min-w-[70px]">
                                             <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Lợi Nhuận</div>
                                             <div className={`text-[15px] md:text-[16px] font-black tracking-tight tabular-nums ${parseFloat(row.loi || 0) >= 0 ? 'text-[#1DB2A0]' : 'text-[#FF453A]'}`}>
