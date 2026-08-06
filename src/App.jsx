@@ -507,7 +507,7 @@ export default function App() {
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
                 
                 {/* THANH TOPBAR (Vẫn giữ lại để chứa nút Hamburger cho Mobile) */}
-                <header className="h-16 md:h-20 w-full flex items-center px-4 sm:px-8 shrink-0 bg-transparent">
+                <header className="md:hidden h-16 md:h-20 w-full flex items-center px-4 sm:px-8 shrink-0 bg-transparent">
                     {/* Nút bật Sidebar trên Mobile */}
                     <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 border border-gray-100">
                         <Menu size={24} />
