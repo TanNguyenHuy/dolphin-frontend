@@ -12,6 +12,7 @@ import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
+import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
 // Import các Modals
 import SyncModal from './components/modals/SyncModal';
@@ -21,8 +22,6 @@ import DeleteSessionModal from './components/modals/DeleteSessionModal';
 import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
-// Thêm dòng này lên đầu, chung với chỗ Import các Component giao diện
-import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
 // Import Utils và Bộ Não Logic
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
@@ -76,7 +75,7 @@ export default function App() {
     
     // --- STATE DÀNH CHO BỐ CỤC MỚI (LAYOUT) ---
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [pendingTasksCount, setPendingTasksCount] = useState(2); // Mock data: Giả lập 2 công việc bị trễ hạn (chấm đỏ)
+    const [pendingTasksCount, setPendingTasksCount] = useState(0); 
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
@@ -138,7 +137,7 @@ export default function App() {
         if (view !== newView) {
             window.history.pushState({ view: newView }, '');
             setView(newView);
-            setIsSidebarOpen(false); // Tự động đóng menu trên Mobile khi bấm chuyển trang
+            setIsSidebarOpen(false); 
         }
     };
 
@@ -449,13 +448,6 @@ export default function App() {
                             <span className="text-[14px]">Thống kê</span>
                         </button>
                     </div>
-                    {/* TRANG 4: LỊCH CÁ NHÂN */}
-                            {view === 'CALENDAR' && ( 
-                                <PersonalCalendar 
-                                    sessions={enrichedSessions} 
-                                    onUpdatePendingCount={setPendingTasksCount} 
-                                />
-                            )}
 
                     {/* Nhóm Quản Lý */}
                     {isAdmin && (
@@ -554,13 +546,10 @@ export default function App() {
 
                             {/* TRANG 4: LỊCH CÁ NHÂN */}
                             {view === 'CALENDAR' && ( 
-                                <div className="liquid-glass rounded-[32px] p-10 md:p-20 text-center flex flex-col items-center justify-center border border-white/60 min-h-[500px]">
-                                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                                        <CalendarDays size={40} className="text-[#33A1FD]" />
-                                    </div>
-                                    <h2 className="text-2xl font-black text-gray-800 mb-2">Lịch Cá Nhân Pro Max</h2>
-                                    <p className="text-gray-500 font-medium max-w-md">Tính năng này đang được thi công. Nó sẽ là nơi ghim các sự kiện, tích hợp nhắc nhở (recurring) vô cùng xịn xò trong thời gian tới!</p>
-                                </div>
+                                <PersonalCalendar 
+                                    sessions={enrichedSessions} 
+                                    onUpdatePendingCount={setPendingTasksCount} 
+                                />
                             )}
 
                         </div>
