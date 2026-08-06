@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom'; // BÍ QUYẾT FIX LỆCH TỌA ĐỘ Ở ĐÂY
 import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
 
 // ============================================================================
@@ -39,24 +40,54 @@ const getLunarDateStr = (date) => {
 };
 
 // ============================================================================
-// COMPONENT ĐỘC LẬP: SẢN PHẨM TRÊN LỊCH (Chống giật Flicker 100%)
-// Mỗi sản phẩm tự quản lý hiệu ứng Tooltip, không làm Lịch phải load lại
+// COMPONENT ĐỘC LẬP: SẢN PHẨM TRÊN LỊCH
+// Sử dụng Portal để giải quyết triệt để lỗi lệch Tooltip
 // ============================================================================
 const ProductItem = ({ item }) => {
     const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0 });
 
     const handleMouseEnter = (e) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        // Căn giữa thẻ, đẩy cao lên 8px để không bao giờ đè vào chuột
-        setTooltip({ show: true, x: rect.left + rect.width / 2, y: rect.top - 8 });
+        // Lấy tọa độ tuyệt đối so với Viewport
+        setTooltip({ 
+            show: true, 
+            x: rect.left + rect.width / 2, 
+            y: rect.top - 8 
+        });
     };
+
+    const handleMouseLeave = () => {
+        setTooltip({ show: false, x: 0, y: 0 });
+    };
+
+    const tooltipContent = tooltip.show ? (
+        <div 
+            className="fixed z-[9999] pointer-events-none animate-fade-in-up"
+            style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
+        >
+            <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-4 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[220px]">
+                <div className="text-[14px] font-black text-[#26D0CE] mb-3 border-b border-white/10 pb-2 truncate max-w-[250px]">
+                    {item.ten_san_pham}
+                </div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-3 text-[12px] font-bold">
+                    <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Nhập</span><span className="text-white">{item.so_luong_nhap || 0}</span></div>
+                    <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Bán</span><span className="text-teal-400">{item.so_luong || 0}</span></div>
+                    <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Còn</span><span className="text-orange-400">{(item.so_luong_nhap || 0) - (item.so_luong || 0)}</span></div>
+                    <div className="col-span-3 pt-2 border-t border-white/5 flex justify-between items-center">
+                        <span className="text-gray-400 font-medium text-[10px] uppercase tracking-wider">Doanh thu</span>
+                        <span className="text-yellow-400 text-[13px]">{formatMoney(item.so_tien_ban_duoc)}đ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    ) : null;
 
     return (
         <>
             <div 
                 className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-2 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
                 onMouseEnter={handleMouseEnter}
-                onMouseLeave={() => setTooltip({ show: false, x: 0, y: 0 })}
+                onMouseLeave={handleMouseLeave}
             >
                 <div className="flex items-center gap-1.5 truncate">
                     <span className="text-[12px] shrink-0">🛍️</span>
@@ -64,27 +95,8 @@ const ProductItem = ({ item }) => {
                 </div>
             </div>
 
-            {tooltip.show && (
-                <div 
-                    className="fixed z-[9999] pointer-events-none animate-fade-in-up"
-                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
-                >
-                    <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-4 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[220px]">
-                        <div className="text-[14px] font-black text-[#26D0CE] mb-3 border-b border-white/10 pb-2 truncate max-w-[250px]">
-                            {item.ten_san_pham}
-                        </div>
-                        <div className="grid grid-cols-3 gap-x-3 gap-y-3 text-[12px] font-bold">
-                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Nhập</span><span className="text-white">{item.so_luong_nhap || 0}</span></div>
-                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Bán</span><span className="text-teal-400">{item.so_luong || 0}</span></div>
-                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Còn</span><span className="text-orange-400">{(item.so_luong_nhap || 0) - (item.so_luong || 0)}</span></div>
-                            <div className="col-span-3 pt-2 border-t border-white/5 flex justify-between items-center">
-                                <span className="text-gray-400 font-medium text-[10px] uppercase tracking-wider">Doanh thu</span>
-                                <span className="text-yellow-400 text-[13px]">{formatMoney(item.so_tien_ban_duoc)}đ</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Dịch chuyển Tooltip ra thẳng thẻ Body của trình duyệt */}
+            {tooltip.show && typeof document !== 'undefined' && createPortal(tooltipContent, document.body)}
         </>
     );
 };
@@ -232,7 +244,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    // KHÓA CỨNG LƯỚI LỊCH (Chống giật khi hover)
+    // KHÓA CỨNG LƯỚI LỊCH BẰNG useMemo
     const calendarCells = useMemo(() => {
         const cells = [];
         
@@ -245,13 +257,12 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const cellDateStr = formatDateStr(cellDateObj);
             const isToday = cellDateStr === todayStr;
 
-            // KIỂM TRA NGÀY LỄ (Dương & Âm) - ĐÃ SỬA LỖI BIẾN Ở ĐÂY
             const solarDayStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
             const fullDateStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}-${currentYear}`;
             
             let holidayName = VN_HOLIDAYS[solarDayStr] || null;
             if (VN_HOLIDAYS[fullDateStr]) {
-                holidayName = VN_HOLIDAYS[fullDateStr]; // Âm lịch ưu tiên đè lên Dương lịch
+                holidayName = VN_HOLIDAYS[fullDateStr];
             }
 
             const daySales = [];
@@ -280,19 +291,16 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1 pb-1">
                         
-                        {/* HIỂN THỊ NGÀY LỄ */}
                         {holidayName && (
                             <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[10px] font-black px-2 py-1.5 rounded-[8px] truncate shadow-sm flex items-center gap-1.5 shrink-0">
                                 <span className="text-[12px]">🌟</span><span className="truncate">{holidayName}</span>
                             </div>
                         )}
 
-                        {/* HIỂN THỊ SẢN PHẨM BẰNG COMPONENT ĐỘC LẬP CHỐNG GIẬT */}
                         {daySales.map((item, idx) => (
                             <ProductItem key={`sale-${day}-${idx}-${item.ten_san_pham}`} item={item} />
                         ))}
 
-                        {/* HIỂN THỊ SỰ KIỆN NHẮC NHỞ */}
                         {dayPersonalEvents.map((ev) => {
                             const isCompleted = ev.completedDates.includes(cellDateStr);
                             const isPastDue = cellDateStr < todayStr && !isCompleted;
@@ -319,7 +327,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             );
         }
-
         return cells;
     }, [currentYear, currentMonth, events, sessions]);
 
@@ -329,7 +336,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
                 <div className="flex items-center gap-4">
                     
-                    {/* BỘ CHỌN THÁNG "SANG XỊN MỊN" NHƯ APP CHUYÊN NGHIỆP */}
                     <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100 relative">
                         <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
                         
@@ -341,7 +347,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                 Tháng {currentMonth + 1}, {currentYear}
                             </button>
 
-                            {/* Popup Bảng chọn Tháng */}
                             {showMonthPicker && (
                                 <div className="absolute top-[120%] mt-2 left-1/2 -translate-x-1/2 w-[320px] bg-white/95 backdrop-blur-2xl rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white p-5 z-[200] animate-scale-up origin-top">
                                     <div className="flex justify-between items-center mb-5 bg-gray-50 rounded-[14px] p-1 border border-gray-100">
@@ -396,7 +401,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
             {/* MODAL THÊM SỰ KIỆN */}
             {showModal && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
                     <div className="bg-white rounded-[32px] w-full max-w-[420px] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                         
