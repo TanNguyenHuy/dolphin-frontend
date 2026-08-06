@@ -23,8 +23,6 @@ import BlockModal from './components/modals/BlockModal';
 // Import Utils và Bộ Não Logic
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
-// Thêm vào khu vực Import
-import Hero3D from './components/dashboard/Hero3D'; // (Hoặc './components/Hero3D' nếu bạn để trong thư mục components)
 
 // ============================================================================
 // LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY) - NGĂN CHẶN LỖI TRẮNG TRANG
@@ -118,7 +116,6 @@ export default function App() {
     // BỘ ĐIỀU HƯỚNG THÔNG MINH (HISTORY API) - XỬ LÝ VUỐT/BACK TRÊN ĐIỆN THOẠI
     // ============================================================================
     useEffect(() => {
-        // Khởi tạo lịch sử mặc định khi mới vào web
         if (!window.history.state || !window.history.state.view) {
             window.history.replaceState({ view: 'DASHBOARD' }, '');
         }
@@ -128,7 +125,6 @@ export default function App() {
                 const targetView = event.state.view;
                 setView(targetView);
                 
-                // Nếu quay về Dashboard thì tải lại dữ liệu mới nhất
                 if (targetView === 'DASHBOARD') {
                     fetchDashboard();
                     setDetailData(null);
@@ -141,7 +137,6 @@ export default function App() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
-    // Hàm chuyển trang mượt mà có lưu lịch sử
     const handleNavigate = (newView) => {
         if (view !== newView) {
             window.history.pushState({ view: newView }, '');
@@ -355,7 +350,6 @@ export default function App() {
         } catch (err) {} 
     };
     
-    // Đã thay đổi: Khi bấm nút Trở Về trên web, nó sẽ ra lệnh cho trình duyệt lùi lại (y hệt như bạn vuốt mép điện thoại)
     const handleBack = () => { 
         if (window.history.state) {
             window.history.back();
@@ -367,7 +361,7 @@ export default function App() {
         }
     };
 
-    // TÍNH TOÁN DỮ LIỆU ĐƯỢC BỌC KỸ CÀNG
+    // TÍNH TOÁN DỮ LIỆU
     const safeSessions = Array.isArray(sessions) ? sessions : [];
     const enrichedSessions = safeSessions.map(ss => {
         const autoAdCost = ss.quang_cao || 0; 
@@ -378,27 +372,16 @@ export default function App() {
 
     let dashboardProfit = 0, totalRevenueForTax = 0, taxAmount = 0, showTax = false, displayRevenueTr = 0, globalTongNhap = 0, globalTongBan = 0, globalVonTon = 0, globalTongCon = 0;
     try {
-        // LỌC: Chỉ lấy những đợt bán đã bấm nút "Chốt sổ"
         const completedSessions = enrichedSessions.filter(ss => ss.is_completed === true);
-        
-        // Đưa danh sách đã lọc vào hàm tính tổng
         const gStats = calculateGlobalStats(completedSessions) || {};
-        dashboardProfit = gStats.dashboardProfit || 0; 
-        totalRevenueForTax = gStats.totalRevenueForTax || 0; 
-        taxAmount = gStats.taxAmount || 0; 
-        showTax = gStats.showTax || false; 
-        displayRevenueTr = gStats.displayRevenueTr || 0; 
-        globalTongNhap = gStats.globalTongNhap || 0; 
-        globalTongBan = gStats.globalTongBan || 0; 
-        globalVonTon = gStats.globalVonTon || 0; 
-        globalTongCon = gStats.globalTongCon || 0;
-    } catch(e) { console.error("Global Stats Crash", e); }
+        dashboardProfit = gStats.dashboardProfit || 0; totalRevenueForTax = gStats.totalRevenueForTax || 0; taxAmount = gStats.taxAmount || 0; showTax = gStats.showTax || false; displayRevenueTr = gStats.displayRevenueTr || 0; globalTongNhap = gStats.globalTongNhap || 0; globalTongBan = gStats.globalTongBan || 0; globalVonTon = gStats.globalVonTon || 0; globalTongCon = gStats.globalTongCon || 0;
+    } catch(e) {}
 
     let detailProfit = 0, mvpRowId = null, enrichedDaily = [], detailAutoAdCost = 0, actualStartDate = null, actualEndDate = null, dynamicTarget = 0, isTargetReached = false;
     try {
         const dStats = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE) || {};
         detailProfit = dStats.detailProfit || 0; mvpRowId = dStats.mvpRowId || null; enrichedDaily = Array.isArray(dStats.enrichedDaily) ? dStats.enrichedDaily : []; detailAutoAdCost = dStats.detailAutoAdCost || 0; actualStartDate = dStats.actualStartDate || null; actualEndDate = dStats.actualEndDate || null; dynamicTarget = dStats.dynamicTarget || 0; isTargetReached = dStats.isTargetReached || false;
-    } catch(e) { console.error("Detail Stats Crash", e); }
+    } catch(e) {}
 
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
@@ -421,11 +404,7 @@ export default function App() {
     return (
         <div 
             id="main-app-container"
-            className={`font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 ${
-                view === 'DASHBOARD' 
-                    ? 'min-h-screen w-full overflow-x-hidden scroll-smooth' 
-                    : 'min-h-screen overflow-x-hidden pt-[120px]' // Trả lại khoảng cách vừa đủ cho các trang con
-            }`}
+            className="font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 min-h-screen w-full overflow-x-hidden pt-[100px]"
         >
             {showFireworks && <Confetti />}
 
@@ -469,39 +448,24 @@ export default function App() {
             <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
             
             <ErrorBoundary>
-                {view === 'DASHBOARD' ? (
-                    <>
-                        {/* KHUNG 1: MÀN HÌNH CHÀO CÁ HEO (CHIẾM TRỌN MÀN HÌNH) */}
-                        <section className="h-[100vh] min-h-[700px] w-full relative flex-shrink-0">
-                            <Hero3D />
-                        </section>
-
-                        {/* KHUNG 2: BẢNG TÍNH TIỀN ĐÃ ĐƯỢC KÉO LÊN (Thay pt-[220px] bằng pt-20) */}
-                        <section id="main-dashboard" className="min-h-screen w-full relative pt-20 pb-20">
-                            <div className="w-[96%] max-w-[1600px] mx-auto p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50">
-                                <DashboardView 
-                                    activeTab={activeTab}
-                                    dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
-                                />
-                            </div>
-                        </section>
-                    </>
-                ) : (
-                    /* CÁC TRANG KHÁC (USERS, DETAIL) BỌC TRONG KHUNG KÍNH MỜ */
-                    <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50 mt-4">
-                        {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
-                        {view === 'DETAIL' && detailData && (
-                            <DetailView 
-                                detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                                isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
-                                canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
-                                baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                                newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                                handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
-                            />
-                        )}
-                    </div>
-                )}
+                <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50">
+                    {view === 'DASHBOARD' && (
+                        <DashboardView 
+                            activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
+                        />
+                    )}
+                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
+                    {view === 'DETAIL' && detailData && (
+                        <DetailView 
+                            detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
+                            isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                            canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
+                            baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
+                            newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
+                            handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
+                        />
+                    )}
+                </div>
             </ErrorBoundary>
             <ChatBox authUser={authUser} />
         </div>
