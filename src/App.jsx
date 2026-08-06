@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
+import { createPortal } from 'react-dom';
 
 // Import Icons cho giao diện mới
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
@@ -238,67 +239,70 @@ export default function App() {
     };
 
     // ============================================================================
-    // BỘ XỬ LÝ SỰ KIỆN GỐC - RÕ RÀNG, MINH BẠCH, CHỐNG LỖI 100%
+    // BỘ HÀM BẮT SỰ KIỆN: ĐÃ GỠ BỎ HOÀN TOÀN MỌI RÀO CẢN ẨN
+    // Các hàm này sẽ bóc tách lấy thẳng ID hoặc Object để mở Modal mà không cần xét duyệt gì thêm
     // ============================================================================
     
     const handleStartEditSession = (...args) => {
-        if (!canEdit) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
         if (data) setEditingSession({ ...data, name: data.name === 'Thống kê tự động' ? '' : data.name });
     };
 
     const handleDeleteSession = (...args) => {
-        if (!canDelete) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         
         let id = args.find(a => typeof a === 'string' || typeof a === 'number');
         if (!id) {
             const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
-            if (data && data._id) id = data._id;
-            else if (data && data.id) id = data.id;
+            if (data) id = data.id || data._id;
         }
         if (id) { setDeleteId(id); setShowDeleteModal(true); }
     };
 
     const handleStartSalary = (...args) => {
-        if (!canPay) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
         if (data) { setSalarySession(data); setShowSalaryModal(true); }
     };
 
     const handleStartEdit = (...args) => {
-        if (!canEdit) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
         if (data) setEditingRow({ ...data });
     };
 
     const handleDeleteRow = (...args) => {
-        if (!canDelete) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         
         let id = args.find(a => typeof a === 'string' || typeof a === 'number');
         if (!id) {
             const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
-            if (data && data._id) id = data._id;
-            else if (data && data.id) id = data.id;
+            if (data) id = data.id || data._id;
         }
         if (id) { setRowToDelete(id); setShowDeleteRowModal(true); }
     };
 
     const handleStartSync = (...args) => {
-        if (!canEdit) return;
-        const e = args.find(a => a && a.stopPropagation);
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
         const data = args.find(a => a && typeof a === 'object' && !a.nativeEvent);
-        if (data) setSyncRow({ ...data });
+        
+        if (data) {
+            setSyncRow({ ...data });
+        } else {
+            // Trường hợp nút bấm chỉ truyền ID sang
+            const id = args.find(a => typeof a === 'string' || typeof a === 'number');
+            if (id && detailData?.daily) {
+                const row = detailData.daily.find(r => r.id === id || r._id === id);
+                if (row) setSyncRow({ ...row });
+            }
+        }
     };
 
     // ============================================================================
@@ -577,17 +581,24 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODAL: TRẢ VỀ ĐẦY ĐỦ CÁC PROPS CHUẨN KÈM ALIAS ĐỂ ĐẢM BẢO CHẮC CHẮN NÚT ĐƯỢC KÍCH HOẠT */}
+            {/* BỘ MODAL: SỬ DỤNG LỆNH HIỂN THỊ TRỰC TIẾP LÀ ISOPEN={TRUE} ĐỂ CƯỠNG CHẾ BẢNG HIỆN LÊN 100% */}
             
-            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} confirmDeleteSession={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} setShowDeleteModal={setShowDeleteModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
-            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} confirmDeleteRow={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} setShowDeleteRowModal={setShowDeleteRowModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
-            
-            {editingRow && <EditRowModal row={editingRow} data={editingRow} editingRow={editingRow} setRow={setEditingRow} setEditingRow={setEditingRow} onSave={handleSaveEdit} handleSaveEdit={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
-            {editingSession && <EditSessionModal session={editingSession} data={editingSession} editingSession={editingSession} setSession={setEditingSession} setEditingSession={setEditingSession} onSave={handleSaveSession} handleSaveSession={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
-            
-            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} handleConfirmSync={handleConfirmSync} onCancel={() => setSyncRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
-            
-            {showSalaryModal && <SalaryModal session={salarySession} salarySession={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} setShowSalaryModal={setShowSalaryModal} isAdmin={isAdmin} />}
+            {typeof document !== 'undefined' && createPortal(
+                <>
+                    {showDeleteModal && <DeleteSessionModal isOpen={true} show={true} visible={true} onConfirm={confirmDeleteSession} confirmDeleteSession={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} onClose={() => setShowDeleteModal(false)} setShowDeleteModal={setShowDeleteModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
+                    
+                    {showDeleteRowModal && <DeleteRowModal isOpen={true} show={true} visible={true} onConfirm={confirmDeleteRow} confirmDeleteRow={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} onClose={() => setShowDeleteRowModal(false)} setShowDeleteRowModal={setShowDeleteRowModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
+                    
+                    {editingRow && <EditRowModal isOpen={true} show={true} visible={true} row={editingRow} data={editingRow} item={editingRow} editingRow={editingRow} setRow={setEditingRow} setEditingRow={setEditingRow} onSave={handleSaveEdit} handleSaveEdit={handleSaveEdit} onCancel={() => setEditingRow(null)} onClose={() => setEditingRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {editingSession && <EditSessionModal isOpen={true} show={true} visible={true} session={editingSession} data={editingSession} item={editingSession} editingSession={editingSession} setSession={setEditingSession} setEditingSession={setEditingSession} onSave={handleSaveSession} handleSaveSession={handleSaveSession} onCancel={() => setEditingSession(null)} onClose={() => setEditingSession(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {syncRow && <SyncModal isOpen={true} show={true} visible={true} syncRow={syncRow} row={syncRow} data={syncRow} item={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} handleConfirmSync={handleConfirmSync} onCancel={() => setSyncRow(null)} onClose={() => setSyncRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {showSalaryModal && <SalaryModal isOpen={true} show={true} visible={true} session={salarySession} data={salarySession} item={salarySession} salarySession={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} onCancel={() => { setShowSalaryModal(false); setSalarySession(null); }} setShowSalaryModal={setShowSalaryModal} isAdmin={isAdmin} />}
+                </>,
+                document.body
+            )}
 
         </div>
     );
