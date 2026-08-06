@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
 
 // ============================================================================
@@ -227,12 +227,13 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         const freqText = frequency === 'daily' ? 'ngày' : frequency === 'weekly' ? 'tuần' : frequency === 'monthly' ? 'tháng' : 'năm';
         if (frequency === 'weekly') {
             const dayNames = daysOfWeek.map(d => d === 0 ? 'CN' : `T${d+1}`).join(', ');
-            return `Sự kiện diễn ra mỗi ${interval} tuần vào ${dayNames}.`;
+            return `Sự kiện sẽ diễn ra mỗi ${interval} tuần vào ${dayNames}.`;
         }
-        return `Sự kiện diễn ra mỗi ${interval} ${freqText}.`;
+        return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    const renderCalendarCells = () => {
+    // KHÓA CỨNG LƯỚI LỊCH (Chống giật khi hover)
+    const calendarCells = useMemo(() => {
         const cells = [];
         
         for (let i = 0; i < firstDay; i++) {
@@ -244,13 +245,13 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const cellDateStr = formatDateStr(cellDateObj);
             const isToday = cellDateStr === todayStr;
 
-            // KIỂM TRA NGÀY LỄ (Dương & Âm)
+            // KIỂM TRA NGÀY LỄ (Dương & Âm) - ĐÃ SỬA LỖI BIẾN Ở ĐÂY
             const solarDayStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
             const fullDateStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}-${currentYear}`;
             
-            let holidayName = SOLAR_HOLIDAYS[solarDayStr] || null;
+            let holidayName = VN_HOLIDAYS[solarDayStr] || null;
             if (VN_HOLIDAYS[fullDateStr]) {
-                holidayName = VN_HOLIDAYS[fullDateStr];
+                holidayName = VN_HOLIDAYS[fullDateStr]; // Âm lịch ưu tiên đè lên Dương lịch
             }
 
             const daySales = [];
@@ -320,7 +321,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
 
         return cells;
-    };
+    }, [currentYear, currentMonth, events, sessions]);
 
     return (
         <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
@@ -389,7 +390,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                     ))}
                 </div>
                 <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
-                    {renderCalendarCells()}
+                    {calendarCells}
                 </div>
             </div>
 
