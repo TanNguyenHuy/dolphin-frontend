@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom'; // BÍ QUYẾT FIX LỆCH TỌA ĐỘ Ở ĐÂY
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
 
 // ============================================================================
@@ -15,21 +15,17 @@ const formatDateStr = (date) => {
     return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
 };
 
-// Dữ liệu Ngày Lễ Việt Nam (Quy đổi Âm lịch sang Dương lịch chuẩn xác)
 const VN_HOLIDAYS = {
-    // Ngày lễ Dương lịch cố định
     "01-01": "Tết Dương Lịch", "14-02": "Lễ Tình nhân", "08-03": "Quốc tế Phụ nữ",
     "30-04": "Giải phóng miền Nam", "01-05": "Quốc tế Lao động", "01-06": "Quốc tế Thiếu nhi",
     "02-09": "Quốc khánh VN", "20-10": "Phụ nữ Việt Nam", "20-11": "Nhà giáo Việt Nam",
     "22-12": "Quân đội Nhân dân", "24-12": "Lễ Giáng sinh",
 
-    // Ngày Lễ Âm lịch (Quy ra Dương lịch chuẩn xác 100% để hiển thị)
     "29-01-2025": "Tết Nguyên Đán", "17-02-2026": "Tết Nguyên Đán", "06-02-2027": "Tết Nguyên Đán", "26-01-2028": "Tết Nguyên Đán",
     "07-04-2025": "Giỗ Tổ Hùng Vương", "26-04-2026": "Giỗ Tổ Hùng Vương", "16-04-2027": "Giỗ Tổ Hùng Vương", "04-04-2028": "Giỗ Tổ Hùng Vương",
     "06-09-2025": "Tết Trung Thu", "25-09-2026": "Tết Trung Thu", "15-09-2027": "Tết Trung Thu", "03-10-2028": "Tết Trung Thu",
 };
 
-// Hàm lấy ngày Âm lịch rút gọn (Sử dụng múi giờ VN để sửa lỗi lệch ngày)
 const getLunarDateStr = (date) => {
     try {
         const str = new Intl.DateTimeFormat('en-US-u-ca-chinese', { timeZone: 'Asia/Ho_Chi_Minh', day: 'numeric', month: 'numeric' }).format(date);
@@ -40,25 +36,17 @@ const getLunarDateStr = (date) => {
 };
 
 // ============================================================================
-// COMPONENT ĐỘC LẬP: SẢN PHẨM TRÊN LỊCH
-// Sử dụng Portal để giải quyết triệt để lỗi lệch Tooltip
+// COMPONENT: SẢN PHẨM TRÊN LỊCH
 // ============================================================================
 const ProductItem = ({ item }) => {
     const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0 });
 
-    const handleMouseEnter = (e) => {
+    const handleInteract = (e) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        // Lấy tọa độ tuyệt đối so với Viewport
-        setTooltip({ 
-            show: true, 
-            x: rect.left + rect.width / 2, 
-            y: rect.top - 8 
-        });
+        setTooltip({ show: true, x: rect.left + rect.width / 2, y: rect.top - 8 });
     };
 
-    const handleMouseLeave = () => {
-        setTooltip({ show: false, x: 0, y: 0 });
-    };
+    const handleMouseLeave = () => setTooltip({ show: false, x: 0, y: 0 });
 
     const tooltipContent = tooltip.show ? (
         <div 
@@ -85,17 +73,17 @@ const ProductItem = ({ item }) => {
     return (
         <>
             <div 
-                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-2 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
-                onMouseEnter={handleMouseEnter}
+                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-1 md:py-1.5 rounded-[4px] md:rounded-[8px] shadow-sm flex items-center shrink-0 cursor-pointer hover:bg-[#e6eff9] transition-colors"
+                onMouseEnter={handleInteract}
                 onMouseLeave={handleMouseLeave}
+                onClick={handleInteract} 
             >
-                <div className="flex items-center gap-1.5 truncate">
-                    <span className="text-[12px] shrink-0">🛍️</span>
-                    <span className="truncate">{item.ten_san_pham}</span>
+                <div className="flex items-center gap-0.5 md:gap-1.5 min-w-0 w-full">
+                    <span className="text-[10px] md:text-[12px] shrink-0 leading-none">🛍️</span>
+                    <span className="truncate w-full leading-tight">{item.ten_san_pham}</span>
                 </div>
             </div>
 
-            {/* Dịch chuyển Tooltip ra thẳng thẻ Body của trình duyệt */}
             {tooltip.show && typeof document !== 'undefined' && createPortal(tooltipContent, document.body)}
         </>
     );
@@ -111,13 +99,11 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return saved ? JSON.parse(saved) : [];
     });
     
-    // States UI
     const [showModal, setShowModal] = useState(false);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [pickerYear, setPickerYear] = useState(currentDate.getFullYear());
     const [eventToDelete, setEventToDelete] = useState(null);
 
-    // States Data
     const [newEvent, setNewEvent] = useState({ title: '', startDate: formatDateStr(new Date()), recurring: 'none' });
     const [customConfig, setCustomConfig] = useState({ frequency: 'daily', interval: 1, daysOfWeek: [new Date().getDay()] });
 
@@ -244,12 +230,11 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    // KHÓA CỨNG LƯỚI LỊCH BẰNG useMemo
     const calendarCells = useMemo(() => {
         const cells = [];
         
         for (let i = 0; i < firstDay; i++) {
-            cells.push(<div key={`empty-${i}`} className="bg-transparent border border-transparent p-2 h-36"></div>);
+            cells.push(<div key={`empty-${i}`} className="bg-transparent border border-transparent p-1 md:p-2 h-20 sm:h-24 md:h-36"></div>);
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -262,7 +247,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             
             let holidayName = VN_HOLIDAYS[solarDayStr] || null;
             if (VN_HOLIDAYS[fullDateStr]) {
-                holidayName = VN_HOLIDAYS[fullDateStr];
+                holidayName = VN_HOLIDAYS[fullDateStr]; 
             }
 
             const daySales = [];
@@ -279,21 +264,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const lunarStr = getLunarDateStr(cellDateObj);
 
             cells.push(
-                <div key={`cell-${day}`} className={`bg-white border border-gray-100 p-2 h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
-                    <div className="flex justify-between items-start mb-1 shrink-0">
-                        <span className={`text-[15px] font-bold ${isToday ? 'text-white bg-[#26D0CE] w-7 h-7 rounded-full flex items-center justify-center shadow-sm' : 'text-gray-700'}`}>
+                <div key={`cell-${day}`} className={`bg-white border border-gray-100 p-1 md:p-2 h-24 sm:h-24 md:h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
+                    
+                    {/* CĂN CHỈNH HEADER NGÀY RIÊNG CHO MOBILE & DESKTOP */}
+                    <div className="flex flex-col xl:flex-row justify-center xl:justify-between items-center xl:items-start mb-1 shrink-0 gap-[2px] xl:gap-0">
+                        <span className={`text-[12px] md:text-[15px] font-bold shrink-0 leading-none ${isToday ? 'text-white bg-[#26D0CE] w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center shadow-sm' : 'text-gray-700'}`}>
                             {day}
                         </span>
-                        <span className={`text-[10px] font-black mt-1 ${lunarStr.startsWith('1/') || lunarStr.startsWith('15/') ? 'text-rose-500' : 'text-gray-400'}`}>
+                        <span className={`text-[8px] md:text-[10px] font-black xl:mt-1 leading-none ${lunarStr.startsWith('1/') || lunarStr.startsWith('15/') ? 'text-rose-500' : 'text-gray-400'}`}>
                             {lunarStr}
                         </span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1 pb-1">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1 md:gap-1.5 mt-0.5 md:mt-1 pr-0.5 md:pr-1 pb-1">
                         
                         {holidayName && (
-                            <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[10px] font-black px-2 py-1.5 rounded-[8px] truncate shadow-sm flex items-center gap-1.5 shrink-0">
-                                <span className="text-[12px]">🌟</span><span className="truncate">{holidayName}</span>
+                            <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[8px] md:text-[10px] font-black px-1 md:px-2 py-1 md:py-1.5 rounded-[4px] md:rounded-[6px] truncate shadow-sm flex items-center gap-1 md:gap-1.5 shrink-0">
+                                <span className="text-[10px] md:text-[12px]">🌟</span><span className="truncate">{holidayName}</span>
                             </div>
                         )}
 
@@ -306,19 +293,19 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                             const isPastDue = cellDateStr < todayStr && !isCompleted;
 
                             return (
-                                <div key={`pe-${ev.id}`} className={`group/task flex items-center justify-between text-[11px] font-bold px-1.5 py-1.5 rounded-[6px] shadow-sm transition-all border shrink-0 ${
+                                <div key={`pe-${ev.id}`} className={`group/task flex items-center justify-between text-[8px] md:text-[11px] font-bold px-1 md:px-1.5 py-1 md:py-1.5 rounded-[4px] md:rounded-[6px] shadow-sm transition-all border shrink-0 gap-1 ${
                                     isCompleted ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' : 
                                     isPastDue ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-orange-50 text-orange-600 border-orange-200'
                                 }`}>
                                     <div className="flex items-center gap-1 min-w-0 flex-1 cursor-pointer" onClick={() => requestDeleteEvent(ev.id)} title="Bấm để xoá chuỗi nhắc nhở">
                                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCompleted ? 'bg-gray-300' : isPastDue ? 'bg-rose-400 animate-pulse' : 'bg-orange-400'}`}></div>
-                                        <span className="truncate">{ev.title}</span>
+                                        <span className="truncate leading-tight">{ev.title}</span>
                                     </div>
                                     <button 
                                         onClick={() => toggleComplete(ev.id, cellDateStr)} 
-                                        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center flex-shrink-0 transition-colors ml-1 ${isCompleted ? 'bg-gray-300 border-gray-400' : 'bg-white border-orange-300 hover:bg-orange-100'}`}
+                                        className={`w-3 h-3 md:w-4 md:h-4 rounded-[3px] md:rounded-[4px] border flex items-center justify-center flex-shrink-0 transition-colors ${isCompleted ? 'bg-gray-300 border-gray-400' : 'bg-white border-orange-300 hover:bg-orange-100'}`}
                                     >
-                                        {isCompleted && <Check size={10} className="text-white" strokeWidth={4} />}
+                                        {isCompleted && <Check size={8} className="text-white md:w-[10px] md:h-[10px]" strokeWidth={4} />}
                                     </button>
                                 </div>
                             )
@@ -331,43 +318,42 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     }, [currentYear, currentMonth, events, sessions]);
 
     return (
-        <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
+        <div className="w-full h-full liquid-glass rounded-[24px] md:rounded-[32px] p-3 sm:p-4 md:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up mt-4 md:mt-0">
             
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
-                <div className="flex items-center gap-4">
-                    
-                    <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100 relative">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-6 gap-3 md:gap-4 shrink-0">
+                <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                    <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100 relative flex-1 md:flex-none justify-between md:justify-start">
                         <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
                         
-                        <div className="relative">
+                        <div className="relative flex-1 md:flex-none flex justify-center">
                             <button 
                                 onClick={() => { setShowMonthPicker(!showMonthPicker); setPickerYear(currentYear); }}
-                                className="px-4 py-2 font-black text-[18px] text-[#1A5B82] hover:text-[#26D0CE] transition-colors rounded-[12px] hover:bg-teal-50 flex items-center justify-center min-w-[160px] h-full"
+                                className="px-2 md:px-4 py-2 font-black text-[16px] md:text-[18px] text-[#1A5B82] hover:text-[#26D0CE] transition-colors rounded-[12px] hover:bg-teal-50 flex items-center justify-center min-w-[140px] md:min-w-[160px] h-full"
                             >
                                 Tháng {currentMonth + 1}, {currentYear}
                             </button>
 
                             {showMonthPicker && (
-                                <div className="absolute top-[120%] mt-2 left-1/2 -translate-x-1/2 w-[320px] bg-white/95 backdrop-blur-2xl rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white p-5 z-[200] animate-scale-up origin-top">
-                                    <div className="flex justify-between items-center mb-5 bg-gray-50 rounded-[14px] p-1 border border-gray-100">
-                                        <button onClick={() => setPickerYear(y => y - 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-[10px] text-gray-600 shadow-sm transition-all"><ChevronLeft size={18}/></button>
-                                        <span className="font-black text-[#1D1D1F] text-[16px] tracking-widest">{pickerYear}</span>
-                                        <button onClick={() => setPickerYear(y => y + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-[10px] text-gray-600 shadow-sm transition-all"><ChevronRight size={18}/></button>
+                                <div className="absolute top-[120%] mt-2 left-1/2 -translate-x-1/2 w-[280px] md:w-[320px] bg-white/95 backdrop-blur-2xl rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-white p-4 md:p-5 z-[200] animate-scale-up origin-top">
+                                    <div className="flex justify-between items-center mb-4 md:mb-5 bg-gray-50 rounded-[14px] p-1 border border-gray-100">
+                                        <button onClick={() => setPickerYear(y => y - 1)} className="w-8 md:w-10 h-8 md:h-10 flex items-center justify-center hover:bg-white rounded-[10px] text-gray-600 shadow-sm transition-all"><ChevronLeft size={18}/></button>
+                                        <span className="font-black text-[#1D1D1F] text-[15px] md:text-[16px] tracking-widest">{pickerYear}</span>
+                                        <button onClick={() => setPickerYear(y => y + 1)} className="w-8 md:w-10 h-8 md:h-10 flex items-center justify-center hover:bg-white rounded-[10px] text-gray-600 shadow-sm transition-all"><ChevronRight size={18}/></button>
                                     </div>
                                     <div className="grid grid-cols-4 gap-2 mb-4">
                                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
                                             <button
                                                 key={m}
                                                 onClick={() => { setCurrentDate(new Date(pickerYear, m - 1, 1)); setShowMonthPicker(false); }}
-                                                className={`py-3 text-[13px] rounded-[14px] font-black transition-all ${currentMonth === m - 1 && currentYear === pickerYear ? 'bg-gradient-to-br from-[#26D0CE] to-[#1A5B82] text-white shadow-md' : 'text-gray-500 hover:bg-teal-50 hover:text-teal-600'}`}
+                                                className={`py-2.5 md:py-3 text-[12px] md:text-[13px] rounded-[14px] font-black transition-all ${currentMonth === m - 1 && currentYear === pickerYear ? 'bg-gradient-to-br from-[#26D0CE] to-[#1A5B82] text-white shadow-md' : 'text-gray-500 hover:bg-teal-50 hover:text-teal-600'}`}
                                             >
                                                 Thg {m}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-100 px-2">
-                                        <button onClick={() => setShowMonthPicker(false)} className="text-[13px] font-bold text-gray-400 hover:text-rose-500 transition-colors">Đóng</button>
-                                        <button onClick={goToToday} className="text-[13px] font-bold text-[#26D0CE] hover:text-teal-600 transition-colors bg-teal-50 px-3 py-1.5 rounded-lg">Về Tháng này</button>
+                                    <div className="flex justify-between items-center pt-3 md:pt-4 border-t border-gray-100 px-2">
+                                        <button onClick={() => setShowMonthPicker(false)} className="text-[12px] md:text-[13px] font-bold text-gray-400 hover:text-rose-500 transition-colors">Đóng</button>
+                                        <button onClick={goToToday} className="text-[12px] md:text-[13px] font-bold text-[#26D0CE] hover:text-teal-600 transition-colors bg-teal-50 px-3 py-1.5 rounded-lg">Về Tháng này</button>
                                     </div>
                                 </div>
                             )}
@@ -381,56 +367,56 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                     </button>
                 </div>
 
-                <button onClick={() => setShowModal(true)} className="px-6 py-3 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[14px] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all flex items-center gap-2">
+                <button onClick={() => setShowModal(true)} className="w-full md:w-auto px-6 py-3 md:py-3 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[13px] md:text-[14px] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all flex justify-center items-center gap-2">
                     <Plus size={18} strokeWidth={3} /> TẠO NHẮC NHỞ
                 </button>
             </div>
 
-            <div className="flex-1 flex flex-col min-h-[600px]">
-                <div className="grid grid-cols-7 gap-px mb-2 shrink-0">
+            <div className="flex-1 flex flex-col min-h-[400px] md:min-h-[600px]">
+                <div className="grid grid-cols-7 gap-px mb-1 md:mb-2 shrink-0">
                     {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => (
-                        <div key={day} className={`text-center py-2 font-black text-[13px] tracking-widest uppercase ${i >= 5 ? 'text-rose-500' : 'text-gray-400'}`}>
+                        <div key={day} className={`text-center py-1 md:py-2 font-black text-[10px] md:text-[13px] tracking-widest uppercase ${i >= 5 ? 'text-rose-500' : 'text-gray-400'}`}>
                             {day}
                         </div>
                     ))}
                 </div>
-                <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
+                <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-xl md:rounded-2xl overflow-hidden border border-gray-100 flex-1">
                     {calendarCells}
                 </div>
             </div>
 
             {/* MODAL THÊM SỰ KIỆN */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
-                    <div className="bg-white rounded-[32px] w-full max-w-[420px] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
+                <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
+                    <div className="bg-white rounded-[32px] w-full max-w-[420px] p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                         
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500"><Clock size={22}/></div>
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500"><Clock size={20} className="md:w-[22px] md:h-[22px]" /></div>
                             <div>
-                                <h3 className="text-[20px] font-black text-[#1D1D1F]">Tạo Nhắc Nhở</h3>
-                                <p className="text-[12px] text-gray-500 font-bold">Hệ thống sẽ tự động ghim vào lịch</p>
+                                <h3 className="text-[18px] md:text-[20px] font-black text-[#1D1D1F]">Tạo Nhắc Nhở</h3>
+                                <p className="text-[11px] md:text-[12px] text-gray-500 font-bold">Hệ thống sẽ tự động ghim vào lịch</p>
                             </div>
                         </div>
 
-                        <form onSubmit={handleSaveEvent} className="space-y-5">
+                        <form onSubmit={handleSaveEvent} className="space-y-4 md:space-y-5">
                             <div>
-                                <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Nội dung công việc</label>
-                                <input required type="text" placeholder="VD: Nhập tiền xưởng, Đáo hạn..." className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[15px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all"
+                                <label className="block text-[11px] md:text-[12px] font-black text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Nội dung công việc</label>
+                                <input required type="text" placeholder="VD: Nhập tiền xưởng, Đáo hạn..." className="w-full bg-gray-50 border border-gray-200 rounded-[12px] md:rounded-[16px] px-3.5 md:px-4 py-3 md:py-3.5 text-[14px] md:text-[15px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all"
                                     value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})}
                                 />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
                                 <div>
-                                    <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Bắt đầu từ</label>
-                                    <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700"
+                                    <label className="block text-[11px] md:text-[12px] font-black text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Bắt đầu từ</label>
+                                    <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-[12px] md:rounded-[16px] px-2 md:px-4 py-3 md:py-3.5 text-[13px] md:text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700"
                                         value={newEvent.startDate} onChange={e => setNewEvent({...newEvent, startDate: e.target.value})}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Chu kỳ lặp lại</label>
-                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700 cursor-pointer appearance-none"
+                                    <label className="block text-[11px] md:text-[12px] font-black text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Chu kỳ lặp lại</label>
+                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-[12px] md:rounded-[16px] px-3 md:px-4 py-3 md:py-3.5 text-[13px] md:text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700 cursor-pointer appearance-none"
                                         value={newEvent.recurring} onChange={e => setNewEvent({...newEvent, recurring: e.target.value})}
                                     >
                                         <option value="none">Chỉ 1 lần</option>
@@ -444,14 +430,14 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                             </div>
 
                             {newEvent.recurring === 'custom' && (
-                                <div className="p-5 bg-orange-50/50 border border-orange-200/50 rounded-[20px] space-y-4 animate-scale-up origin-top">
-                                    <div className="flex items-center gap-2 mb-2 text-orange-600 font-black text-[13px] uppercase tracking-widest">
+                                <div className="p-4 md:p-5 bg-orange-50/50 border border-orange-200/50 rounded-[16px] md:rounded-[20px] space-y-3 md:space-y-4 animate-scale-up origin-top">
+                                    <div className="flex items-center gap-2 mb-1 md:mb-2 text-orange-600 font-black text-[12px] md:text-[13px] uppercase tracking-widest">
                                         <Settings2 size={16} /> Cấu hình chi tiết
                                     </div>
                                     
                                     <div className="flex justify-between items-center">
-                                        <label className="text-[13px] font-bold text-gray-600">Tần suất</label>
-                                        <select className="bg-white border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-bold outline-none focus:border-orange-400"
+                                        <label className="text-[12px] md:text-[13px] font-bold text-gray-600">Tần suất</label>
+                                        <select className="bg-white border border-gray-200 rounded-[10px] px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-[13px] font-bold outline-none focus:border-orange-400"
                                             value={customConfig.frequency} onChange={e => setCustomConfig({...customConfig, frequency: e.target.value})}
                                         >
                                             <option value="daily">Hàng ngày</option>
@@ -462,23 +448,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <label className="text-[13px] font-bold text-gray-600">Mỗi</label>
+                                        <label className="text-[12px] md:text-[13px] font-bold text-gray-600">Mỗi</label>
                                         <div className="flex items-center gap-2">
-                                            <input type="number" min="1" max="99" className="w-16 bg-white border border-gray-200 rounded-[10px] px-2 py-2 text-[14px] font-bold outline-none text-center focus:border-orange-400"
+                                            <input type="number" min="1" max="99" className="w-14 md:w-16 bg-white border border-gray-200 rounded-[10px] px-2 py-1.5 md:py-2 text-[13px] md:text-[14px] font-bold outline-none text-center focus:border-orange-400"
                                                 value={customConfig.interval} onChange={e => setCustomConfig({...customConfig, interval: parseInt(e.target.value) || 1})}
                                             />
-                                            <span className="text-[13px] font-bold text-gray-600 w-10">
+                                            <span className="text-[12px] md:text-[13px] font-bold text-gray-600 w-8 md:w-10">
                                                 {customConfig.frequency === 'daily' ? 'ngày' : customConfig.frequency === 'weekly' ? 'tuần' : customConfig.frequency === 'monthly' ? 'tháng' : 'năm'}
                                             </span>
                                         </div>
                                     </div>
 
                                     {customConfig.frequency === 'weekly' && (
-                                        <div className="pt-2">
-                                            <div className="flex flex-wrap justify-between gap-1 mt-2">
+                                        <div className="pt-1 md:pt-2">
+                                            <div className="flex flex-wrap justify-between gap-1 mt-1 md:mt-2">
                                                 {[1,2,3,4,5,6,0].map(day => (
                                                     <button type="button" key={day} 
-                                                        className={`w-10 h-10 rounded-full text-[12px] font-black flex items-center justify-center transition-all ${customConfig.daysOfWeek.includes(day) ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.3)] scale-110' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                                                        className={`w-8 md:w-10 h-8 md:h-10 rounded-full text-[11px] md:text-[12px] font-black flex items-center justify-center transition-all ${customConfig.daysOfWeek.includes(day) ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.3)] scale-110' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
                                                         onClick={() => {
                                                             let newDays = [...customConfig.daysOfWeek];
                                                             if (newDays.includes(day)) { newDays = newDays.filter(d => d !== day); } 
@@ -493,34 +479,34 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                         </div>
                                     )}
 
-                                    <p className="text-[11px] font-bold text-gray-400 pt-2 border-t border-orange-200/50 text-center">
+                                    <p className="text-[10px] md:text-[11px] font-bold text-gray-400 pt-2 border-t border-orange-200/50 text-center">
                                         {getCustomRecurringText()}
                                     </p>
                                 </div>
                             )}
 
-                            <button type="submit" className="w-full mt-2 py-4 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[15px] tracking-widest shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2">
-                                <Check size={20} strokeWidth={3} /> LƯU SỰ KIỆN
+                            <button type="submit" className="w-full mt-2 py-3.5 md:py-4 rounded-[12px] md:rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[14px] md:text-[15px] tracking-widest shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2">
+                                <Check size={18} strokeWidth={3} className="md:w-5 md:h-5" /> LƯU SỰ KIỆN
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN ĐỒNG BỘ */}
+            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN */}
             {eventToDelete && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
-                    <div className="bg-white rounded-[24px] w-full max-w-[360px] p-6 shadow-2xl relative text-center">
-                        <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
-                            <Trash2 size={24} />
+                    <div className="bg-white rounded-[24px] w-full max-w-[360px] p-5 md:p-6 shadow-2xl relative text-center">
+                        <div className="w-12 md:w-14 h-12 md:h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 text-rose-500">
+                            <Trash2 size={20} className="md:w-6 md:h-6" />
                         </div>
-                        <h3 className="text-[18px] font-black text-[#1D1D1F] mb-2">Xác nhận xoá</h3>
-                        <p className="text-[13px] text-gray-500 font-medium mb-6 px-2">
+                        <h3 className="text-[16px] md:text-[18px] font-black text-[#1D1D1F] mb-1.5 md:mb-2">Xác nhận xoá</h3>
+                        <p className="text-[12px] md:text-[13px] text-gray-500 font-medium mb-5 md:mb-6 px-1 md:px-2">
                             Bạn có chắc muốn xoá toàn bộ chuỗi nhắc nhở này không? Hành động này không thể hoàn tác.
                         </p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setEventToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold text-[14px] rounded-[14px] hover:bg-gray-200 transition-colors active:scale-95">Huỷ</button>
-                            <button onClick={confirmDeleteEvent} className="flex-1 py-3 bg-rose-500 text-white font-bold text-[14px] rounded-[14px] hover:bg-rose-600 transition-colors active:scale-95 shadow-[0_4px_12px_rgba(244,63,94,0.3)]">Xoá ngay</button>
+                        <div className="flex gap-2.5 md:gap-3">
+                            <button onClick={() => setEventToDelete(null)} className="flex-1 py-2.5 md:py-3 bg-gray-100 text-gray-600 font-bold text-[13px] md:text-[14px] rounded-[12px] md:rounded-[14px] hover:bg-gray-200 transition-colors active:scale-95">Huỷ</button>
+                            <button onClick={confirmDeleteEvent} className="flex-1 py-2.5 md:py-3 bg-rose-500 text-white font-bold text-[13px] md:text-[14px] rounded-[12px] md:rounded-[14px] hover:bg-rose-600 transition-colors active:scale-95 shadow-[0_4px_12px_rgba(244,63,94,0.3)]">Xoá ngay</button>
                         </div>
                     </div>
                 </div>
