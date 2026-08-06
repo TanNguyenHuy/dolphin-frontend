@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 
+// Import Icons cho giao diện mới
+import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, X, Plus, Clock, ChevronRight } from 'lucide-react';
+
 // Import các Component giao diện
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
 import DetailView from './components/DetailView';
 import ChatBox from './components/ChatBox';
-import Header from './components/Header';
 import Toast from './components/Toast';
 
 // Import các Modals
@@ -25,7 +27,7 @@ import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionNam
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
 
 // ============================================================================
-// LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY) - NGĂN CHẶN LỖI TRẮNG TRANG
+// LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY)
 // ============================================================================
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
@@ -34,15 +36,15 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="p-6 md:p-10 bg-[#FFF5F5] border-2 border-red-200 rounded-[32px] shadow-2xl max-w-5xl mx-auto mt-32 relative z-50">
+                <div className="p-6 md:p-10 bg-[#FFF5F5] border-2 border-red-200 rounded-[32px] shadow-2xl max-w-5xl mx-auto mt-20 relative z-50">
                     <h2 className="text-[24px] font-black text-red-600 mb-4 uppercase tracking-widest">🚨 Hệ thống phát hiện Crash (Sập giao diện)!</h2>
-                    <p className="text-[15px] text-gray-700 font-medium mb-6">Thay vì hiện màn hình trắng, lá chắn đã chặn lại. Hãy chụp màn hình khung đỏ dưới đây và gửi lại cho tôi, tôi sẽ chỉ ra ngay file nào đang gây lỗi:</p>
-                    <div className="bg-white p-5 rounded-2xl overflow-x-auto text-[13px] font-mono text-red-800 border border-red-100 shadow-inner max-h-[400px] overflow-y-auto">
+                    <p className="text-[15px] text-gray-700 font-medium mb-6">Thay vì hiện màn hình trắng, lá chắn đã chặn lại. Hãy chụp màn hình khung đỏ dưới đây và gửi lại cho tôi:</p>
+                    <div className="bg-white p-5 rounded-2xl overflow-x-auto text-[13px] font-mono text-red-800 border border-red-100 shadow-inner max-h-[300px] overflow-y-auto">
                         <strong className="text-red-600 text-[15px]">{this.state.error?.toString()}</strong>
                         <br/><br/>
                         {this.state.errorInfo?.componentStack}
                     </div>
-                    <button onClick={() => window.location.reload()} className="mt-8 bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95">
+                    <button onClick={() => window.location.reload()} className="mt-8 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95">
                         Tải lại trang
                     </button>
                 </div>
@@ -70,32 +72,31 @@ export default function App() {
     const [currentId, setCurrentId] = useState(null);
     const [detailData, setDetailData] = useState(null);
     
+    // --- STATE DÀNH CHO BỐ CỤC MỚI (LAYOUT) ---
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [pendingTasksCount, setPendingTasksCount] = useState(2); // Mock data: Giả lập 2 công việc bị trễ hạn (chấm đỏ)
+
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const [showDeleteRowModal, setShowDeleteRowModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
-    
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
-    
     const [syncRow, setSyncRow] = useState(null);
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
     const [syncManualRev, setSyncManualRev] = useState('');
-
     const [isProcessingCreate, setIsProcessingCreate] = useState(false);
     const [isProcessingDelete, setIsProcessingDelete] = useState(false);
     const [isProcessingAdd, setIsProcessingAdd] = useState(false);
     const [isProcessingEdit, setIsProcessingEdit] = useState(false);
     const [showFireworks, setShowFireworks] = useState(false);
-
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [salarySession, setSalarySession] = useState(null);
     const [momoPhone, setMomoPhone] = useState(() => {
         if (typeof window !== 'undefined') { return localStorage.getItem('momoPhone') || ''; }
         return '';
     });
-
     const [newItem, setNewItem] = useState({ ten_san_pham: '', link_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
@@ -112,9 +113,6 @@ export default function App() {
     const [blockModal, setBlockModal] = useState({ show: false, message: '' });
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    // ============================================================================
-    // BỘ ĐIỀU HƯỚNG THÔNG MINH (HISTORY API) - XỬ LÝ VUỐT/BACK TRÊN ĐIỆN THOẠI
-    // ============================================================================
     useEffect(() => {
         if (!window.history.state || !window.history.state.view) {
             window.history.replaceState({ view: 'DASHBOARD' }, '');
@@ -124,11 +122,8 @@ export default function App() {
             if (event.state && event.state.view) {
                 const targetView = event.state.view;
                 setView(targetView);
-                
                 if (targetView === 'DASHBOARD') {
-                    fetchDashboard();
-                    setDetailData(null);
-                    setImportedBales([]);
+                    fetchDashboard(); setDetailData(null); setImportedBales([]);
                 }
             }
         };
@@ -141,9 +136,9 @@ export default function App() {
         if (view !== newView) {
             window.history.pushState({ view: newView }, '');
             setView(newView);
+            setIsSidebarOpen(false); // Tự động đóng menu trên Mobile khi bấm chuyển trang
         }
     };
-    // ============================================================================
 
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
@@ -259,20 +254,10 @@ export default function App() {
             
             if(res.data && typeof res.data === 'object' && !Array.isArray(res.data)) { 
                 const safeData = { 
-                    ...res.data, 
-                    name: res.data.name || 'Đợt bán',
-                    start_date: res.data.start_date || getTodayString(),
-                    end_date: res.data.end_date || getTodayString(),
-                    daily: Array.isArray(res.data.daily) ? res.data.daily : [] 
+                    ...res.data, name: res.data.name || 'Đợt bán', start_date: res.data.start_date || getTodayString(), end_date: res.data.end_date || getTodayString(), daily: Array.isArray(res.data.daily) ? res.data.daily : [] 
                 };
-                setDetailData(safeData); 
-                setImportedBales(Array.isArray(balesData) ? balesData : []); 
-                setCurrentId(id); 
-                
-                // Ghi lại lịch sử khi vào trang chi tiết
-                window.history.pushState({ view: 'DETAIL', id: id }, '');
-                setView('DETAIL'); 
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                setDetailData(safeData); setImportedBales(Array.isArray(balesData) ? balesData : []); setCurrentId(id); 
+                window.history.pushState({ view: 'DETAIL', id: id }, ''); setView('DETAIL'); 
             }
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
@@ -282,7 +267,6 @@ export default function App() {
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
-    
     const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
 
     const handleAddBale = async (e) => { 
@@ -351,14 +335,8 @@ export default function App() {
     };
     
     const handleBack = () => { 
-        if (window.history.state) {
-            window.history.back();
-        } else {
-            handleNavigate('DASHBOARD');
-            fetchDashboard(); 
-            setDetailData(null); 
-            setImportedBales([]); 
-        }
+        if (window.history.state) { window.history.back(); } 
+        else { handleNavigate('DASHBOARD'); fetchDashboard(); setDetailData(null); setImportedBales([]); }
     };
 
     // TÍNH TOÁN DỮ LIỆU
@@ -397,76 +375,202 @@ export default function App() {
         csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
     };
 
+    // ============================================================================
+    // KIỂM TRA CHỨNG THỰC (HIỂN THỊ MÀN HÌNH ĐĂNG NHẬP NẾU CHƯA ĐĂNG NHẬP)
+    // ============================================================================
     if (!authUser || isExpiredState) {
         return <Auth onLoginSuccess={(u, rememberMe) => { setAuthUser(u); if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); } }} expiredEmail={isExpiredState ? authUser?.email : null} onLogout={handleLogout} />;
     }
 
+    // ============================================================================
+    // GIAO DIỆN CHÍNH (LAYOUT MỚI: SIDEBAR + CONTENT)
+    // ============================================================================
     return (
-        <div 
-            id="main-app-container"
-            className="font-sans text-[#1D1D1F] relative selection:bg-[#26D0CE]/30 selection:text-[#0B3B60] pb-24 md:pb-12 min-h-screen w-full overflow-x-hidden pt-[100px]"
-        >
+        <div className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30">
             {showFireworks && <Confetti />}
-
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
+            {/* --- CSS CHO CÁC KHỐI KÍNH (NẾU CÓ DÙNG BÊN TRONG CÁC COMPONENT CON) --- */}
             <style dangerouslySetInnerHTML={{ __html: `
-                html, body, div, span, p, h1, h2, h3, h4, h5, h6 { -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
-                .font-sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }
                 .tabular-nums { font-variant-numeric: tabular-nums; }
-                @keyframes scale-up { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-                .animate-scale-up { animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-                .liquid-glass { background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
-                .liquid-glass-dark { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.2); color: white; }
-                .liquid-input { background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); transition: all 0.3s; }
-                .liquid-input:focus { background: rgba(255, 255, 255, 0.8); border-color: #26D0CE; box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.2); }
+                .liquid-glass { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
 
-            {/* --- NỀN ĐẠI DƯƠNG VÀ SÓNG BIỂN CSS ÁP DỤNG TOÀN TRANG --- */}
-            <div className="fixed inset-0 z-[-2] bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden">
+            {/* --- NỀN ĐẠI DƯƠNG VÀ SÓNG BIỂN CHỈ HIỂN THỊ Ở KHU VỰC CONTENT BÊN PHẢI --- */}
+            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden opacity-40">
                 <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
-                <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/30 rounded-[40%] animate-[spin_15s_linear_infinite_reverse] -bottom-[185vw] sm:-bottom-[135vw] left-1/2 -translate-x-1/2"></div>
             </div>
 
-            <Header 
-                authUser={authUser} isAdmin={isAdmin} canEdit={canEdit} timeLeftDisplay={timeLeftDisplay}
-                view={view} setView={handleNavigate} handleCreateAutoSession={handleCreateAutoSession}
-                isProcessingCreate={isProcessingCreate} handleLogout={handleLogout}
-                activeTab={activeTab} setActiveTab={setActiveTab} 
-            />
-
-            <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} handleConfirmSync={handleConfirmSync} isProcessingEdit={isProcessingEdit} />
-            <EditRowModal editingRow={editingRow} setEditingRow={setEditingRow} handleSaveEdit={handleSaveEdit} isProcessingEdit={isProcessingEdit} />
-            <EditSessionModal editingSession={editingSession} setEditingSession={setEditingSession} handleSaveSession={handleSaveSession} />
-            <DeleteSessionModal showDeleteModal={showDeleteModal} setShowDeleteModal={setShowDeleteModal} confirmDeleteSession={confirmDeleteSession} />
-            <DeleteRowModal showDeleteRowModal={showDeleteRowModal} setShowDeleteRowModal={setShowDeleteRowModal} confirmDeleteRow={confirmDeleteRow} isProcessingDelete={isProcessingDelete} />
-            <SalaryModal salarySession={salarySession} setShowSalaryModal={setShowSalaryModal} momoPhone={momoPhone} setMomoPhone={setMomoPhone} />
-            
-            <ErrorBoundary>
-                <div className="w-[96%] max-w-[1600px] mx-auto space-y-6 md:space-y-8 p-3 sm:p-6 md:p-8 bg-white/40 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50">
-                    {view === 'DASHBOARD' && (
-                        <DashboardView 
-                            activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
-                        />
-                    )}
-                    {view === 'USERS' && isAdmin && ( <AdminPanel setView={handleNavigate} authUser={authUser} /> )}
-                    {view === 'DETAIL' && detailData && (
-                        <DetailView 
-                            detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                            isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
-                            canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
-                            baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                            newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                            handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
-                        />
-                    )}
+            {/* ========================================================= */}
+            {/* CỘT TRÁI (SIDEBAR MENU) */}
+            {/* ========================================================= */}
+            <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-[10px_0_30px_rgba(0,0,0,0.03)] transform transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:flex-shrink-0`}>
+                
+                {/* Logo Area */}
+                <div className="h-20 flex items-center px-6 border-b border-gray-100 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#26D0CE] to-[#1A5B82] rounded-[12px] flex items-center justify-center shadow-sm">
+                            <span className="text-white font-bold text-xl leading-none -mt-1">🐳</span>
+                        </div>
+                        <div>
+                            <h2 className="font-black text-[16px] text-gray-800 leading-tight">Dolphin Flow</h2>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Workspace</p>
+                        </div>
+                    </div>
                 </div>
-            </ErrorBoundary>
+
+                {/* Menu Area */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar py-6 px-4 space-y-8">
+                    
+                    {/* Nhóm Tổng Quan */}
+                    <div>
+                        <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Tổng quan</p>
+                        <button onClick={() => handleNavigate('DASHBOARD')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${view === 'DASHBOARD' || view === 'DETAIL' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
+                            <LayoutDashboard size={20} className={view === 'DASHBOARD' || view === 'DETAIL' ? 'text-[#1A5B82]' : 'text-gray-400'} />
+                            <span className="text-[14px]">Thống kê</span>
+                        </button>
+                    </div>
+
+                    {/* Nhóm Quản Lý */}
+                    {isAdmin && (
+                        <div>
+                            <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Quản lý</p>
+                            <button onClick={() => handleNavigate('USERS')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${view === 'USERS' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
+                                <Users size={20} className={view === 'USERS' ? 'text-[#1A5B82]' : 'text-gray-400'} />
+                                <span className="text-[14px]">Tài khoản</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Nhóm Công Việc (Lịch) */}
+                    <div>
+                        <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Công việc</p>
+                        <button onClick={() => handleNavigate('CALENDAR')} className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${view === 'CALENDAR' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
+                            <div className="flex items-center gap-3">
+                                <CalendarDays size={20} className={view === 'CALENDAR' ? 'text-[#1A5B82]' : 'text-gray-400'} />
+                                <span className="text-[14px]">Lịch cá nhân</span>
+                            </div>
+                            
+                            {/* CHẤM ĐỎ THÔNG BÁO (BADGE) */}
+                            {pendingTasksCount > 0 && (
+                                <span className="bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                    {pendingTasksCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+
+                </div>
+
+                {/* Profile & Logout Area */}
+                <div className="p-4 border-t border-gray-100 shrink-0">
+                    {timeLeftDisplay && (
+                        <div className="mb-4 px-2 flex items-center gap-2 text-[11px] font-bold text-amber-600 bg-amber-50 py-2 rounded-lg justify-center border border-amber-100">
+                            <Clock size={14} /> {timeLeftDisplay}
+                        </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between px-2 group cursor-pointer" onClick={handleLogout}>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold shrink-0 border border-gray-200">
+                                {authUser?.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-bold text-gray-800 truncate">{authUser?.name || 'Người dùng'}</p>
+                                <p className="text-[11px] text-gray-500 font-medium truncate">{authUser?.email}</p>
+                            </div>
+                        </div>
+                        <button className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50" title="Đăng xuất">
+                            <LogOut size={16} strokeWidth={2.5}/>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Màn che mờ cho Sidebar trên Mobile */}
+            {isSidebarOpen && (
+                <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+            )}
+
+
+            {/* ========================================================= */}
+            {/* CỘT PHẢI (MAIN CONTENT AREA) */}
+            {/* ========================================================= */}
+            <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
+                
+                {/* THANH TOPBAR (Luôn nổi ở trên cùng) */}
+                <header className="h-20 w-full flex items-center justify-between px-4 sm:px-8 shrink-0 bg-transparent">
+                    {/* Nút bật Sidebar trên Mobile */}
+                    <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 border border-gray-100">
+                        <Menu size={24} />
+                    </button>
+                    
+                    {/* Khoảng trống để nút Tạo Thống Kê luôn bị đẩy sang phải */}
+                    <div className="hidden md:block flex-1"></div>
+
+                    {/* NÚT VÀNG: TẠO THỐNG KÊ (Luôn hiển thị) */}
+                    {canEdit && (
+                        <button 
+                            onClick={handleCreateAutoSession} disabled={isProcessingCreate}
+                            className="bg-[#26D0CE] hover:bg-[#1DB2A0] text-white px-5 sm:px-6 py-2.5 rounded-[14px] font-bold text-[13px] sm:text-[14px] tracking-wide shadow-[0_8px_20px_rgba(38,208,206,0.25)] hover:shadow-[0_10px_25px_rgba(38,208,206,0.35)] active:scale-95 transition-all flex items-center gap-2 border border-white/20 ml-auto"
+                        >
+                            {isProcessingCreate ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={3} />}
+                            <span className="hidden sm:inline">TẠO THỐNG KÊ</span>
+                            <span className="sm:hidden">TẠO MỚI</span>
+                        </button>
+                    )}
+                </header>
+
+                {/* KHU VỰC HIỂN THỊ NỘI DUNG TỪNG TRANG */}
+                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-2 sm:p-6 pb-24">
+                    <ErrorBoundary>
+                        <div className="w-full max-w-[1600px] mx-auto space-y-6">
+                            
+                            {/* TRANG 1: DASHBOARD THỐNG KÊ LỢI NHUẬN */}
+                            {view === 'DASHBOARD' && (
+                                <DashboardView 
+                                    activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
+                                />
+                            )}
+                            
+                            {/* TRANG 2: CHI TIẾT ĐỢT BÁN (Thuộc Dashboard) */}
+                            {view === 'DETAIL' && detailData && (
+                                <DetailView 
+                                    detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
+                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                                    canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
+                                    baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
+                                    newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
+                                    handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
+                                />
+                            )}
+
+                            {/* TRANG 3: QUẢN LÝ TÀI KHOẢN */}
+                            {view === 'USERS' && isAdmin && ( 
+                                <AdminPanel setView={handleNavigate} authUser={authUser} /> 
+                            )}
+
+                            {/* TRANG 4: LỊCH CÁ NHÂN (CHỜ XÂY DỰNG MODULE) */}
+                            {view === 'CALENDAR' && ( 
+                                <div className="liquid-glass rounded-[32px] p-10 md:p-20 text-center flex flex-col items-center justify-center border border-white/60 min-h-[500px]">
+                                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                                        <CalendarDays size={40} className="text-[#33A1FD]" />
+                                    </div>
+                                    <h2 className="text-2xl font-black text-gray-800 mb-2">Lịch Cá Nhân Pro Max</h2>
+                                    <p className="text-gray-500 font-medium max-w-md">Tính năng này đang được thi công. Nó sẽ là nơi ghim các sự kiện, tích hợp nhắc nhở (recurring) vô cùng xịn xò trong thời gian tới!</p>
+                                </div>
+                            )}
+
+                        </div>
+                    </ErrorBoundary>
+                </main>
+            </div>
+
             <ChatBox authUser={authUser} />
         </div>
     );
