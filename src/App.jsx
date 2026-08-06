@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
+import { createPortal } from 'react-dom';
 
 // Import Icons cho giao diện mới
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
@@ -14,7 +15,7 @@ import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
-// Import các Modals (Chú ý: Các Modal này cực kỳ nhạy cảm với tên Props)
+// Import các Modals (Đã khôi phục đúng chuẩn tên Props)
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -54,7 +55,6 @@ class ErrorBoundary extends React.Component {
         return this.props.children;
     }
 }
-// ============================================================================
 
 export default function App() {
     const [authUser, setAuthUser] = useState(() => {
@@ -93,6 +93,7 @@ export default function App() {
     const [showFireworks, setShowFireworks] = useState(false);
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [salarySession, setSalarySession] = useState(null);
+    
     const [momoPhone, setMomoPhone] = useState(() => {
         if (typeof window !== 'undefined') { return localStorage.getItem('momoPhone') || ''; }
         return '';
@@ -171,31 +172,6 @@ export default function App() {
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
     useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
 
-    useEffect(() => {
-        if (!authUser || !authUser.email) return; 
-        const checkRealTimeStatus = async () => {
-            try {
-                const res = await axios.post(`${API_URL}/check-status`, { email: authUser.email });
-                const latestData = res.data;
-                const isActuallyExpired = latestData.planExpiry && new Date(latestData.planExpiry) <= new Date();
-
-                if (latestData.isBanned || (!latestData.isApproved && !isActuallyExpired && !latestData.paymentImage)) {
-                    setBlockModal({ show: true, message: 'Tài khoản của bạn đã bị khóa hoặc mất quyền truy cập!' }); return;
-                }
-                if (JSON.stringify(authUser.permissions) !== JSON.stringify(latestData.permissions) || authUser.role !== latestData.role || authUser.planExpiry !== latestData.planExpiry || authUser.plan !== latestData.plan || authUser.isApproved !== latestData.isApproved || authUser.isChatBanned !== latestData.isChatBanned || authUser.chatRestrictedUntil !== latestData.chatRestrictedUntil) {
-                    setAuthUser(prev => {
-                        const updated = { ...prev, permissions: latestData.permissions, role: latestData.role, plan: latestData.plan, planExpiry: latestData.planExpiry, isApproved: latestData.isApproved, isChatBanned: latestData.isChatBanned, chatRestrictedUntil: latestData.chatRestrictedUntil };
-                        if (localStorage.getItem('authUser')) localStorage.setItem('authUser', JSON.stringify(updated));
-                        if (sessionStorage.getItem('authUser')) sessionStorage.setItem('authUser', JSON.stringify(updated));
-                        return updated;
-                    });
-                }
-            } catch (error) {}
-        };
-        const radar = setInterval(checkRealTimeStatus, 5000);
-        return () => clearInterval(radar); 
-    }, [authUser, isExpiredState]);
-
     const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); handleNavigate('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
     const fetchDashboard = async () => { 
@@ -263,45 +239,84 @@ export default function App() {
     };
 
     // ============================================================================
-    // BỘ HÀM BẮT SỰ KIỆN - THIẾT KẾ CHỐNG LỖI HOÀN HẢO TỰ TÌM OBJECT CHUẨN
+    // SIÊU LÁ CHẮN BẢO VỆ NÚT BẤM (CHỐNG LỖI MÀN HÌNH TRẮNG & CLICK TRƯỢT)
     // ============================================================================
     
-    const handleStartEditSession = (...args) => {
+    const safeHandleEditSession = (...args) => {
         if (!canEdit) return;
         const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
-        const session = args.find(a => a && typeof a === 'object' && a.id);
-        if (session) setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name });
+        const data = args.find(a => a && typeof a === 'object' && a.id);
+        if (data) {
+            setEditingSession({ ...data, name: data.name === 'Thống kê tự động' ? '' : data.name });
+        }
     };
 
-    const handleDeleteSession = (...args) => {
+    const safeHandleDeleteSession = (...args) => {
         if (!canDelete) return;
         const e = args.find(a => a && typeof a.stopPropagation === 'function');
         if (e) e.stopPropagation();
-        const id = args.find(a => typeof a === 'string' || typeof a === 'number');
+        
+        let id = args.find(a => typeof a === 'string' || typeof a === 'number');
+        if (!id) {
+            const data = args.find(a => a && typeof a === 'object' && a.id);
+            if (data) id = data.id;
+        }
+        
         if (id) { setDeleteId(id); setShowDeleteModal(true); }
     };
 
-    const handleStartEdit = (...args) => {
-        if (!canEdit) return;
-        const row = args.find(a => a && typeof a === 'object' && a.id);
-        if (row) setEditingRow({ ...row });
+    // Hàm nhận diện chuẩn nút Phát Lương (Tránh lỗi sập màn hình trắng)
+    const safeHandleSalary = (...args) => {
+        if (!canPay) return;
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
+        if (e) e.stopPropagation();
+        const data = args.find(a => a && typeof a === 'object' && a.id);
+        if (data) { 
+            setSalarySession(data); 
+            setShowSalaryModal(true); 
+        }
     };
 
-    const handleDeleteRow = (...args) => {
+    const safeHandleEditRow = (...args) => {
+        if (!canEdit) return;
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
+        if (e) e.stopPropagation();
+        const data = args.find(a => a && typeof a === 'object' && a.id);
+        if (data) setEditingRow({ ...data });
+    };
+
+    const safeHandleDeleteRow = (...args) => {
         if (!canDelete) return;
-        const id = args.find(a => typeof a === 'string' || typeof a === 'number');
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
+        if (e) e.stopPropagation();
+        
+        let id = args.find(a => typeof a === 'string' || typeof a === 'number');
+        if (!id) {
+            const data = args.find(a => a && typeof a === 'object' && a.id);
+            if (data) id = data.id;
+        }
+
         if (id) { setRowToDelete(id); setShowDeleteRowModal(true); }
     };
 
-    const handleStartSync = (...args) => {
-        const row = args.find(a => a && typeof a === 'object' && a.id);
-        if (row) setSyncRow({ ...row });
+    const safeHandleSyncRow = (...args) => {
+        if (!canEdit) return;
+        const e = args.find(a => a && typeof a.stopPropagation === 'function');
+        if (e) e.stopPropagation();
+        const data = args.find(a => a && typeof a === 'object' && a.id);
+        if (data) setSyncRow({ ...data });
     };
 
+    // ============================================================================
+    // CÁC HÀM XỬ LÝ DỮ LIỆU CỐT LÕI
+    // ============================================================================
+
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
+    
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
+    
     const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
 
     const handleAddBale = async (e) => { 
@@ -530,9 +545,10 @@ export default function App() {
                                 <DashboardView 
                                     activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                                     
-                                    setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal}
-                                    handleStartEditSession={handleStartEditSession}
-                                    handleDeleteSession={handleDeleteSession}
+                                    // Bơm tất cả tên thay thế (Alias) cực an toàn
+                                    onPay={safeHandleSalary} setSalarySession={safeHandleSalary} setShowSalaryModal={safeHandleSalary}
+                                    handleStartEditSession={safeHandleEditSession} onEditSession={safeHandleEditSession} onEdit={safeHandleEditSession}
+                                    handleDeleteSession={safeHandleDeleteSession} onDeleteSession={safeHandleDeleteSession} onDelete={safeHandleDeleteSession}
                                 />
                             )}
                             
@@ -544,9 +560,10 @@ export default function App() {
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
-                                    handleStartEdit={handleStartEdit}
-                                    handleStartSync={handleStartSync}
-                                    handleDeleteRow={handleDeleteRow}
+                                    // Bơm tất cả tên thay thế (Alias) cực an toàn
+                                    handleStartEdit={safeHandleEditRow} handleEditRow={safeHandleEditRow} onEditRow={safeHandleEditRow} onEdit={safeHandleEditRow} setEditingRow={safeHandleEditRow}
+                                    handleStartSync={safeHandleSyncRow} handleSyncRow={safeHandleSyncRow} onSyncRow={safeHandleSyncRow} onSync={safeHandleSyncRow} setSyncRow={safeHandleSyncRow}
+                                    handleDeleteRow={safeHandleDeleteRow} onDeleteRow={safeHandleDeleteRow} onDelete={safeHandleDeleteRow} setRowToDelete={safeHandleDeleteRow}
 
                                     isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
                                 />
@@ -570,13 +587,21 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODALS ĐƯỢC TRUYỀN PROPS CHUẨN XÁC 100% ĐỂ NGĂN VIỆC BỊ RENDER RỖNG (ẨN MÌNH) */}
-            {showDeleteModal && <DeleteSessionModal setShowDeleteModal={setShowDeleteModal} confirmDeleteSession={confirmDeleteSession} isProcessingDelete={isProcessingDelete} />}
-            {showDeleteRowModal && <DeleteRowModal setShowDeleteRowModal={setShowDeleteRowModal} confirmDeleteRow={confirmDeleteRow} isProcessingDelete={isProcessingDelete} />}
-            {editingRow && <EditRowModal editingRow={editingRow} setEditingRow={setEditingRow} handleSaveEdit={handleSaveEdit} isProcessingEdit={isProcessingEdit} />}
-            {editingSession && <EditSessionModal editingSession={editingSession} setEditingSession={setEditingSession} handleSaveSession={handleSaveSession} isProcessingEdit={isProcessingEdit} />}
-            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} handleConfirmSync={handleConfirmSync} isProcessingEdit={isProcessingEdit} />}
-            {showSalaryModal && <SalaryModal setShowSalaryModal={setShowSalaryModal} salarySession={salarySession} isAdmin={isAdmin} />}
+            {/* BỘ MODAL: SỬ DỤNG ĐÚNG CHUẨN TÊN PROPS (ONCONFIRM / ONCANCEL) ĐỂ HỒI SINH NÚT BẤM BÊN TRONG */}
+            {typeof document !== 'undefined' && createPortal(
+                <>
+                    {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
+                    {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
+                    
+                    {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
+                    {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
+                    
+                    {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
+                    
+                    {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
+                </>,
+                document.body
+            )}
 
         </div>
     );
