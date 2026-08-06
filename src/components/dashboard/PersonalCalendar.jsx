@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
 
 // Hàm format tiền tệ nội bộ
@@ -13,19 +13,30 @@ const formatDateStr = (date) => {
     return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
 };
 
-// DANH SÁCH NGÀY LỄ LỚN (DƯƠNG LỊCH) TẠI VIỆT NAM
-const VN_HOLIDAYS = {
-    "01-01": "Tết Dương Lịch",
-    "14-02": "Lễ Tình nhân",
-    "08-03": "Quốc tế Phụ nữ",
-    "30-04": "Giải phóng miền Nam",
-    "01-05": "Quốc tế Lao động",
-    "01-06": "Quốc tế Thiếu nhi",
-    "02-09": "Quốc khánh VN",
-    "20-10": "Phụ nữ Việt Nam",
-    "20-11": "Nhà giáo Việt Nam",
-    "22-12": "Quân đội Nhân dân",
-    "24-12": "Lễ Giáng sinh"
+// HÀM TÍNH LỊCH ÂM CHUẨN XÁC (Dựa trên API Quốc Tế của trình duyệt)
+const getLunarDate = (date) => {
+    try {
+        const formatter = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', month: 'numeric' });
+        const parts = formatter.formatToParts(date);
+        const day = parts.find(p => p.type === 'day')?.value;
+        const month = parts.find(p => p.type === 'month')?.value;
+        if (day && month) return { day: parseInt(day, 10), month: parseInt(month, 10) };
+    } catch(e) {}
+    return { day: date.getDate(), month: date.getMonth() + 1 };
+};
+
+// DANH SÁCH NGÀY LỄ LỚN Ở VIỆT NAM
+const SOLAR_HOLIDAYS = {
+    "01-01": "Tết Dương Lịch", "14-02": "Lễ Tình nhân", "08-03": "Quốc tế Phụ nữ",
+    "30-04": "Giải phóng miền Nam", "01-05": "Quốc tế Lao động", "01-06": "Quốc tế Thiếu nhi",
+    "02-09": "Quốc khánh VN", "20-10": "Phụ nữ Việt Nam", "20-11": "Nhà giáo Việt Nam",
+    "22-12": "Quân đội Nhân dân", "24-12": "Lễ Giáng sinh"
+};
+
+const LUNAR_HOLIDAYS = {
+    "01-01": "Tết Nguyên Đán", "15-01": "Tết Nguyên Tiêu", "10-03": "Giỗ Tổ Hùng Vương",
+    "15-04": "Lễ Phật Đản", "05-05": "Tết Đoan Ngọ", "15-07": "Lễ Vu Lan",
+    "15-08": "Tết Trung Thu", "23-12": "Ông Công Ông Táo"
 };
 
 export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }) {
@@ -35,25 +46,10 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return saved ? JSON.parse(saved) : [];
     });
     
-    // States cho Modal tạo sự kiện
     const [showModal, setShowModal] = useState(false);
-    const [newEvent, setNewEvent] = useState({
-        title: '',
-        startDate: formatDateStr(new Date()),
-        recurring: 'none'
-    });
-    
-    // State cho tùy chỉnh lặp lại
-    const [customConfig, setCustomConfig] = useState({
-        frequency: 'daily',
-        interval: 1,
-        daysOfWeek: [new Date().getDay()] 
-    });
-
-    // State cho Modal Xóa
+    const [newEvent, setNewEvent] = useState({ title: '', startDate: formatDateStr(new Date()), recurring: 'none' });
+    const [customConfig, setCustomConfig] = useState({ frequency: 'daily', interval: 1, daysOfWeek: [new Date().getDay()] });
     const [eventToDelete, setEventToDelete] = useState(null);
-
-    // State cho Tooltip khi rê chuột vào sản phẩm
     const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, data: null });
 
     useEffect(() => {
@@ -80,7 +76,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         check.setHours(0,0,0,0);
 
         if (check < start) return false;
-
         if (ev.recurring === 'none') return check.getTime() === start.getTime();
         if (ev.recurring === 'daily') return true;
         if (ev.recurring === 'weekly') return check.getDay() === start.getDay();
@@ -94,10 +89,8 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
             if (frequency === 'daily') return diffDays % interval === 0;
             if (frequency === 'weekly') {
-                const startMonday = new Date(start);
-                startMonday.setDate(start.getDate() - (start.getDay() === 0 ? 6 : start.getDay() - 1));
-                const checkMonday = new Date(check);
-                checkMonday.setDate(check.getDate() - (check.getDay() === 0 ? 6 : check.getDay() - 1));
+                const startMonday = new Date(start); startMonday.setDate(start.getDate() - (start.getDay() === 0 ? 6 : start.getDay() - 1));
+                const checkMonday = new Date(check); checkMonday.setDate(check.getDate() - (check.getDay() === 0 ? 6 : check.getDay() - 1));
                 const weekDiff = Math.round((checkMonday - startMonday) / (1000 * 60 * 60 * 24 * 7));
                 if (weekDiff % interval === 0) return daysOfWeek.includes(check.getDay());
                 return false;
@@ -145,11 +138,8 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
 
         const eventToSave = {
-            id: 'evt_' + Date.now(),
-            title: newEvent.title,
-            startDate: newEvent.startDate,
-            recurring: newEvent.recurring,
-            customConfig: newEvent.recurring === 'custom' ? customConfig : null,
+            id: 'evt_' + Date.now(), title: newEvent.title, startDate: newEvent.startDate,
+            recurring: newEvent.recurring, customConfig: newEvent.recurring === 'custom' ? customConfig : null,
             completedDates: [] 
         };
         
@@ -169,7 +159,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }));
     };
 
-    // Xoá chuỗi sự kiện
     const requestDeleteEvent = (eventId) => setEventToDelete(eventId);
     const confirmDeleteEvent = () => {
         if(eventToDelete) {
@@ -178,20 +167,18 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
     };
 
-    // --- FIX LỖI TOOLTIP NHẤP NHÁY ---
+    // --- FIX LỖI TOOLTIP NHẤP NHÁY BẰNG CÁCH DÙNG useMemo ---
     const handleMouseEnterProduct = (e, item) => {
         const rect = e.currentTarget.getBoundingClientRect();
         setTooltip({ 
             show: true, 
             x: rect.left + rect.width / 2, 
-            y: rect.top - 12, // Đẩy tooltip lên cao hẳn để không bao giờ chạm vào chuột
+            y: rect.top - 8, // Đẩy xa chuột một chút
             data: item 
         });
     };
     
-    const handleMouseLeaveProduct = () => {
-        setTooltip({ show: false, x: 0, y: 0, data: null });
-    };
+    const handleMouseLeaveProduct = () => setTooltip({ show: false, x: 0, y: 0, data: null });
 
     const getCustomRecurringText = () => {
         const { frequency, interval, daysOfWeek } = customConfig;
@@ -203,7 +190,9 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    const renderCalendarCells = () => {
+    // FIX MẠNH MẼ: Dùng useMemo đóng băng Lưới lịch.
+    // Lịch sẽ không bị render lại vô tội vạ mỗi khi Tooltip bật/tắt nữa -> 100% hết giật nháy!
+    const calendarCells = useMemo(() => {
         const cells = [];
         
         for (let i = 0; i < firstDay; i++) {
@@ -211,12 +200,20 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
-            const cellDateStr = formatDateStr(new Date(currentYear, currentMonth, day));
+            const cellDateObj = new Date(currentYear, currentMonth, day);
+            const cellDateStr = formatDateStr(cellDateObj);
             const isToday = cellDateStr === todayStr;
 
-            // Kiểm tra Ngày Lễ
-            const dayMonthStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
-            const holidayName = VN_HOLIDAYS[dayMonthStr];
+            // KIỂM TRA NGÀY LỄ (Dương Lịch)
+            const solarDayStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
+            let holidayName = SOLAR_HOLIDAYS[solarDayStr] || null;
+
+            // KIỂM TRA NGÀY LỄ (Âm Lịch)
+            const lunarDate = getLunarDate(cellDateObj);
+            const lunarDayStr = `${String(lunarDate.day).padStart(2, '0')}-${String(lunarDate.month).padStart(2, '0')}`;
+            if (LUNAR_HOLIDAYS[lunarDayStr]) {
+                holidayName = LUNAR_HOLIDAYS[lunarDayStr]; // Âm lịch ưu tiên đè lên Dương lịch nếu trùng
+            }
 
             const daySales = [];
             sessions.forEach(s => {
@@ -236,25 +233,24 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                         <span className={`text-[15px] font-bold ${isToday ? 'text-white bg-[#26D0CE] w-7 h-7 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
                             {day}
                         </span>
-                        <span className="text-[10px] font-medium text-gray-400 mt-1">
-                            {day}/{currentMonth === 0 ? 12 : currentMonth}
+                        {/* HIỂN THỊ LỊCH ÂM CỰC CHUẨN */}
+                        <span className={`text-[10px] font-bold mt-1 ${lunarDate.day === 1 || lunarDate.day === 15 ? 'text-rose-500' : 'text-gray-400'}`}>
+                            {lunarDate.day}/{lunarDate.month}
                         </span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1 pb-1">
                         
-                        {/* --- NGÀY LỄ --- */}
+                        {/* --- RENDER NGÀY LỄ --- */}
                         {holidayName && (
-                            <div className="bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-black px-1.5 py-1 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
-                                <span>🌟</span>
-                                <span className="truncate">{holidayName}</span>
+                            <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[10px] font-black px-1.5 py-1 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
+                                <span>🌟</span><span className="truncate">{holidayName}</span>
                             </div>
                         )}
 
                         {/* --- SẢN PHẨM ĐÃ BÁN --- */}
                         {daySales.map((item, idx) => (
                             <div 
-                                // Khóa key độc nhất để chống lỗi render nhấp nháy
                                 key={`sale-${day}-${idx}-${item.ten_san_pham}`} 
                                 className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-2 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
                                 onMouseEnter={(e) => handleMouseEnterProduct(e, item)}
@@ -294,21 +290,24 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             );
         }
-
         return cells;
+    }, [currentYear, currentMonth, events, sessions]); // ⚠️ Bí quyết hết giật: Chỉ vẽ lại lịch khi dữ liệu nguồn thay đổi!
+
+    // FIX MẠNH MẼ: Ép trình duyệt mở bộ chọn ngày khi bấm vào chữ
+    const openDatePicker = (e) => {
+        const input = e.currentTarget.querySelector('input');
+        if (input && input.showPicker) {
+            try { input.showPicker(); } catch (err) {}
+        }
     };
 
     return (
         <>
-            {/* TOOLTIP NỔI (Hoàn toàn cách ly khỏi chuột, chống giật nháy) */}
+            {/* TOOLTIP NỔI: Cấp độ Z cao nhất, tắt mọi tương tác chuột (pointer-events-none) */}
             {tooltip.show && tooltip.data && (
                 <div 
                     className="fixed z-[9999] pointer-events-none transition-opacity duration-150"
-                    style={{ 
-                        left: tooltip.x, 
-                        top: tooltip.y, 
-                        transform: 'translate(-50%, -100%)'
-                    }}
+                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
                 >
                     <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom">
                         <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate max-w-[250px]">
@@ -327,7 +326,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             )}
 
-            {/* KHUNG LỊCH CHÍNH */}
             <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
                 
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
@@ -335,15 +333,12 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                         <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
                             <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
                             
-                            {/* --- TÍNH NĂNG CHỌN NHANH THÁNG/NĂM --- */}
-                            <div className="relative flex items-center justify-center px-4 min-w-[160px] group cursor-pointer">
-                                <span className="font-black text-[18px] text-[#1A5B82] group-hover:text-[#26D0CE] transition-colors">
-                                    Tháng {currentMonth + 1}, {currentYear}
-                                </span>
-                                {/* Input type="month" bị ẩn đi, nhưng khi click vào sẽ xổ ra bảng chọn native của trình duyệt */}
+                            {/* KHU VỰC CHỌN THÁNG/NĂM (Đã sửa lỗi Click không hiện) */}
+                            <div className="relative flex items-center justify-center px-4 min-w-[160px] cursor-pointer hover:text-[#26D0CE] text-[#1A5B82] transition-colors" onClick={openDatePicker}>
+                                <span className="font-black text-[18px] pointer-events-none">Tháng {currentMonth + 1}, {currentYear}</span>
                                 <input
                                     type="month"
-                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                                     value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`}
                                     onChange={(e) => {
                                         if (e.target.value) {
@@ -374,8 +369,9 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                             </div>
                         ))}
                     </div>
+                    {/* Render lưới lịch đã được đóng băng bởi useMemo */}
                     <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
-                        {renderCalendarCells()}
+                        {calendarCells}
                     </div>
                 </div>
 
