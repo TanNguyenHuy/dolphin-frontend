@@ -17,8 +17,8 @@ export default function AuthForm({
                 Sẽ bay thẳng ra bên trái khi isExiting = true
                 ========================================== */}
             <div className={`absolute top-0 left-0 w-full md:w-1/2 h-full bg-white rounded-[32px] md:rounded-l-[40px] md:rounded-r-none flex flex-col items-center justify-center p-8 md:p-12 shadow-[0_20px_60px_rgba(0,10,30,0.08)] transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)]
-                ${isExiting ? 'md:-translate-x-[150vw] opacity-0' : 'translate-x-0 opacity-100'}
                 ${!isRightPanelActive ? 'z-20' : 'opacity-0 md:opacity-100 z-10 pointer-events-none md:pointer-events-auto'}
+                ${isExiting ? 'md:-translate-x-[150vw] opacity-0' : 'translate-x-0 opacity-100'}
             `}>
                 <form onSubmit={view === 'FORGOT' && otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full max-w-[360px]">
                     <div className="w-[80px] h-[80px] rounded-[24px] flex items-center justify-center mb-6 shadow-sm border border-gray-100 overflow-hidden bg-white">
@@ -107,8 +107,8 @@ export default function AuthForm({
                 Sẽ bay thẳng ra bên phải khi isExiting = true
                 ========================================== */}
             <div className={`absolute top-0 right-0 w-full md:w-1/2 h-full bg-white rounded-[32px] md:rounded-r-[40px] md:rounded-l-none flex flex-col items-center justify-center p-8 md:p-12 shadow-[0_20px_60px_rgba(0,10,30,0.08)] transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)]
-                ${isExiting ? 'md:translate-x-[150vw] opacity-0' : 'translate-x-0 opacity-100'}
                 ${isRightPanelActive ? 'z-20' : 'opacity-0 md:opacity-100 z-10 pointer-events-none md:pointer-events-auto'}
+                ${isExiting ? 'md:translate-x-[150vw] opacity-0' : 'translate-x-0 opacity-100'}
             `}>
                 <form onSubmit={otpStep === 1 ? handleSendOTP : handleAuth} className="flex flex-col items-center justify-center w-full max-w-[360px] text-center">
                     <h1 className="font-black text-[32px] md:text-[38px] mb-2 text-[#1D1D1F] tracking-tight">Tạo Tài Khoản</h1>
@@ -164,7 +164,8 @@ export default function AuthForm({
                 Sẽ tự động lướt qua lại giữa 2 form và bay ra ngoài khi isExiting = true
                 ========================================== */}
             <div className={`hidden md:block absolute top-0 w-1/2 h-full z-50 transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)]
-                ${isExiting ? (isRightPanelActive ? '-translate-x-[150vw] opacity-0' : 'translate-x-[150vw] opacity-0') : (isRightPanelActive ? 'left-0' : 'left-1/2')}
+                ${isRightPanelActive ? 'left-0' : 'left-1/2'}
+                ${isExiting ? (isRightPanelActive ? '-translate-x-[150vw] opacity-0' : 'translate-x-[150vw] opacity-0') : 'translate-x-0 opacity-100'}
             `}>
                 <div className={`w-full h-full bg-gradient-to-br from-[#26D0CE] to-[#33A1FD] text-white overflow-hidden relative transition-all duration-700 shadow-2xl
                     ${isExiting ? 'rounded-[40px]' : (isRightPanelActive ? 'rounded-l-[40px] rounded-r-3xl' : 'rounded-r-[40px] rounded-l-3xl')}
