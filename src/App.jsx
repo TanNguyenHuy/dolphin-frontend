@@ -298,6 +298,7 @@ export default function App() {
         try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
+    // Khởi tạo các hàm lưu Modal
     const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
     const handleSaveEdit = async () => { 
         if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
@@ -487,7 +488,7 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Profile & Logout Area - CHỈ HIỂN THỊ ICON ĐĂNG XUẤT ĐỎ */}
+                {/* Profile & Logout Area */}
                 <div className="p-4 border-t border-gray-100 shrink-0">
                     {timeLeftDisplay && (
                         <div className="mb-4 px-2 flex items-center gap-2 text-[11px] font-bold text-amber-600 bg-amber-50 py-2 rounded-lg justify-center border border-amber-100">
@@ -509,13 +510,12 @@ export default function App() {
                 <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
             )}
 
-
             {/* ========================================================= */}
             {/* CỘT PHẢI (MAIN CONTENT AREA) */}
             {/* ========================================================= */}
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
                 
-                {/* Nút bật Menu lơ lửng trên Mobile (Thay thế Topbar) */}
+                {/* Nút bật Menu lơ lửng trên Mobile */}
                 <button 
                     onClick={() => setIsSidebarOpen(true)} 
                     className="md:hidden fixed top-4 left-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-xl shadow-md text-[#1A5B82] border border-gray-200 active:scale-95 transition-all"
@@ -542,8 +542,13 @@ export default function App() {
                                     isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                                    newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} handleStartEdit={handleStartEdit}
-                                    handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} handleStartSync={setSyncRow}
+                                    newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
+                                    
+                                    // TRUYỀN VÀO ĐẦY ĐỦ CÁC TRƯỜNG HỢP GỌI HÀM ĐỂ BẢO VỆ CHẮC CHẮN NÚT BẤM SẼ HOẠT ĐỘNG
+                                    handleStartEdit={handleStartEdit} handleEditRow={handleStartEdit} onEditRow={handleStartEdit} setEditingRow={handleStartEdit}
+                                    handleStartSync={setSyncRow} handleSyncRow={setSyncRow} onSyncRow={setSyncRow} setSyncRow={setSyncRow}
+                                    
+                                    handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
                                 />
                             )}
 
