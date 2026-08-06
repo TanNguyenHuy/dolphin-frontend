@@ -4,13 +4,28 @@ import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, 
 // Hàm format tiền tệ nội bộ
 const formatMoney = (val) => new Intl.NumberFormat('vi-VN').format(val || 0);
 
-// Hàm hỗ trợ format ngày (YYYY-MM-DD) để so sánh chuẩn xác
+// Hàm hỗ trợ format ngày (YYYY-MM-DD)
 const formatDateStr = (date) => {
     const d = new Date(date);
     const month = '' + (d.getMonth() + 1);
     const day = '' + d.getDate();
     const year = d.getFullYear();
     return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
+};
+
+// DANH SÁCH NGÀY LỄ LỚN (DƯƠNG LỊCH) TẠI VIỆT NAM
+const VN_HOLIDAYS = {
+    "01-01": "Tết Dương Lịch",
+    "14-02": "Lễ Tình nhân",
+    "08-03": "Quốc tế Phụ nữ",
+    "30-04": "Giải phóng miền Nam",
+    "01-05": "Quốc tế Lao động",
+    "01-06": "Quốc tế Thiếu nhi",
+    "02-09": "Quốc khánh VN",
+    "20-10": "Phụ nữ Việt Nam",
+    "20-11": "Nhà giáo Việt Nam",
+    "22-12": "Quân đội Nhân dân",
+    "24-12": "Lễ Giáng sinh"
 };
 
 export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }) {
@@ -35,7 +50,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         daysOfWeek: [new Date().getDay()] 
     });
 
-    // State cho Modal Xóa (Thay thế window.confirm)
+    // State cho Modal Xóa
     const [eventToDelete, setEventToDelete] = useState(null);
 
     // State cho Tooltip khi rê chuột vào sản phẩm
@@ -154,7 +169,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }));
     };
 
-    // --- XỬ LÝ XOÁ ĐỒNG BỘ ---
+    // Xoá chuỗi sự kiện
     const requestDeleteEvent = (eventId) => setEventToDelete(eventId);
     const confirmDeleteEvent = () => {
         if(eventToDelete) {
@@ -163,20 +178,19 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
     };
 
-    // --- XỬ LÝ RÊ CHUỘT (TOOLTIP) CHUẨN XÁC ---
+    // --- FIX LỖI TOOLTIP NHẤP NHÁY ---
     const handleMouseEnterProduct = (e, item) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        // Lấy tọa độ X là chính giữa thẻ sản phẩm, tọa độ Y là đỉnh thẻ
         setTooltip({ 
             show: true, 
             x: rect.left + rect.width / 2, 
-            y: rect.top, 
+            y: rect.top - 12, // Đẩy tooltip lên cao hẳn để không bao giờ chạm vào chuột
             data: item 
         });
     };
     
     const handleMouseLeaveProduct = () => {
-        setTooltip({ ...tooltip, show: false });
+        setTooltip({ show: false, x: 0, y: 0, data: null });
     };
 
     const getCustomRecurringText = () => {
@@ -200,6 +214,10 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const cellDateStr = formatDateStr(new Date(currentYear, currentMonth, day));
             const isToday = cellDateStr === todayStr;
 
+            // Kiểm tra Ngày Lễ
+            const dayMonthStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const holidayName = VN_HOLIDAYS[dayMonthStr];
+
             const daySales = [];
             sessions.forEach(s => {
                 if (s.daily && Array.isArray(s.daily)) {
@@ -213,7 +231,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const dayPersonalEvents = events.filter(ev => isEventOnDate(ev, cellDateStr));
 
             cells.push(
-                <div key={day} className={`bg-white border border-gray-100 p-2 h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
+                <div key={`cell-${day}`} className={`bg-white border border-gray-100 p-2 h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
                     <div className="flex justify-between items-start mb-1 shrink-0">
                         <span className={`text-[15px] font-bold ${isToday ? 'text-white bg-[#26D0CE] w-7 h-7 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
                             {day}
@@ -225,10 +243,19 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1">
                         
-                        {/* --- SẢN PHẨM (Giao diện tinh gọn chỉ có Tên, không có số lượng bán) --- */}
+                        {/* --- NGÀY LỄ --- */}
+                        {holidayName && (
+                            <div className="bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-black px-1.5 py-1 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
+                                <span>🌟</span>
+                                <span className="truncate">{holidayName}</span>
+                            </div>
+                        )}
+
+                        {/* --- SẢN PHẨM ĐÃ BÁN --- */}
                         {daySales.map((item, idx) => (
                             <div 
-                                key={`sale-${idx}`} 
+                                // Khóa key độc nhất để chống lỗi render nhấp nháy
+                                key={`sale-${day}-${idx}-${item.ten_san_pham}`} 
                                 className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-2 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
                                 onMouseEnter={(e) => handleMouseEnterProduct(e, item)}
                                 onMouseLeave={handleMouseLeaveProduct}
@@ -273,15 +300,14 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
     return (
         <>
-            {/* TOOLTIP NỔI (ĐƯỢC ĐƯA RA NGOÀI CÙNG ĐỂ TRÁNH LỖI LỆCH TỌA ĐỘ BỞI CSS TRANSFORM) */}
+            {/* TOOLTIP NỔI (Hoàn toàn cách ly khỏi chuột, chống giật nháy) */}
             {tooltip.show && tooltip.data && (
                 <div 
                     className="fixed z-[9999] pointer-events-none transition-opacity duration-150"
                     style={{ 
                         left: tooltip.x, 
                         top: tooltip.y, 
-                        transform: 'translate(-50%, -100%)', 
-                        marginTop: '-6px' // Tạo khoảng hở mỏng giữa tooltip và nút
+                        transform: 'translate(-50%, -100%)'
                     }}
                 >
                     <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom">
@@ -308,9 +334,26 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                     <div className="flex items-center gap-4">
                         <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
                             <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
-                            <div className="flex items-center px-4 font-black text-[18px] text-[#1A5B82] min-w-[160px] justify-center">
-                                Tháng {currentMonth + 1}, {currentYear}
+                            
+                            {/* --- TÍNH NĂNG CHỌN NHANH THÁNG/NĂM --- */}
+                            <div className="relative flex items-center justify-center px-4 min-w-[160px] group cursor-pointer">
+                                <span className="font-black text-[18px] text-[#1A5B82] group-hover:text-[#26D0CE] transition-colors">
+                                    Tháng {currentMonth + 1}, {currentYear}
+                                </span>
+                                {/* Input type="month" bị ẩn đi, nhưng khi click vào sẽ xổ ra bảng chọn native của trình duyệt */}
+                                <input
+                                    type="month"
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const [y, m] = e.target.value.split('-');
+                                            setCurrentDate(new Date(y, m - 1, 1));
+                                        }
+                                    }}
+                                />
                             </div>
+
                             <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronRight size={20} /></button>
                         </div>
                         <button onClick={goToToday} className="hidden md:flex px-4 py-2.5 bg-white border border-gray-200 rounded-[14px] text-[13px] font-bold text-gray-600 hover:text-[#26D0CE] hover:border-[#26D0CE] transition-all shadow-sm items-center gap-2 active:scale-95">
