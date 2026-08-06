@@ -163,10 +163,18 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
     };
 
-    // --- XỬ LÝ RÊ CHUỘT (TOOLTIP) ---
-    const handleMouseMoveProduct = (e, item) => {
-        setTooltip({ show: true, x: e.clientX, y: e.clientY, data: item });
+    // --- XỬ LÝ RÊ CHUỘT (TOOLTIP) CHUẨN XÁC ---
+    const handleMouseEnterProduct = (e, item) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        // Lấy tọa độ X là chính giữa thẻ sản phẩm, tọa độ Y là đỉnh thẻ
+        setTooltip({ 
+            show: true, 
+            x: rect.left + rect.width / 2, 
+            y: rect.top, 
+            data: item 
+        });
     };
+    
     const handleMouseLeaveProduct = () => {
         setTooltip({ ...tooltip, show: false });
     };
@@ -217,16 +225,16 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1">
                         
-                        {/* --- SẢN PHẨM (Giao diện tinh gọn chỉ có Tên) --- */}
+                        {/* --- SẢN PHẨM (Giao diện tinh gọn chỉ có Tên, không có số lượng bán) --- */}
                         {daySales.map((item, idx) => (
                             <div 
                                 key={`sale-${idx}`} 
-                                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-1.5 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
-                                onMouseMove={(e) => handleMouseMoveProduct(e, item)}
+                                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-2 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
+                                onMouseEnter={(e) => handleMouseEnterProduct(e, item)}
                                 onMouseLeave={handleMouseLeaveProduct}
                             >
                                 <div className="flex items-center gap-1.5 truncate">
-                                    <span className="text-[12px]">🛍️</span>
+                                    <span className="text-[12px] shrink-0">🛍️</span>
                                     <span className="truncate">{item.ten_san_pham}</span>
                                 </div>
                             </div>
@@ -264,16 +272,20 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     };
 
     return (
-        <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
-            
-            {/* TOOLTIP NỔI (Được tách riêng khối bọc transform để không bị css scale ghi đè) */}
+        <>
+            {/* TOOLTIP NỔI (ĐƯỢC ĐƯA RA NGOÀI CÙNG ĐỂ TRÁNH LỖI LỆCH TỌA ĐỘ BỞI CSS TRANSFORM) */}
             {tooltip.show && tooltip.data && (
                 <div 
-                    className="fixed z-[9999] pointer-events-none"
-                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -105%)' }}
+                    className="fixed z-[9999] pointer-events-none transition-opacity duration-150"
+                    style={{ 
+                        left: tooltip.x, 
+                        top: tooltip.y, 
+                        transform: 'translate(-50%, -100%)', 
+                        marginTop: '-6px' // Tạo khoảng hở mỏng giữa tooltip và nút
+                    }}
                 >
                     <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom">
-                        <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate">
+                        <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate max-w-[250px]">
                             {tooltip.data.ten_san_pham}
                         </div>
                         <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-[11px] font-bold">
@@ -289,164 +301,168 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             )}
 
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
-                <div className="flex items-center gap-4">
-                    <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
-                        <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
-                        <div className="flex items-center px-4 font-black text-[18px] text-[#1A5B82] min-w-[160px] justify-center">
-                            Tháng {currentMonth + 1}, {currentYear}
+            {/* KHUNG LỊCH CHÍNH */}
+            <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
+                
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
+                            <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
+                            <div className="flex items-center px-4 font-black text-[18px] text-[#1A5B82] min-w-[160px] justify-center">
+                                Tháng {currentMonth + 1}, {currentYear}
+                            </div>
+                            <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronRight size={20} /></button>
                         </div>
-                        <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronRight size={20} /></button>
+                        <button onClick={goToToday} className="hidden md:flex px-4 py-2.5 bg-white border border-gray-200 rounded-[14px] text-[13px] font-bold text-gray-600 hover:text-[#26D0CE] hover:border-[#26D0CE] transition-all shadow-sm items-center gap-2 active:scale-95">
+                            <CalIcon size={16} /> Hôm nay
+                        </button>
                     </div>
-                    <button onClick={goToToday} className="hidden md:flex px-4 py-2.5 bg-white border border-gray-200 rounded-[14px] text-[13px] font-bold text-gray-600 hover:text-[#26D0CE] hover:border-[#26D0CE] transition-all shadow-sm items-center gap-2 active:scale-95">
-                        <CalIcon size={16} /> Hôm nay
+
+                    <button onClick={() => setShowModal(true)} className="px-6 py-3 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[14px] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all flex items-center gap-2">
+                        <Plus size={18} strokeWidth={3} /> TẠO NHẮC NHỞ
                     </button>
                 </div>
 
-                <button onClick={() => setShowModal(true)} className="px-6 py-3 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[14px] shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all flex items-center gap-2">
-                    <Plus size={18} strokeWidth={3} /> TẠO NHẮC NHỞ
-                </button>
-            </div>
-
-            <div className="flex-1 flex flex-col min-h-[600px]">
-                <div className="grid grid-cols-7 gap-px mb-2 shrink-0">
-                    {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => (
-                        <div key={day} className={`text-center py-2 font-black text-[13px] tracking-widest uppercase ${i >= 5 ? 'text-rose-500' : 'text-gray-400'}`}>
-                            {day}
-                        </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
-                    {renderCalendarCells()}
-                </div>
-            </div>
-
-            {/* MODAL THÊM SỰ KIỆN */}
-            {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
-                    <div className="bg-white rounded-[32px] w-full max-w-[420px] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
-                        
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500"><Clock size={22}/></div>
-                            <div>
-                                <h3 className="text-[20px] font-black text-[#1D1D1F]">Tạo Nhắc Nhở</h3>
-                                <p className="text-[12px] text-gray-500 font-bold">Hệ thống sẽ tự động ghim vào lịch</p>
+                <div className="flex-1 flex flex-col min-h-[600px]">
+                    <div className="grid grid-cols-7 gap-px mb-2 shrink-0">
+                        {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => (
+                            <div key={day} className={`text-center py-2 font-black text-[13px] tracking-widest uppercase ${i >= 5 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                {day}
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
+                        {renderCalendarCells()}
+                    </div>
+                </div>
 
-                        <form onSubmit={handleSaveEvent} className="space-y-5">
-                            <div>
-                                <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Nội dung công việc</label>
-                                <input required type="text" placeholder="VD: Nhập tiền xưởng, Đáo hạn..." className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[15px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all"
-                                    value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})}
-                                />
-                            </div>
+                {/* MODAL THÊM SỰ KIỆN */}
+                {showModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
+                        <div className="bg-white rounded-[32px] w-full max-w-[420px] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+                            <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500"><Clock size={22}/></div>
                                 <div>
-                                    <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Bắt đầu từ</label>
-                                    <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700"
-                                        value={newEvent.startDate} onChange={e => setNewEvent({...newEvent, startDate: e.target.value})}
+                                    <h3 className="text-[20px] font-black text-[#1D1D1F]">Tạo Nhắc Nhở</h3>
+                                    <p className="text-[12px] text-gray-500 font-bold">Hệ thống sẽ tự động ghim vào lịch</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSaveEvent} className="space-y-5">
+                                <div>
+                                    <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Nội dung công việc</label>
+                                    <input required type="text" placeholder="VD: Nhập tiền xưởng, Đáo hạn..." className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[15px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all"
+                                        value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Chu kỳ lặp lại</label>
-                                    <select className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700 cursor-pointer appearance-none"
-                                        value={newEvent.recurring} onChange={e => setNewEvent({...newEvent, recurring: e.target.value})}
-                                    >
-                                        <option value="none">Chỉ 1 lần</option>
-                                        <option value="daily">Hằng ngày</option>
-                                        <option value="weekly">Hằng tuần</option>
-                                        <option value="monthly">Hằng tháng</option>
-                                        <option value="yearly">Hằng năm</option>
-                                        <option value="custom">Tùy chỉnh...</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {newEvent.recurring === 'custom' && (
-                                <div className="p-5 bg-orange-50/50 border border-orange-200/50 rounded-[20px] space-y-4 animate-scale-up origin-top">
-                                    <div className="flex items-center gap-2 mb-2 text-orange-600 font-black text-[13px] uppercase tracking-widest">
-                                        <Settings2 size={16} /> Cấu hình chi tiết
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Bắt đầu từ</label>
+                                        <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700"
+                                            value={newEvent.startDate} onChange={e => setNewEvent({...newEvent, startDate: e.target.value})}
+                                        />
                                     </div>
-                                    
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-[13px] font-bold text-gray-600">Tần suất</label>
-                                        <select className="bg-white border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-bold outline-none focus:border-orange-400"
-                                            value={customConfig.frequency} onChange={e => setCustomConfig({...customConfig, frequency: e.target.value})}
+                                    <div>
+                                        <label className="block text-[12px] font-black text-gray-500 uppercase tracking-widest mb-2">Chu kỳ lặp lại</label>
+                                        <select className="w-full bg-gray-50 border border-gray-200 rounded-[16px] px-4 py-3.5 text-[14px] font-bold focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-100 outline-none transition-all text-gray-700 cursor-pointer appearance-none"
+                                            value={newEvent.recurring} onChange={e => setNewEvent({...newEvent, recurring: e.target.value})}
                                         >
-                                            <option value="daily">Hàng ngày</option>
-                                            <option value="weekly">Hàng tuần</option>
-                                            <option value="monthly">Hàng tháng</option>
-                                            <option value="yearly">Hàng năm</option>
+                                            <option value="none">Chỉ 1 lần</option>
+                                            <option value="daily">Hằng ngày</option>
+                                            <option value="weekly">Hằng tuần</option>
+                                            <option value="monthly">Hằng tháng</option>
+                                            <option value="yearly">Hằng năm</option>
+                                            <option value="custom">Tùy chỉnh...</option>
                                         </select>
                                     </div>
+                                </div>
 
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-[13px] font-bold text-gray-600">Mỗi</label>
-                                        <div className="flex items-center gap-2">
-                                            <input type="number" min="1" max="99" className="w-16 bg-white border border-gray-200 rounded-[10px] px-2 py-2 text-[14px] font-bold outline-none text-center focus:border-orange-400"
-                                                value={customConfig.interval} onChange={e => setCustomConfig({...customConfig, interval: parseInt(e.target.value) || 1})}
-                                            />
-                                            <span className="text-[13px] font-bold text-gray-600 w-10">
-                                                {customConfig.frequency === 'daily' ? 'ngày' : customConfig.frequency === 'weekly' ? 'tuần' : customConfig.frequency === 'monthly' ? 'tháng' : 'năm'}
-                                            </span>
+                                {newEvent.recurring === 'custom' && (
+                                    <div className="p-5 bg-orange-50/50 border border-orange-200/50 rounded-[20px] space-y-4 animate-scale-up origin-top">
+                                        <div className="flex items-center gap-2 mb-2 text-orange-600 font-black text-[13px] uppercase tracking-widest">
+                                            <Settings2 size={16} /> Cấu hình chi tiết
                                         </div>
-                                    </div>
+                                        
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[13px] font-bold text-gray-600">Tần suất</label>
+                                            <select className="bg-white border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-bold outline-none focus:border-orange-400"
+                                                value={customConfig.frequency} onChange={e => setCustomConfig({...customConfig, frequency: e.target.value})}
+                                            >
+                                                <option value="daily">Hàng ngày</option>
+                                                <option value="weekly">Hàng tuần</option>
+                                                <option value="monthly">Hàng tháng</option>
+                                                <option value="yearly">Hàng năm</option>
+                                            </select>
+                                        </div>
 
-                                    {customConfig.frequency === 'weekly' && (
-                                        <div className="pt-2">
-                                            <div className="flex flex-wrap justify-between gap-1 mt-2">
-                                                {[1,2,3,4,5,6,0].map(day => (
-                                                    <button type="button" key={day} 
-                                                        className={`w-10 h-10 rounded-full text-[12px] font-black flex items-center justify-center transition-all ${customConfig.daysOfWeek.includes(day) ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.3)] scale-110' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
-                                                        onClick={() => {
-                                                            let newDays = [...customConfig.daysOfWeek];
-                                                            if (newDays.includes(day)) { newDays = newDays.filter(d => d !== day); } 
-                                                            else { newDays.push(day); }
-                                                            setCustomConfig({...customConfig, daysOfWeek: newDays});
-                                                        }}
-                                                    >
-                                                        {day === 0 ? 'CN' : `T${day+1}`}
-                                                    </button>
-                                                ))}
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[13px] font-bold text-gray-600">Mỗi</label>
+                                            <div className="flex items-center gap-2">
+                                                <input type="number" min="1" max="99" className="w-16 bg-white border border-gray-200 rounded-[10px] px-2 py-2 text-[14px] font-bold outline-none text-center focus:border-orange-400"
+                                                    value={customConfig.interval} onChange={e => setCustomConfig({...customConfig, interval: parseInt(e.target.value) || 1})}
+                                                />
+                                                <span className="text-[13px] font-bold text-gray-600 w-10">
+                                                    {customConfig.frequency === 'daily' ? 'ngày' : customConfig.frequency === 'weekly' ? 'tuần' : customConfig.frequency === 'monthly' ? 'tháng' : 'năm'}
+                                                </span>
                                             </div>
                                         </div>
-                                    )}
 
-                                    <p className="text-[11px] font-bold text-gray-400 pt-2 border-t border-orange-200/50 text-center">
-                                        {getCustomRecurringText()}
-                                    </p>
-                                </div>
-                            )}
+                                        {customConfig.frequency === 'weekly' && (
+                                            <div className="pt-2">
+                                                <div className="flex flex-wrap justify-between gap-1 mt-2">
+                                                    {[1,2,3,4,5,6,0].map(day => (
+                                                        <button type="button" key={day} 
+                                                            className={`w-10 h-10 rounded-full text-[12px] font-black flex items-center justify-center transition-all ${customConfig.daysOfWeek.includes(day) ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.3)] scale-110' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                                                            onClick={() => {
+                                                                let newDays = [...customConfig.daysOfWeek];
+                                                                if (newDays.includes(day)) { newDays = newDays.filter(d => d !== day); } 
+                                                                else { newDays.push(day); }
+                                                                setCustomConfig({...customConfig, daysOfWeek: newDays});
+                                                            }}
+                                                        >
+                                                            {day === 0 ? 'CN' : `T${day+1}`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
-                            <button type="submit" className="w-full mt-2 py-4 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[15px] tracking-widest shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2">
-                                <Check size={20} strokeWidth={3} /> LƯU SỰ KIỆN
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
+                                        <p className="text-[11px] font-bold text-gray-400 pt-2 border-t border-orange-200/50 text-center">
+                                            {getCustomRecurringText()}
+                                        </p>
+                                    </div>
+                                )}
 
-            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN */}
-            {eventToDelete && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
-                    <div className="bg-white rounded-[24px] w-full max-w-[360px] p-6 shadow-2xl relative text-center">
-                        <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
-                            <Trash2 size={24} />
+                                <button type="submit" className="w-full mt-2 py-4 rounded-[16px] bg-gradient-to-r from-orange-400 to-rose-400 text-white font-black text-[15px] tracking-widest shadow-[0_8px_20px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_25px_rgba(244,63,94,0.4)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2">
+                                    <Check size={20} strokeWidth={3} /> LƯU SỰ KIỆN
+                                </button>
+                            </form>
                         </div>
-                        <h3 className="text-[18px] font-black text-[#1D1D1F] mb-2">Xác nhận xoá</h3>
-                        <p className="text-[13px] text-gray-500 font-medium mb-6 px-2">
-                            Bạn có chắc muốn xoá toàn bộ chuỗi nhắc nhở này không? Hành động này không thể hoàn tác.
-                        </p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setEventToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold text-[14px] rounded-[14px] hover:bg-gray-200 transition-colors active:scale-95">Huỷ</button>
-                            <button onClick={confirmDeleteEvent} className="flex-1 py-3 bg-rose-500 text-white font-bold text-[14px] rounded-[14px] hover:bg-rose-600 transition-colors active:scale-95 shadow-[0_4px_12px_rgba(244,63,94,0.3)]">Xoá ngay</button>
+                    </div>
+                )}
+
+                {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN */}
+                {eventToDelete && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
+                        <div className="bg-white rounded-[24px] w-full max-w-[360px] p-6 shadow-2xl relative text-center">
+                            <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
+                                <Trash2 size={24} />
+                            </div>
+                            <h3 className="text-[18px] font-black text-[#1D1D1F] mb-2">Xác nhận xoá</h3>
+                            <p className="text-[13px] text-gray-500 font-medium mb-6 px-2">
+                                Bạn có chắc muốn xoá toàn bộ chuỗi nhắc nhở này không? Hành động này không thể hoàn tác.
+                            </p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setEventToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold text-[14px] rounded-[14px] hover:bg-gray-200 transition-colors active:scale-95">Huỷ</button>
+                                <button onClick={confirmDeleteEvent} className="flex-1 py-3 bg-rose-500 text-white font-bold text-[14px] rounded-[14px] hover:bg-rose-600 transition-colors active:scale-95 shadow-[0_4px_12px_rgba(244,63,94,0.3)]">Xoá ngay</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        </>
     );
 }
