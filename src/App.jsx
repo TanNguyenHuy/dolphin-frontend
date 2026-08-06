@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
+import { createPortal } from 'react-dom';
 
-// Import Icons cho giao diện mới
+// Import Icons
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
 
-// Import các Component giao diện
+// Import Components
 import Auth from './Auth';
 import AdminPanel from './components/AdminPanel';
 import DashboardView from './components/DashboardView';
@@ -14,7 +15,7 @@ import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
-// Import các Modals (SẠCH SẼ, NGUYÊN BẢN)
+// Import Modals
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -23,13 +24,10 @@ import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
-// Import Utils và Bộ Não Logic
+// Import Utils & Logic
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
 
-// ============================================================================
-// LÁ CHẮN CƯỜNG LỰC (ERROR BOUNDARY)
-// ============================================================================
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
     static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -37,17 +35,13 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="p-6 md:p-10 bg-[#FFF5F5] border-2 border-red-200 rounded-[32px] shadow-2xl max-w-5xl mx-auto mt-20 relative z-50">
-                    <h2 className="text-[24px] font-black text-red-600 mb-4 uppercase tracking-widest">🚨 Hệ thống phát hiện Crash (Sập giao diện)!</h2>
-                    <p className="text-[15px] text-gray-700 font-medium mb-6">Thay vì hiện màn hình trắng, lá chắn đã chặn lại. Hãy chụp màn hình khung đỏ dưới đây và gửi lại cho tôi:</p>
+                <div className="p-10 bg-[#FFF5F5] border-2 border-red-200 rounded-[32px] shadow-2xl max-w-5xl mx-auto mt-20 relative z-50">
+                    <h2 className="text-[24px] font-black text-red-600 mb-4 uppercase">🚨 Hệ thống phát hiện Crash!</h2>
                     <div className="bg-white p-5 rounded-2xl overflow-x-auto text-[13px] font-mono text-red-800 border border-red-100 shadow-inner max-h-[300px] overflow-y-auto">
                         <strong className="text-red-600 text-[15px]">{this.state.error?.toString()}</strong>
-                        <br/><br/>
-                        {this.state.errorInfo?.componentStack}
+                        <br/><br/>{this.state.errorInfo?.componentStack}
                     </div>
-                    <button onClick={() => window.location.reload()} className="mt-8 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all active:scale-95">
-                        Tải lại trang
-                    </button>
+                    <button onClick={() => window.location.reload()} className="mt-8 bg-red-500 text-white font-bold py-3 px-8 rounded-xl shadow-md">Tải lại trang</button>
                 </div>
             );
         }
@@ -82,6 +76,7 @@ export default function App() {
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     const [syncRow, setSyncRow] = useState(null);
+    
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
     const [syncManualRev, setSyncManualRev] = useState('');
@@ -94,7 +89,7 @@ export default function App() {
     const [salarySession, setSalarySession] = useState(null);
     
     const [momoPhone, setMomoPhone] = useState(() => {
-        if (typeof window !== 'undefined') { return localStorage.getItem('momoPhone') || ''; }
+        if (typeof window !== 'undefined') return localStorage.getItem('momoPhone') || ''; 
         return '';
     });
     const [newItem, setNewItem] = useState({ ten_san_pham: '', link_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
@@ -114,20 +109,13 @@ export default function App() {
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     useEffect(() => {
-        if (!window.history.state || !window.history.state.view) {
-            window.history.replaceState({ view: 'DASHBOARD' }, '');
-        }
-
+        if (!window.history.state || !window.history.state.view) window.history.replaceState({ view: 'DASHBOARD' }, '');
         const handlePopState = (event) => {
             if (event.state && event.state.view) {
-                const targetView = event.state.view;
-                setView(targetView);
-                if (targetView === 'DASHBOARD') {
-                    fetchDashboard(); setDetailData(null); setImportedBales([]);
-                }
+                setView(event.state.view);
+                if (event.state.view === 'DASHBOARD') { fetchDashboard(); setDetailData(null); setImportedBales([]); }
             }
         };
-
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
@@ -169,7 +157,7 @@ export default function App() {
     }, [authUser, isExpiredState]);
 
     useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
-    useEffect(() => { if(authUser) { fetchDashboard(); } }, [authUser]);
+    useEffect(() => { if(authUser) fetchDashboard(); }, [authUser]);
 
     const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); handleNavigate('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
@@ -222,7 +210,7 @@ export default function App() {
     };
 
     const fetchDetail = async (id) => { 
-        if (!canViewDetail) { showToast("Gói của bạn không hỗ trợ xem chi tiết. Vui lòng nâng cấp lên gói VIP hoặc cao hơn!", "error"); return; }
+        if (!canViewDetail) { showToast("Gói của bạn không hỗ trợ xem chi tiết!", "error"); return; }
         try { 
             const res = await axios.get(`${API_URL}/data/${id}`); 
             let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
@@ -238,59 +226,55 @@ export default function App() {
     };
 
     // ============================================================================
-    // BỘ HÀM BẮT SỰ KIỆN NÚT BẤM (SIÊU SẠCH, CHỐNG LỖI)
+    // BỘ PHÂN GIẢI SỰ KIỆN (MỘC MẠC, CHỐNG LỖI 100%)
     // ============================================================================
-
-    const handleStartEditSession = (e, session) => {
+    
+    // Xử lý các Action ở Dashboard
+    const handleActionEditSession = (param1, param2) => {
         if (!canEdit) return;
-        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        const target = session || e; 
-        if (target && (target.id || target._id)) {
-            setEditingSession({ ...target, name: target.name === 'Thống kê tự động' ? '' : target.name });
-        }
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        if (typeof target === 'string' || typeof target === 'number') target = sessions.find(s => s.id === target || s._id === target);
+        if (target) setEditingSession({ ...target, name: target.name === 'Thống kê tự động' ? '' : target.name });
     };
 
-    const handleDeleteSession = (e, id) => {
+    const handleActionDeleteSession = (param1, param2) => {
         if (!canDelete) return;
-        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        let targetId = id || e;
-        if (targetId && typeof targetId === 'object') targetId = targetId.id || targetId._id;
-        if (targetId) {
-            setDeleteId(targetId);
-            setShowDeleteModal(true);
-        }
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        let id = (typeof target === 'string' || typeof target === 'number') ? target : (target?.id || target?._id);
+        if (id) { setDeleteId(id); setShowDeleteModal(true); }
     };
 
-    const handleStartSalary = (e, session) => {
+    const handleActionSalary = (param1, param2) => {
         if (!canPay) return;
-        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-        const target = session || e;
-        if (target && (target.id || target._id)) {
-            setSalarySession(target);
-            setShowSalaryModal(true);
-        }
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        if (typeof target === 'string' || typeof target === 'number') target = sessions.find(s => s.id === target || s._id === target);
+        if (target) { setSalarySession(target); setShowSalaryModal(true); }
     };
 
-    const handleStartEdit = (row) => {
-        if (canEdit && row) setEditingRow({ ...row });
+    // Xử lý các Action ở Detail
+    const handleActionEditRow = (param1, param2) => {
+        if (!canEdit) return;
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        if (typeof target === 'string' || typeof target === 'number') target = detailData?.daily?.find(r => r.id === target || r._id === target);
+        if (target) setEditingRow({ ...target });
     };
 
-    const handleDeleteRow = (id) => {
+    const handleActionDeleteRow = (param1, param2) => {
         if (!canDelete) return;
-        let targetId = id;
-        if (targetId && typeof targetId === 'object') targetId = targetId.id || targetId._id;
-        if (targetId) {
-            setRowToDelete(targetId);
-            setShowDeleteRowModal(true);
-        }
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        let id = (typeof target === 'string' || typeof target === 'number') ? target : (target?.id || target?._id);
+        if (id) { setRowToDelete(id); setShowDeleteRowModal(true); }
     };
 
-    const handleStartSync = (row) => {
-        if (canEdit && row) setSyncRow({ ...row });
+    const handleActionSyncRow = (param1, param2) => {
+        if (!canEdit) return;
+        let target = param1 && param1.nativeEvent ? param2 : param1;
+        if (typeof target === 'string' || typeof target === 'number') target = detailData?.daily?.find(r => r.id === target || r._id === target);
+        if (target) setSyncRow({ ...target });
     };
 
     // ============================================================================
-    // CÁC HÀM TƯƠNG TÁC API
+    // API CALLS
     // ============================================================================
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
@@ -405,9 +389,6 @@ export default function App() {
         return <Auth onLoginSuccess={(u, rememberMe) => { setAuthUser(u); if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); } }} expiredEmail={isExpiredState ? authUser?.email : null} onLogout={handleLogout} />;
     }
 
-    // ============================================================================
-    // GIAO DIỆN CHÍNH
-    // ============================================================================
     return (
         <div className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
             {showFireworks && <Confetti />}
@@ -524,9 +505,9 @@ export default function App() {
                                     activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                                     
                                     // Truyền mọi Alias cho Nút bấm an toàn
-                                    setSalarySession={handleStartSalary} setShowSalaryModal={handleStartSalary} onPay={handleStartSalary} handleStartSalary={handleStartSalary}
-                                    handleStartEditSession={handleStartEditSession} onEditSession={handleStartEditSession} onEdit={handleStartEditSession}
-                                    handleDeleteSession={handleDeleteSession} onDeleteSession={handleDeleteSession} onDelete={handleDeleteSession}
+                                    setSalarySession={handleActionSalary} setShowSalaryModal={handleActionSalary} onPay={handleActionSalary} handleStartSalary={handleActionSalary}
+                                    handleStartEditSession={handleActionEditSession} onEditSession={handleActionEditSession} onEdit={handleActionEditSession}
+                                    handleDeleteSession={handleActionDeleteSession} onDeleteSession={handleActionDeleteSession} onDelete={handleActionDeleteSession}
                                 />
                             )}
                             
@@ -539,9 +520,9 @@ export default function App() {
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
                                     // Truyền mọi Alias cho Nút bấm an toàn
-                                    handleStartEdit={handleStartEdit} handleEditRow={handleStartEdit} onEditRow={handleStartEdit} setEditingRow={handleStartEdit} onEdit={handleStartEdit}
-                                    handleStartSync={handleStartSync} handleSyncRow={handleStartSync} onSyncRow={handleStartSync} setSyncRow={handleStartSync} onSync={handleStartSync}
-                                    handleDeleteRow={handleDeleteRow} onDeleteRow={handleDeleteRow} onDelete={handleDeleteRow} setRowToDelete={handleDeleteRow}
+                                    handleStartEdit={handleActionEditRow} handleEditRow={handleActionEditRow} onEditRow={handleActionEditRow} setEditingRow={handleActionEditRow} onEdit={handleActionEditRow}
+                                    handleStartSync={handleActionSyncRow} handleSyncRow={handleActionSyncRow} onSyncRow={handleActionSyncRow} setSyncRow={handleActionSyncRow} onSync={handleActionSyncRow}
+                                    handleDeleteRow={handleActionDeleteRow} onDeleteRow={handleActionDeleteRow} onDelete={handleActionDeleteRow} setRowToDelete={handleActionDeleteRow}
 
                                     isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
                                 />
@@ -565,14 +546,23 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODAL: SỬ DỤNG LỆNH HIỂN THỊ TRỰC TIẾP LÀ NGUYÊN BẢN VÀ KHÔNG NHỒI RÁC */}
-            
-            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
-            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
-            {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
-            {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
-            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
-            {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
+            {/* BỘ MODAL: SẠCH SẼ, HIỂN THỊ ĐÚNG CHUẨN */}
+            {typeof document !== 'undefined' && createPortal(
+                <>
+                    {showDeleteModal && <DeleteSessionModal isOpen={true} show={true} visible={true} onConfirm={confirmDeleteSession} confirmDeleteSession={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} onClose={() => setShowDeleteModal(false)} setShowDeleteModal={setShowDeleteModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
+                    
+                    {showDeleteRowModal && <DeleteRowModal isOpen={true} show={true} visible={true} onConfirm={confirmDeleteRow} confirmDeleteRow={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} onClose={() => setShowDeleteRowModal(false)} setShowDeleteRowModal={setShowDeleteRowModal} isProcessing={isProcessingDelete} isProcessingDelete={isProcessingDelete} />}
+                    
+                    {editingRow && <EditRowModal isOpen={true} show={true} visible={true} row={editingRow} data={editingRow} item={editingRow} editingRow={editingRow} setRow={setEditingRow} setEditingRow={setEditingRow} onSave={handleSaveEdit} handleSaveEdit={handleSaveEdit} onCancel={() => setEditingRow(null)} onClose={() => setEditingRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {editingSession && <EditSessionModal isOpen={true} show={true} visible={true} session={editingSession} data={editingSession} item={editingSession} editingSession={editingSession} setSession={setEditingSession} setEditingSession={setEditingSession} onSave={handleSaveSession} handleSaveSession={handleSaveSession} onCancel={() => setEditingSession(null)} onClose={() => setEditingSession(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {syncRow && <SyncModal isOpen={true} show={true} visible={true} syncRow={syncRow} row={syncRow} data={syncRow} item={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} handleConfirmSync={handleConfirmSync} onCancel={() => setSyncRow(null)} onClose={() => setSyncRow(null)} isProcessing={isProcessingEdit} isProcessingEdit={isProcessingEdit} />}
+                    
+                    {showSalaryModal && <SalaryModal isOpen={true} show={true} visible={true} session={salarySession} data={salarySession} item={salarySession} salarySession={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} onCancel={() => { setShowSalaryModal(false); setSalarySession(null); }} setShowSalaryModal={setShowSalaryModal} isAdmin={isAdmin} />}
+                </>,
+                document.body
+            )}
 
         </div>
     );
