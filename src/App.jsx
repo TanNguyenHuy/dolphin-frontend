@@ -506,16 +506,16 @@ export default function App() {
             {/* ========================================================= */}
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
                 
-                {/* THANH TOPBAR (Vẫn giữ lại để chứa nút Hamburger cho Mobile) */}
-                <header className="md:hidden h-16 md:h-20 w-full flex items-center px-4 sm:px-8 shrink-0 bg-transparent">
-                    {/* Nút bật Sidebar trên Mobile */}
-                    <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 border border-gray-100">
-                        <Menu size={24} />
-                    </button>
-                </header>
+                {/* Nút bật Menu lơ lửng trên Mobile (Thay thế Topbar) */}
+                <button 
+                    onClick={() => setIsSidebarOpen(true)} 
+                    className="md:hidden fixed top-4 left-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-xl shadow-md text-[#1A5B82] border border-gray-200 active:scale-95 transition-all"
+                >
+                    <Menu size={24} />
+                </button>
 
                 {/* KHU VỰC HIỂN THỊ NỘI DUNG TỪNG TRANG */}
-                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-2 sm:p-6 pb-24">
+                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24">
                     <ErrorBoundary>
                         <div className="w-full max-w-[1600px] mx-auto space-y-6">
                             
