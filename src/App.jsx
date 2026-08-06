@@ -21,6 +21,8 @@ import DeleteSessionModal from './components/modals/DeleteSessionModal';
 import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
+// Thêm dòng này lên đầu, chung với chỗ Import các Component giao diện
+import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
 // Import Utils và Bộ Não Logic
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
@@ -447,6 +449,13 @@ export default function App() {
                             <span className="text-[14px]">Thống kê</span>
                         </button>
                     </div>
+                    {/* TRANG 4: LỊCH CÁ NHÂN */}
+                            {view === 'CALENDAR' && ( 
+                                <PersonalCalendar 
+                                    sessions={enrichedSessions} 
+                                    onUpdatePendingCount={setPendingTasksCount} 
+                                />
+                            )}
 
                     {/* Nhóm Quản Lý */}
                     {isAdmin && (
