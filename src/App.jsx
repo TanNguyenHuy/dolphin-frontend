@@ -263,12 +263,45 @@ export default function App() {
         } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
     };
     
+    // ============================================================================
+    // BỘ XỬ LÝ SỰ KIỆN CHỐNG LỖI EVENT & BỎ CHẶN NGẦM
+    // ============================================================================
     const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
-    const handleDeleteSession = (e, id) => { if(!canDelete) return; e.stopPropagation(); setDeleteId(id); setShowDeleteModal(true); };
     const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
-    const handleDeleteRow = (id) => { if (!canDelete) return; setRowToDelete(id); setShowDeleteRowModal(true); };
     const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
     const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
+
+    // Xử lý thông minh: Nhận diện Component con trả về Event hay truyền thẳng Data
+    const handleStartEdit = (...args) => {
+        const row = (args[0] && args[0].target) ? args[1] : args[0];
+        setEditingRow({ ...row });
+    };
+
+    const handleDeleteRow = (...args) => {
+        const id = (args[0] && args[0].target) ? args[1] : args[0];
+        setRowToDelete(id);
+        setShowDeleteRowModal(true);
+    };
+
+    const handleStartEditSession = (...args) => {
+        const e = (args[0] && args[0].target) ? args[0] : null;
+        const session = e ? args[1] : args[0];
+        if (e && e.stopPropagation) e.stopPropagation();
+        setEditingSession({ ...session, name: session?.name === 'Thống kê tự động' ? '' : session?.name });
+    };
+
+    const handleDeleteSession = (...args) => {
+        const e = (args[0] && args[0].target) ? args[0] : null;
+        const id = e ? args[1] : args[0];
+        if (e && e.stopPropagation) e.stopPropagation();
+        setDeleteId(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleStartSync = (...args) => {
+        const row = (args[0] && args[0].target) ? args[1] : args[0];
+        setSyncRow(row);
+    };
 
     const handleAddBale = async (e) => { 
         e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; 
@@ -298,8 +331,6 @@ export default function App() {
         try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch (err) {} finally { setIsProcessingAdd(false); }
     };
     
-    // Khởi tạo các hàm lưu Modal
-    const handleStartEdit = (row) => { if(canEdit) setEditingRow({ ...row }); };
     const handleSaveEdit = async () => { 
         if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
@@ -324,7 +355,6 @@ export default function App() {
         } catch (err) {} finally { setIsProcessingEdit(false); }
     };
 
-    const handleStartEditSession = (e, session) => { if(!canEdit) return; e.stopPropagation(); setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name }); };
     const handleSaveSession = async () => { 
         if (!editingSession) return; 
         try { 
@@ -385,21 +415,13 @@ export default function App() {
     }
 
     // ============================================================================
-    // GIAO DIỆN CHÍNH (LAYOUT MỚI: SIDEBAR + CONTENT)
+    // GIAO DIỆN CHÍNH
     // ============================================================================
     return (
-        <div className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30">
+        <div className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
             {showFireworks && <Confetti />}
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
-
-            {/* --- CÁC MODAL QUAN TRỌNG ĐÃ ĐƯỢC THÊM LẠI VÀO ĐÂY --- */}
-            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
-            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
-            {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
-            {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
-            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
-            {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
 
             <style dangerouslySetInnerHTML={{ __html: `
                 .tabular-nums { font-variant-numeric: tabular-nums; }
@@ -415,12 +437,9 @@ export default function App() {
                 <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
             </div>
 
-            {/* ========================================================= */}
-            {/* CỘT TRÁI (SIDEBAR MENU) */}
-            {/* ========================================================= */}
+            {/* CỘT TRÁI (SIDEBAR) */}
             <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-[10px_0_30px_rgba(0,0,0,0.03)] transform transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:flex-shrink-0`}>
                 
-                {/* Logo Area */}
                 <div className="h-20 flex items-center px-6 border-b border-gray-100 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shadow-sm bg-white overflow-hidden shrink-0 border border-gray-100">
@@ -433,10 +452,7 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Menu Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar py-6 px-4 space-y-8">
-                    
-                    {/* NÚT TẠO THỐNG KÊ TRONG SIDEBAR */}
                     {canEdit && (
                         <div className="mb-2">
                             <button 
@@ -449,7 +465,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* Nhóm Tổng Quan */}
                     <div>
                         <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Tổng quan</p>
                         <button onClick={() => handleNavigate('DASHBOARD')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${view === 'DASHBOARD' || view === 'DETAIL' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
@@ -458,7 +473,6 @@ export default function App() {
                         </button>
                     </div>
 
-                    {/* Nhóm Quản Lý */}
                     {isAdmin && (
                         <div>
                             <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Quản lý</p>
@@ -469,7 +483,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* Nhóm Công Việc (Lịch) */}
                     <div>
                         <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Công việc</p>
                         <button onClick={() => handleNavigate('CALENDAR')} className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${view === 'CALENDAR' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
@@ -478,7 +491,6 @@ export default function App() {
                                 <span className="text-[14px]">Lịch cá nhân</span>
                             </div>
                             
-                            {/* CHẤM ĐỎ THÔNG BÁO (BADGE) */}
                             {pendingTasksCount > 0 && (
                                 <span className="bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                     {pendingTasksCount}
@@ -488,7 +500,6 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Profile & Logout Area */}
                 <div className="p-4 border-t border-gray-100 shrink-0">
                     {timeLeftDisplay && (
                         <div className="mb-4 px-2 flex items-center gap-2 text-[11px] font-bold text-amber-600 bg-amber-50 py-2 rounded-lg justify-center border border-amber-100">
@@ -505,17 +516,13 @@ export default function App() {
                 </div>
             </aside>
 
-            {/* Màn che mờ cho Sidebar trên Mobile */}
             {isSidebarOpen && (
                 <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
             )}
 
-            {/* ========================================================= */}
             {/* CỘT PHẢI (MAIN CONTENT AREA) */}
-            {/* ========================================================= */}
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
                 
-                {/* Nút bật Menu lơ lửng trên Mobile */}
                 <button 
                     onClick={() => setIsSidebarOpen(true)} 
                     className="md:hidden fixed top-4 left-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-xl shadow-md text-[#1A5B82] border border-gray-200 active:scale-95 transition-all"
@@ -523,19 +530,22 @@ export default function App() {
                     <Menu size={24} />
                 </button>
 
-                {/* KHU VỰC HIỂN THỊ NỘI DUNG TỪNG TRANG */}
-                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24">
+                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24 relative z-10">
                     <ErrorBoundary>
                         <div className="w-full max-w-[1600px] mx-auto space-y-6">
                             
-                            {/* TRANG 1: DASHBOARD THỐNG KÊ LỢI NHUẬN */}
                             {view === 'DASHBOARD' && (
                                 <DashboardView 
-                                    activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession}
+                                    activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
+                                    
+                                    setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} onPay={setShowSalaryModal}
+                                    
+                                    // Bơm mọi tên gọi cho DashboardView để đảm bảo ăn nút
+                                    handleStartEditSession={handleStartEditSession} onEditSession={handleStartEditSession} onEdit={handleStartEditSession}
+                                    handleDeleteSession={handleDeleteSession} onDeleteSession={handleDeleteSession} onDelete={handleDeleteSession}
                                 />
                             )}
                             
-                            {/* TRANG 2: CHI TIẾT ĐỢT BÁN (Thuộc Dashboard) */}
                             {view === 'DETAIL' && detailData && (
                                 <DetailView 
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
@@ -544,20 +554,19 @@ export default function App() {
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
-                                    // TRUYỀN VÀO ĐẦY ĐỦ CÁC TRƯỜNG HỢP GỌI HÀM ĐỂ BẢO VỆ CHẮC CHẮN NÚT BẤM SẼ HOẠT ĐỘNG
-                                    handleStartEdit={handleStartEdit} handleEditRow={handleStartEdit} onEditRow={handleStartEdit} setEditingRow={handleStartEdit}
-                                    handleStartSync={setSyncRow} handleSyncRow={setSyncRow} onSyncRow={setSyncRow} setSyncRow={setSyncRow}
-                                    
-                                    handleDeleteRow={handleDeleteRow} isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
+                                    // Bơm mọi tên gọi cho DetailView để bao vây lỗi
+                                    handleStartEdit={handleStartEdit} handleEditRow={handleStartEdit} onEditRow={handleStartEdit} setEditingRow={handleStartEdit} onEdit={handleStartEdit}
+                                    handleStartSync={handleStartSync} handleSyncRow={handleStartSync} onSyncRow={handleStartSync} setSyncRow={handleStartSync} onSync={handleStartSync}
+                                    handleDeleteRow={handleDeleteRow} onDeleteRow={handleDeleteRow} onDelete={handleDeleteRow}
+
+                                    isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
                                 />
                             )}
 
-                            {/* TRANG 3: QUẢN LÝ TÀI KHOẢN */}
                             {view === 'USERS' && isAdmin && ( 
                                 <AdminPanel setView={handleNavigate} authUser={authUser} /> 
                             )}
 
-                            {/* TRANG 4: LỊCH CÁ NHÂN */}
                             {view === 'CALENDAR' && ( 
                                 <PersonalCalendar 
                                     sessions={enrichedSessions} 
@@ -571,6 +580,17 @@ export default function App() {
             </div>
 
             <ChatBox authUser={authUser} />
+
+            {/* ========================================================================== */}
+            {/* ĐƯA TOÀN BỘ CÁC MODAL XUỐNG ĐÁY CÙNG ĐỂ NỔI LÊN TRÊN MỌI Z-INDEX */}
+            {/* ========================================================================== */}
+            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
+            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
+            {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
+            {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
+            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
+            {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
+
         </div>
     );
 }
