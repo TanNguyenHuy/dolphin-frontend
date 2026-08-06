@@ -392,6 +392,14 @@ export default function App() {
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
+            {/* --- CÁC MODAL QUAN TRỌNG ĐÃ ĐƯỢC THÊM LẠI VÀO ĐÂY --- */}
+            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
+            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
+            {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
+            {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
+            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
+            {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
+
             <style dangerouslySetInnerHTML={{ __html: `
                 .tabular-nums { font-variant-numeric: tabular-nums; }
                 .liquid-glass { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
