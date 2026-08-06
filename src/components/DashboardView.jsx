@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Calendar, Package, TrendingUp, Activity, Box, ShoppingBag } from 'lucide-react';
 import DashboardChart from './dashboard/DashboardChart';
-import SmartCalendar from './dashboard/SmartCalendar';
 import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
@@ -95,56 +94,55 @@ export default function DashboardView({
     };
 
     return (
-        <div className="space-y-6 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-3 relative">
+        <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-3 relative">
             
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-5">
+            {/* ========================================================= */}
+            {/* KHU VỰC 1: BIỂU ĐỒ VÀ THỐNG KÊ (GRID 2 CỘT LỆCH) */}
+            {/* ========================================================= */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
                 
-                {/* CỘT TRÁI (8 phần) */}
-                <div className="lg:col-span-8 space-y-5 flex flex-col">
-                    <div className="h-[380px] md:h-[420px]">
+                {/* CỘT TRÁI (8 phần): Chứa Biểu đồ tổng, 4 ô Mini, và Bảng Xếp Hạng */}
+                <div className="xl:col-span-8 flex flex-col gap-6 lg:gap-8">
+                    
+                    {/* 1. Biểu đồ Đường Tổng quan */}
+                    <div className="h-[380px] md:h-[450px]">
                         <ScrollReveal delay={0}>
-                            {/* Biểu đồ vẫn dùng completedSessions */}
                             <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
                         </ScrollReveal>
                     </div>
                     
-                    <div>
-                        <ScrollReveal delay={100}>
-                            <MiniCharts sessions={completedSessions} />
-                        </ScrollReveal>
-                    </div>
+                    {/* 2. Bốn ô MiniCharts nằm ngang */}
+                    <ScrollReveal delay={100}>
+                        <MiniCharts sessions={completedSessions} />
+                    </ScrollReveal>
 
-                    <div className="flex-1">
-                        <ScrollReveal delay={150}>
-                            <TopMVP sessions={completedSessions} />
-                        </ScrollReveal>
-                    </div>
+                    {/* 3. Bảng Xếp Hạng Đợt Bán */}
+                    <ScrollReveal delay={150}>
+                        <TopMVP sessions={completedSessions} />
+                    </ScrollReveal>
+
                 </div>
 
-                {/* CỘT PHẢI (4 phần) */}
-                <div className="lg:col-span-4 space-y-5 flex flex-col">
-                    <div className="h-auto">
-                        <ScrollReveal delay={200}>
-                            {/* DÒNG NÀY ĐÃ ĐƯỢC SỬA: Đổi từ completedSessions sang safeEnrichedSessions để lấy TẤT CẢ các ngày bán */}
-                            <SmartCalendar sessions={safeEnrichedSessions} />
-                        </ScrollReveal>
-                    </div>
-                    
-                    <div className="flex-1">
-                        <ScrollReveal delay={300}>
+                {/* CỘT PHẢI (4 phần): Chứa Kho, Vốn, Thuế (Ghim cố định) */}
+                <div className="xl:col-span-4 relative h-full">
+                    <ScrollReveal delay={200}>
+                        {/* Thuộc tính sticky top-6 giúp khối này trượt mượt mà theo màn hình */}
+                        <div className="sticky top-6">
                             <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
-                        </ScrollReveal>
-                    </div>
+                        </div>
+                    </ScrollReveal>
                 </div>
+
             </div>
 
-            {/* PHẦN DANH SÁCH ĐỢT BÁN VÀ BẢNG XEM NHANH */}
+            {/* ========================================================= */}
+            {/* KHU VỰC 2: DANH SÁCH ĐỢT BÁN & BẢNG XEM NHANH */}
+            {/* ========================================================= */}
             <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
-                    {/* Thẻ bọc ngoài cùng (Relative) để quản lý vị trí của cả List và QuickView */}
                     <div className="relative w-full" onMouseLeave={handleMouseLeaveList}>
                         
-                        {/* 1. KHUNG DANH SÁCH (Đã thêm xl:pr-[400px] để tạo khoảng trống bên phải) */}
+                        {/* 1. KHUNG DANH SÁCH */}
                         <div className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[400px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
                             
@@ -170,9 +168,8 @@ export default function DashboardView({
                             )}
                         </div>
 
-                        {/* 2. BẢNG XEM NHANH (Nằm lọt vào khoảng trống 400px bên phải) */}
+                        {/* 2. BẢNG XEM NHANH */}
                         <div className="hidden xl:block absolute right-8 top-10 bottom-10 w-[350px] pointer-events-none z-[100]">
-                            {/* Khối Sticky giúp trượt theo chuột dọc theo danh sách */}
                             <div className={`sticky top-[120px] transition-all duration-[500ms] cubic-bezier(0.16, 1, 0.3, 1) ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
                                 
                                 {quickViewData && (

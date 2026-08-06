@@ -3,7 +3,7 @@ import axios from 'axios';
 import { saveAs } from 'file-saver';
 
 // Import Icons cho giao diện mới
-import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, X, Plus, Clock, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
 
 // Import các Component giao diện
 import Auth from './Auth';
@@ -376,7 +376,7 @@ export default function App() {
     };
 
     // ============================================================================
-    // KIỂM TRA CHỨNG THỰC (HIỂN THỊ MÀN HÌNH ĐĂNG NHẬP NẾU CHƯA ĐĂNG NHẬP)
+    // KIỂM TRA CHỨNG THỰC
     // ============================================================================
     if (!authUser || isExpiredState) {
         return <Auth onLoginSuccess={(u, rememberMe) => { setAuthUser(u); if (rememberMe) { localStorage.setItem('authUser', JSON.stringify(u)); sessionStorage.removeItem('authUser'); } else { sessionStorage.setItem('authUser', JSON.stringify(u)); localStorage.removeItem('authUser'); } }} expiredEmail={isExpiredState ? authUser?.email : null} onLogout={handleLogout} />;
@@ -391,7 +391,6 @@ export default function App() {
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
-            {/* --- CSS CHO CÁC KHỐI KÍNH (NẾU CÓ DÙNG BÊN TRONG CÁC COMPONENT CON) --- */}
             <style dangerouslySetInnerHTML={{ __html: `
                 .tabular-nums { font-variant-numeric: tabular-nums; }
                 .liquid-glass { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
@@ -401,7 +400,7 @@ export default function App() {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
 
-            {/* --- NỀN ĐẠI DƯƠNG VÀ SÓNG BIỂN CHỈ HIỂN THỊ Ở KHU VỰC CONTENT BÊN PHẢI --- */}
+            {/* NỀN ĐẠI DƯƠNG */}
             <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden opacity-40">
                 <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
             </div>
@@ -414,12 +413,12 @@ export default function App() {
                 {/* Logo Area */}
                 <div className="h-20 flex items-center px-6 border-b border-gray-100 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#26D0CE] to-[#1A5B82] rounded-[12px] flex items-center justify-center shadow-sm">
-                            <span className="text-white font-bold text-xl leading-none -mt-1">🐳</span>
+                        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shadow-sm bg-white overflow-hidden shrink-0 border border-gray-100">
+                            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
                         </div>
-                        <div>
-                            <h2 className="font-black text-[16px] text-gray-800 leading-tight">Dolphin Flow</h2>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Workspace</p>
+                        <div className="min-w-0">
+                            <h2 className="font-black text-[16px] text-gray-800 leading-tight truncate">Dolphin_97ers</h2>
+                            <p className="text-[11px] font-bold text-gray-500 truncate">Chào, {authUser?.name || 'bạn'}</p>
                         </div>
                     </div>
                 </div>
@@ -427,6 +426,19 @@ export default function App() {
                 {/* Menu Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar py-6 px-4 space-y-8">
                     
+                    {/* NÚT TẠO THỐNG KÊ TRONG SIDEBAR */}
+                    {canEdit && (
+                        <div className="mb-2">
+                            <button 
+                                onClick={handleCreateAutoSession} disabled={isProcessingCreate}
+                                className="w-full bg-[#26D0CE] hover:bg-[#1DB2A0] text-white px-4 py-3.5 rounded-[16px] font-bold text-[14px] tracking-wide shadow-[0_8px_20px_rgba(38,208,206,0.25)] hover:shadow-[0_10px_25px_rgba(38,208,206,0.35)] active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                {isProcessingCreate ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={3} />}
+                                <span>TẠO THỐNG KÊ</span>
+                            </button>
+                        </div>
+                    )}
+
                     {/* Nhóm Tổng Quan */}
                     <div>
                         <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Tổng quan</p>
@@ -464,10 +476,9 @@ export default function App() {
                             )}
                         </button>
                     </div>
-
                 </div>
 
-                {/* Profile & Logout Area */}
+                {/* Profile & Logout Area - CHỈ HIỂN THỊ ICON ĐĂNG XUẤT ĐỎ */}
                 <div className="p-4 border-t border-gray-100 shrink-0">
                     {timeLeftDisplay && (
                         <div className="mb-4 px-2 flex items-center gap-2 text-[11px] font-bold text-amber-600 bg-amber-50 py-2 rounded-lg justify-center border border-amber-100">
@@ -475,18 +486,10 @@ export default function App() {
                         </div>
                     )}
                     
-                    <div className="flex items-center justify-between px-2 group cursor-pointer" onClick={handleLogout}>
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold shrink-0 border border-gray-200">
-                                {authUser?.name?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[13px] font-bold text-gray-800 truncate">{authUser?.name || 'Người dùng'}</p>
-                                <p className="text-[11px] text-gray-500 font-medium truncate">{authUser?.email}</p>
-                            </div>
-                        </div>
-                        <button className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50" title="Đăng xuất">
-                            <LogOut size={16} strokeWidth={2.5}/>
+                    <div className="flex justify-center">
+                        <button onClick={handleLogout} className="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-3 rounded-[14px] transition-colors w-full flex justify-center items-center gap-2 shadow-sm" title="Đăng xuất">
+                            <LogOut size={20} strokeWidth={2.5}/>
+                            <span className="font-bold text-[14px]">Đăng Xuất</span>
                         </button>
                     </div>
                 </div>
@@ -503,27 +506,12 @@ export default function App() {
             {/* ========================================================= */}
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
                 
-                {/* THANH TOPBAR (Luôn nổi ở trên cùng) */}
-                <header className="h-20 w-full flex items-center justify-between px-4 sm:px-8 shrink-0 bg-transparent">
+                {/* THANH TOPBAR (Vẫn giữ lại để chứa nút Hamburger cho Mobile) */}
+                <header className="h-16 md:h-20 w-full flex items-center px-4 sm:px-8 shrink-0 bg-transparent">
                     {/* Nút bật Sidebar trên Mobile */}
                     <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-white rounded-xl shadow-sm text-gray-600 border border-gray-100">
                         <Menu size={24} />
                     </button>
-                    
-                    {/* Khoảng trống để nút Tạo Thống Kê luôn bị đẩy sang phải */}
-                    <div className="hidden md:block flex-1"></div>
-
-                    {/* NÚT VÀNG: TẠO THỐNG KÊ (Luôn hiển thị) */}
-                    {canEdit && (
-                        <button 
-                            onClick={handleCreateAutoSession} disabled={isProcessingCreate}
-                            className="bg-[#26D0CE] hover:bg-[#1DB2A0] text-white px-5 sm:px-6 py-2.5 rounded-[14px] font-bold text-[13px] sm:text-[14px] tracking-wide shadow-[0_8px_20px_rgba(38,208,206,0.25)] hover:shadow-[0_10px_25px_rgba(38,208,206,0.35)] active:scale-95 transition-all flex items-center gap-2 border border-white/20 ml-auto"
-                        >
-                            {isProcessingCreate ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={3} />}
-                            <span className="hidden sm:inline">TẠO THỐNG KÊ</span>
-                            <span className="sm:hidden">TẠO MỚI</span>
-                        </button>
-                    )}
                 </header>
 
                 {/* KHU VỰC HIỂN THỊ NỘI DUNG TỪNG TRANG */}
@@ -555,7 +543,7 @@ export default function App() {
                                 <AdminPanel setView={handleNavigate} authUser={authUser} /> 
                             )}
 
-                            {/* TRANG 4: LỊCH CÁ NHÂN (CHỜ XÂY DỰNG MODULE) */}
+                            {/* TRANG 4: LỊCH CÁ NHÂN */}
                             {view === 'CALENDAR' && ( 
                                 <div className="liquid-glass rounded-[32px] p-10 md:p-20 text-center flex flex-col items-center justify-center border border-white/60 min-h-[500px]">
                                     <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
