@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
+import { createPortal } from 'react-dom';
 
 // Import Icons
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
@@ -14,7 +15,7 @@ import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
-// Import Modals (Sạch sẽ chuẩn mực theo code gốc của bạn)
+// Import Modals (Khớp nối hoàn hảo theo code gốc của bạn)
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -68,14 +69,17 @@ export default function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingTasksCount, setPendingTasksCount] = useState(0); 
 
-    // QUẢN LÝ HIỂN THỊ MODALS
+    // STATE QUẢN LÝ MODAL (Đã đồng bộ tuyệt đối với các components con)
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+    
     const [showDeleteRowModal, setShowDeleteRowModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
+    
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     const [syncRow, setSyncRow] = useState(null);
+    
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [salarySession, setSalarySession] = useState(null);
     
@@ -226,7 +230,7 @@ export default function App() {
     };
 
     // ============================================================================
-    // BỘ HÀM NHẬN DIỆN NÚT BẤM CỰC KỲ SẠCH VÀ CHUẨN XÁC
+    // CÁC HÀM XỬ LÝ SỰ KIỆN: KHỚP 100% VỚI DASHBOARDVIEW & DETAILVIEW CỦA BẠN
     // ============================================================================
 
     const handleStartEditSession = (e, session) => {
@@ -483,7 +487,6 @@ export default function App() {
                                 <DashboardView 
                                     activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                                     
-                                    /* Gắn chuẩn xác 100% khớp với code DashboardView mà bạn cung cấp */
                                     setSalarySession={setSalarySession} 
                                     setShowSalaryModal={setShowSalaryModal} 
                                     handleStartEditSession={handleStartEditSession} 
@@ -499,7 +502,6 @@ export default function App() {
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
-                                    /* Gắn chuẩn xác 100% khớp với code DetailView mà bạn cung cấp */
                                     handleStartEdit={handleStartEdit} 
                                     handleStartSync={handleStartSync} 
                                     handleDeleteRow={handleDeleteRow}
@@ -526,7 +528,7 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODAL: CHÚ THÍCH KÈM ĐIỀU KIỆN HIỂN THỊ ĐỂ ĐẢM BẢO KHÔNG BỊ TREO NÚT TẮT X */}
+            {/* CÁC MODAL HỆ THỐNG - ĐÃ ĐƯỢC BỌC ĐIỀU KIỆN HIỂN THỊ ĐỂ CHẮC CHẮN ĐÓNG ĐƯỢC */}
             {typeof document !== 'undefined' && createPortal(
                 <>
                     {showDeleteModal && (
