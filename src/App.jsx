@@ -14,7 +14,7 @@ import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
-// Import Modals (Giữ nguyên gốc)
+// Import Modals (Sạch sẽ chuẩn mực theo code gốc của bạn)
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -23,7 +23,7 @@ import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
-// Import Utils & Logic
+// Import Utils
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
 
@@ -68,6 +68,7 @@ export default function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingTasksCount, setPendingTasksCount] = useState(0); 
 
+    // QUẢN LÝ HIỂN THỊ MODALS
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const [showDeleteRowModal, setShowDeleteRowModal] = useState(false);
@@ -75,6 +76,8 @@ export default function App() {
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     const [syncRow, setSyncRow] = useState(null);
+    const [showSalaryModal, setShowSalaryModal] = useState(false);
+    const [salarySession, setSalarySession] = useState(null);
     
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
@@ -84,8 +87,6 @@ export default function App() {
     const [isProcessingAdd, setIsProcessingAdd] = useState(false);
     const [isProcessingEdit, setIsProcessingEdit] = useState(false);
     const [showFireworks, setShowFireworks] = useState(false);
-    const [showSalaryModal, setShowSalaryModal] = useState(false);
-    const [salarySession, setSalarySession] = useState(null);
     
     const [momoPhone, setMomoPhone] = useState(() => {
         if (typeof window !== 'undefined') return localStorage.getItem('momoPhone') || ''; 
@@ -225,7 +226,7 @@ export default function App() {
     };
 
     // ============================================================================
-    // BỘ HÀM NHẬN DIỆN NÚT BẤM (MỘC MẠC VÀ CHUẨN XÁC THEO FILE CON)
+    // BỘ HÀM NHẬN DIỆN NÚT BẤM CỰC KỲ SẠCH VÀ CHUẨN XÁC
     // ============================================================================
 
     const handleStartEditSession = (e, session) => {
@@ -482,7 +483,7 @@ export default function App() {
                                 <DashboardView 
                                     activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                                     
-                                    /* Truyền ĐÚNG CHUẨN TÊN HÀM từ App.jsx vào DashboardView */
+                                    /* Gắn chuẩn xác 100% khớp với code DashboardView mà bạn cung cấp */
                                     setSalarySession={setSalarySession} 
                                     setShowSalaryModal={setShowSalaryModal} 
                                     handleStartEditSession={handleStartEditSession} 
@@ -498,7 +499,7 @@ export default function App() {
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
-                                    /* Truyền ĐÚNG CHUẨN TÊN HÀM từ App.jsx vào DetailView */
+                                    /* Gắn chuẩn xác 100% khớp với code DetailView mà bạn cung cấp */
                                     handleStartEdit={handleStartEdit} 
                                     handleStartSync={handleStartSync} 
                                     handleDeleteRow={handleDeleteRow}
@@ -525,54 +526,69 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODAL: SỬ DỤNG ĐÚNG CHUẨN TÊN PROPS (ONCONFIRM / ONCANCEL) ĐỂ HỒI SINH NÚT BẤM BÊN TRONG */}
-            
-            <DeleteSessionModal 
-                showDeleteModal={showDeleteModal} 
-                setShowDeleteModal={setShowDeleteModal} 
-                confirmDeleteSession={confirmDeleteSession} 
-            />
-            
-            <DeleteRowModal 
-                showDeleteRowModal={showDeleteRowModal} 
-                setShowDeleteRowModal={setShowDeleteRowModal} 
-                confirmDeleteRow={confirmDeleteRow} 
-                isProcessingDelete={isProcessingDelete} 
-            />
-            
-            <EditRowModal 
-                editingRow={editingRow} 
-                setEditingRow={setEditingRow} 
-                handleSaveEdit={handleSaveEdit} 
-                isProcessingEdit={isProcessingEdit} 
-            />
-            
-            <EditSessionModal 
-                editingSession={editingSession} 
-                setEditingSession={setEditingSession} 
-                handleSaveSession={handleSaveSession} 
-            />
-            
-            <SyncModal 
-                syncRow={syncRow} 
-                setSyncRow={setSyncRow} 
-                syncText={syncText} 
-                setSyncText={setSyncText} 
-                syncManualQty={syncManualQty} 
-                setSyncManualQty={setSyncManualQty} 
-                syncManualRev={syncManualRev} 
-                setSyncManualRev={setSyncManualRev} 
-                handleConfirmSync={handleConfirmSync} 
-                isProcessingEdit={isProcessingEdit} 
-            />
-            
-            <SalaryModal 
-                salarySession={salarySession} 
-                setShowSalaryModal={setShowSalaryModal} 
-                momoPhone={momoPhone} 
-                setMomoPhone={setMomoPhone} 
-            />
-
+            {/* BỘ MODAL: CHÚ THÍCH KÈM ĐIỀU KIỆN HIỂN THỊ ĐỂ ĐẢM BẢO KHÔNG BỊ TREO NÚT TẮT X */}
+            {typeof document !== 'undefined' && createPortal(
+                <>
+                    {showDeleteModal && (
+                        <DeleteSessionModal 
+                            showDeleteModal={showDeleteModal} 
+                            setShowDeleteModal={setShowDeleteModal} 
+                            confirmDeleteSession={confirmDeleteSession} 
+                        />
+                    )}
+                    
+                    {showDeleteRowModal && (
+                        <DeleteRowModal 
+                            showDeleteRowModal={showDeleteRowModal} 
+                            setShowDeleteRowModal={setShowDeleteRowModal} 
+                            confirmDeleteRow={confirmDeleteRow} 
+                            isProcessingDelete={isProcessingDelete} 
+                        />
+                    )}
+                    
+                    {editingRow && (
+                        <EditRowModal 
+                            editingRow={editingRow} 
+                            setEditingRow={setEditingRow} 
+                            handleSaveEdit={handleSaveEdit} 
+                            isProcessingEdit={isProcessingEdit} 
+                        />
+                    )}
+                    
+                    {editingSession && (
+                        <EditSessionModal 
+                            editingSession={editingSession} 
+                            setEditingSession={setEditingSession} 
+                            handleSaveSession={handleSaveSession} 
+                        />
+                    )}
+                    
+                    {syncRow && (
+                        <SyncModal 
+                            syncRow={syncRow} 
+                            setSyncRow={setSyncRow} 
+                            syncText={syncText} 
+                            setSyncText={setSyncText} 
+                            syncManualQty={syncManualQty} 
+                            setSyncManualQty={setSyncManualQty} 
+                            syncManualRev={syncManualRev} 
+                            setSyncManualRev={setSyncManualRev} 
+                            handleConfirmSync={handleConfirmSync} 
+                            isProcessingEdit={isProcessingEdit} 
+                        />
+                    )}
+                    
+                    {showSalaryModal && (
+                        <SalaryModal 
+                            salarySession={salarySession} 
+                            setShowSalaryModal={setShowSalaryModal} 
+                            momoPhone={momoPhone} 
+                            setMomoPhone={setMomoPhone} 
+                        />
+                    )}
+                </>,
+                document.body
+            )}
         </div>
     );
 }
