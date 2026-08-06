@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
-import { createPortal } from 'react-dom';
 
 // Import Icons
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
@@ -15,7 +14,7 @@ import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
 
-// Import Modals (Đã được làm sạch, đưa về chuẩn mực gốc)
+// Import Modals
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -226,56 +225,47 @@ export default function App() {
     };
 
     // ============================================================================
-    // HÀM BẮT SỰ KIỆN: VIẾT LẠI HOÀN TOÀN ĐỂ CHỐNG TRƯỢT
+    // BỘ HÀM NHẬN DIỆN NÚT BẤM (CHÍNH XÁC VÀ AN TOÀN NHẤT)
     // ============================================================================
-
-    const handleStartEditSession = (a, b) => {
-        if (!canEdit) return;
-        let session = (a && a.nativeEvent) ? b : a;
-        if (typeof session === 'string' || typeof session === 'number') {
-            session = sessions.find(s => s.id === session || s._id === session);
+    
+    // Hàm này giúp lọc dữ liệu an toàn dù Component con có trả về (event, object) hay (object)
+    const extractItem = (arg1, arg2, listData) => {
+        let item = (arg1 && arg1.nativeEvent) ? arg2 : arg1;
+        if (typeof item === 'string' || typeof item === 'number') {
+            return listData?.find(x => x.id === item || x._id === item) || null;
         }
+        if (typeof item === 'object' && item !== null) {
+            return item;
+        }
+        return null;
+    };
+
+    // --- CÁC HÀM CHO DASHBOARD VIEW ---
+    const handleStartEditSession = (a, b) => {
+        const session = extractItem(a, b, sessions);
         if (session) setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name });
     };
 
     const handleDeleteSession = (a, b) => {
-        if (!canDelete) return;
-        let id = (a && a.nativeEvent) ? b : a;
-        if (typeof id === 'object' && id !== null) id = id.id || id._id;
+        const session = extractItem(a, b, sessions);
+        const id = session ? (session.id || session._id) : null;
         if (id) { setDeleteId(id); setShowDeleteModal(true); }
     };
 
-    const handleStartSalary = (a, b) => {
-        if (!canPay) return;
-        let session = (a && a.nativeEvent) ? b : a;
-        if (typeof session === 'string' || typeof session === 'number') {
-            session = sessions.find(s => s.id === session || s._id === session);
-        }
-        if (session) { setSalarySession(session); setShowSalaryModal(true); }
-    };
-
-    const handleStartEditRow = (a, b) => {
-        if (!canEdit) return;
-        let row = (a && a.nativeEvent) ? b : a;
-        if (typeof row === 'string' || typeof row === 'number') {
-            row = detailData?.daily?.find(r => r.id === row || r._id === row);
-        }
+    // --- CÁC HÀM CHO DETAIL VIEW ---
+    const handleStartEdit = (a, b) => {
+        const row = extractItem(a, b, detailData?.daily);
         if (row) setEditingRow({ ...row });
     };
 
     const handleDeleteRow = (a, b) => {
-        if (!canDelete) return;
-        let id = (a && a.nativeEvent) ? b : a;
-        if (typeof id === 'object' && id !== null) id = id.id || id._id;
+        const row = extractItem(a, b, detailData?.daily);
+        const id = row ? (row.id || row._id) : null;
         if (id) { setRowToDelete(id); setShowDeleteRowModal(true); }
     };
 
-    const handleStartSyncRow = (a, b) => {
-        if (!canEdit) return;
-        let row = (a && a.nativeEvent) ? b : a;
-        if (typeof row === 'string' || typeof row === 'number') {
-            row = detailData?.daily?.find(r => r.id === row || r._id === row);
-        }
+    const handleStartSync = (a, b) => {
+        const row = extractItem(a, b, detailData?.daily);
         if (row) setSyncRow({ ...row });
     };
 
@@ -509,10 +499,11 @@ export default function App() {
                                 <DashboardView 
                                     activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
                                     
-                                    // Truyền mọi định dạng tên hàm, bảo đảm component con không bị hụt lệnh
-                                    setSalarySession={handleStartSalary} setShowSalaryModal={handleStartSalary} onPay={handleStartSalary} handleStartSalary={handleStartSalary}
-                                    handleStartEditSession={handleStartEditSession} onEditSession={handleStartEditSession} onEdit={handleStartEditSession}
-                                    handleDeleteSession={handleDeleteSession} onDeleteSession={handleDeleteSession} onDelete={handleDeleteSession}
+                                    /* Gắn chuẩn xác 100% khớp với code DashboardView mà bạn cung cấp */
+                                    setSalarySession={setSalarySession} 
+                                    setShowSalaryModal={setShowSalaryModal} 
+                                    handleStartEditSession={handleStartEditSession} 
+                                    handleDeleteSession={handleDeleteSession}
                                 />
                             )}
                             
@@ -524,10 +515,10 @@ export default function App() {
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
                                     
-                                    // Truyền mọi định dạng tên hàm
-                                    handleStartEdit={handleStartEditRow} handleEditRow={handleStartEditRow} onEditRow={handleStartEditRow} setEditingRow={handleStartEditRow} onEdit={handleStartEditRow}
-                                    handleStartSync={handleStartSyncRow} handleSyncRow={handleStartSyncRow} onSyncRow={handleStartSyncRow} setSyncRow={handleStartSyncRow} onSync={handleStartSyncRow}
-                                    handleDeleteRow={handleDeleteRow} onDeleteRow={handleDeleteRow} onDelete={handleDeleteRow} setRowToDelete={handleDeleteRow}
+                                    /* Gắn chuẩn xác 100% khớp với code DetailView mà bạn cung cấp */
+                                    handleStartEdit={handleStartEdit} 
+                                    handleStartSync={handleStartSync} 
+                                    handleDeleteRow={handleDeleteRow}
 
                                     isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
                                 />
@@ -551,23 +542,13 @@ export default function App() {
 
             <ChatBox authUser={authUser} />
 
-            {/* BỘ MODAL ĐƯỢC GIỮ SẠCH TUYỆT ĐỐI, KHÔNG NHỒI NHÉT PROPS GÂY LỖI UNDEFINED LENGTH */}
-            {typeof document !== 'undefined' && createPortal(
-                <>
-                    {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
-                    
-                    {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
-                    
-                    {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
-                    
-                    {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
-                    
-                    {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
-                    
-                    {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
-                </>,
-                document.body
-            )}
+            {/* CÁC MODAL ĐƯỢC GIỮ SẠCH, ĐÚNG THEO KIẾN TRÚC GỐC */}
+            {showDeleteModal && <DeleteSessionModal onConfirm={confirmDeleteSession} onCancel={() => setShowDeleteModal(false)} isProcessing={isProcessingDelete} />}
+            {showDeleteRowModal && <DeleteRowModal onConfirm={confirmDeleteRow} onCancel={() => setShowDeleteRowModal(false)} isProcessing={isProcessingDelete} />}
+            {editingRow && <EditRowModal row={editingRow} setRow={setEditingRow} onSave={handleSaveEdit} onCancel={() => setEditingRow(null)} isProcessing={isProcessingEdit} />}
+            {editingSession && <EditSessionModal session={editingSession} setSession={setEditingSession} onSave={handleSaveSession} onCancel={() => setEditingSession(null)} isProcessing={isProcessingEdit} />}
+            {syncRow && <SyncModal syncRow={syncRow} setSyncRow={setSyncRow} syncText={syncText} setSyncText={setSyncText} syncManualQty={syncManualQty} setSyncManualQty={setSyncManualQty} syncManualRev={syncManualRev} setSyncManualRev={setSyncManualRev} onConfirm={handleConfirmSync} isProcessing={isProcessingEdit} />}
+            {showSalaryModal && <SalaryModal session={salarySession} onClose={() => { setShowSalaryModal(false); setSalarySession(null); }} isAdmin={isAdmin} />}
 
         </div>
     );
