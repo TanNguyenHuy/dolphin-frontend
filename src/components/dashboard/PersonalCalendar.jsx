@@ -165,7 +165,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
     // --- XỬ LÝ RÊ CHUỘT (TOOLTIP) ---
     const handleMouseMoveProduct = (e, item) => {
-        setTooltip({ show: true, x: e.clientX, y: e.clientY - 15, data: item });
+        setTooltip({ show: true, x: e.clientX, y: e.clientY, data: item });
     };
     const handleMouseLeaveProduct = () => {
         setTooltip({ ...tooltip, show: false });
@@ -217,11 +217,11 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1">
                         
-                        {/* --- SẢN PHẨM (Giao diện giống hình mẫu + Tooltip) --- */}
+                        {/* --- SẢN PHẨM (Giao diện tinh gọn chỉ có Tên) --- */}
                         {daySales.map((item, idx) => (
                             <div 
                                 key={`sale-${idx}`} 
-                                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-1.5 py-1.5 rounded-[8px] shadow-sm flex items-center justify-between shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
+                                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-1.5 py-1.5 rounded-[8px] shadow-sm flex items-center shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
                                 onMouseMove={(e) => handleMouseMoveProduct(e, item)}
                                 onMouseLeave={handleMouseLeaveProduct}
                             >
@@ -229,7 +229,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                     <span className="text-[12px]">🛍️</span>
                                     <span className="truncate">{item.ten_san_pham}</span>
                                 </div>
-                                <span className="bg-[#dae5f2] text-[#1A5B82] px-1.5 py-[2px] rounded-[4px] ml-1 shrink-0 text-[10px]">{item.so_luong || 0}</span>
                             </div>
                         ))}
 
@@ -267,22 +266,24 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     return (
         <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
             
-            {/* TOOLTIP NỔI (Render Toàn cục để không bị cắt xén) */}
+            {/* TOOLTIP NỔI (Được tách riêng khối bọc transform để không bị css scale ghi đè) */}
             {tooltip.show && tooltip.data && (
                 <div 
-                    className="fixed z-[9999] bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl pointer-events-none transform -translate-x-1/2 -translate-y-full border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom"
-                    style={{ left: tooltip.x, top: tooltip.y }}
+                    className="fixed z-[9999] pointer-events-none"
+                    style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -105%)' }}
                 >
-                    <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate">
-                        {tooltip.data.ten_san_pham}
-                    </div>
-                    <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-[11px] font-bold">
-                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Nhập</span><span className="text-white">{tooltip.data.so_luong_nhap || 0}</span></div>
-                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Bán</span><span className="text-teal-400">{tooltip.data.so_luong || 0}</span></div>
-                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Còn</span><span className="text-orange-400">{(tooltip.data.so_luong_nhap || 0) - (tooltip.data.so_luong || 0)}</span></div>
-                        <div className="col-span-3 mt-1 pt-1.5 border-t border-white/5 flex justify-between items-center">
-                            <span className="text-gray-400 font-medium text-[9px] uppercase">Doanh thu</span>
-                            <span className="text-yellow-400 text-[12px]">{formatMoney(tooltip.data.so_tien_ban_duoc)}đ</span>
+                    <div className="bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom">
+                        <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate">
+                            {tooltip.data.ten_san_pham}
+                        </div>
+                        <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-[11px] font-bold">
+                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Nhập</span><span className="text-white">{tooltip.data.so_luong_nhap || 0}</span></div>
+                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Bán</span><span className="text-teal-400">{tooltip.data.so_luong || 0}</span></div>
+                            <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Còn</span><span className="text-orange-400">{(tooltip.data.so_luong_nhap || 0) - (tooltip.data.so_luong || 0)}</span></div>
+                            <div className="col-span-3 mt-1 pt-1.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-gray-400 font-medium text-[9px] uppercase">Doanh thu</span>
+                                <span className="text-yellow-400 text-[12px]">{formatMoney(tooltip.data.so_tien_ban_duoc)}đ</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -428,7 +429,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             )}
 
-            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN (Style Đồng bộ) */}
+            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN */}
             {eventToDelete && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
                     <div className="bg-white rounded-[24px] w-full max-w-[360px] p-6 shadow-2xl relative text-center">
