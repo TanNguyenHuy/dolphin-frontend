@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
+
+// Hàm format tiền tệ nội bộ
+const formatMoney = (val) => new Intl.NumberFormat('vi-VN').format(val || 0);
 
 // Hàm hỗ trợ format ngày (YYYY-MM-DD) để so sánh chuẩn xác
 const formatDateStr = (date) => {
@@ -22,27 +25,31 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     const [newEvent, setNewEvent] = useState({
         title: '',
         startDate: formatDateStr(new Date()),
-        recurring: 'none' // none, daily, weekly, monthly, yearly, custom
+        recurring: 'none'
     });
     
-    // State cho tùy chỉnh lặp lại (Giống iOS)
+    // State cho tùy chỉnh lặp lại
     const [customConfig, setCustomConfig] = useState({
-        frequency: 'daily', // daily, weekly, monthly, yearly
+        frequency: 'daily',
         interval: 1,
-        daysOfWeek: [new Date().getDay()] // Mặc định là ngày trong tuần hiện tại
+        daysOfWeek: [new Date().getDay()] 
     });
 
-    // Cập nhật LocalStorage và đếm Chấm đỏ mỗi khi sự kiện thay đổi
+    // State cho Modal Xóa (Thay thế window.confirm)
+    const [eventToDelete, setEventToDelete] = useState(null);
+
+    // State cho Tooltip khi rê chuột vào sản phẩm
+    const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, data: null });
+
     useEffect(() => {
         localStorage.setItem('dolphin_personal_events', JSON.stringify(events));
         calculatePendingTasks();
     }, [events]);
 
-    // Lấy thông tin ngày tháng để vẽ Lưới lịch
     const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
     const getFirstDayOfMonth = (year, month) => {
         let day = new Date(year, month, 1).getDay();
-        return day === 0 ? 6 : day - 1; // Đổi Chủ Nhật (0) về cuối tuần, Thứ 2 là ngày đầu tuần
+        return day === 0 ? 6 : day - 1;
     };
 
     const currentYear = currentDate.getFullYear();
@@ -51,67 +58,49 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const todayStr = formatDateStr(new Date());
 
-    // ============================================================================
-    // BỘ NÃO LOGIC LẶP LẠI (Tích hợp thuật toán Custom Recurring chuẩn Apple)
-    // ============================================================================
     const isEventOnDate = (ev, checkDateStr) => {
         const start = new Date(ev.startDate);
         start.setHours(0,0,0,0);
         const check = new Date(checkDateStr);
         check.setHours(0,0,0,0);
 
-        // Nguyên tắc: Không tính các ngày trước mốc tạo sự kiện
         if (check < start) return false;
 
-        // Các mốc lặp cơ bản
         if (ev.recurring === 'none') return check.getTime() === start.getTime();
         if (ev.recurring === 'daily') return true;
         if (ev.recurring === 'weekly') return check.getDay() === start.getDay();
         if (ev.recurring === 'monthly') return check.getDate() === start.getDate();
         if (ev.recurring === 'yearly') return check.getDate() === start.getDate() && check.getMonth() === start.getMonth();
 
-        // Mốc lặp TUỲ CHỈNH (Custom)
         if (ev.recurring === 'custom' && ev.customConfig) {
             const { frequency, interval, daysOfWeek } = ev.customConfig;
             const diffTime = check.getTime() - start.getTime();
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-            if (frequency === 'daily') {
-                return diffDays % interval === 0;
-            }
+            if (frequency === 'daily') return diffDays % interval === 0;
             if (frequency === 'weekly') {
-                // Quy về Thứ 2 để tính chênh lệch tuần chuẩn xác
                 const startMonday = new Date(start);
                 startMonday.setDate(start.getDate() - (start.getDay() === 0 ? 6 : start.getDay() - 1));
                 const checkMonday = new Date(check);
                 checkMonday.setDate(check.getDate() - (check.getDay() === 0 ? 6 : check.getDay() - 1));
-                
                 const weekDiff = Math.round((checkMonday - startMonday) / (1000 * 60 * 60 * 24 * 7));
-
-                if (weekDiff % interval === 0) {
-                    return daysOfWeek.includes(check.getDay());
-                }
+                if (weekDiff % interval === 0) return daysOfWeek.includes(check.getDay());
                 return false;
             }
             if (frequency === 'monthly') {
                 const monthDiff = (check.getFullYear() - start.getFullYear()) * 12 + (check.getMonth() - start.getMonth());
-                if (monthDiff % interval === 0) {
-                    return check.getDate() === start.getDate(); 
-                }
+                if (monthDiff % interval === 0) return check.getDate() === start.getDate(); 
                 return false;
             }
             if (frequency === 'yearly') {
                 const yearDiff = check.getFullYear() - start.getFullYear();
-                if (yearDiff % interval === 0) {
-                    return check.getMonth() === start.getMonth() && check.getDate() === start.getDate();
-                }
+                if (yearDiff % interval === 0) return check.getMonth() === start.getMonth() && check.getDate() === start.getDate();
                 return false;
             }
         }
         return false;
     };
 
-    // Đếm Task chưa hoàn thành cho Chấm đỏ (Tính từ ngày tạo -> hôm nay)
     const calculatePendingTasks = () => {
         let pendingCount = 0;
         const todayDate = new Date(todayStr);
@@ -121,31 +110,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             while (loopDate <= todayDate) {
                 const dateStr = formatDateStr(loopDate);
                 if (isEventOnDate(ev, dateStr)) {
-                    if (!ev.completedDates.includes(dateStr)) {
-                        pendingCount++;
-                    }
+                    if (!ev.completedDates.includes(dateStr)) pendingCount++;
                 }
                 loopDate.setDate(loopDate.getDate() + 1);
             }
         });
-        
         if (onUpdatePendingCount) onUpdatePendingCount(pendingCount);
     };
 
-    // Điều hướng lịch
     const prevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
     const goToToday = () => setCurrentDate(new Date());
 
-    // Lưu sự kiện
     const handleSaveEvent = (e) => {
         e.preventDefault();
         if (!newEvent.title.trim()) return;
-        
-        // Cảnh báo nếu chọn Hàng tuần mà không tick thứ nào
         if (newEvent.recurring === 'custom' && customConfig.frequency === 'weekly' && customConfig.daysOfWeek.length === 0) {
-            alert("Vui lòng chọn ít nhất một ngày trong tuần!");
-            return;
+            alert("Vui lòng chọn ít nhất một ngày trong tuần!"); return;
         }
 
         const eventToSave = {
@@ -162,32 +143,37 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         setNewEvent({ title: '', startDate: todayStr, recurring: 'none' });
     };
 
-    // Tick hoàn thành / Bỏ tick
     const toggleComplete = (eventId, dateStr) => {
         setEvents(events.map(ev => {
             if (ev.id === eventId) {
                 const isDone = ev.completedDates.includes(dateStr);
-                const updatedDates = isDone 
-                    ? ev.completedDates.filter(d => d !== dateStr) 
-                    : [...ev.completedDates, dateStr];
+                const updatedDates = isDone ? ev.completedDates.filter(d => d !== dateStr) : [...ev.completedDates, dateStr];
                 return { ...ev, completedDates: updatedDates };
             }
             return ev;
         }));
     };
 
-    // Xoá chuỗi sự kiện
-    const deleteEvent = (eventId) => {
-        if(window.confirm("Bạn có chắc muốn xoá toàn bộ chuỗi nhắc nhở này không?")) {
-            setEvents(events.filter(ev => ev.id !== eventId));
+    // --- XỬ LÝ XOÁ ĐỒNG BỘ ---
+    const requestDeleteEvent = (eventId) => setEventToDelete(eventId);
+    const confirmDeleteEvent = () => {
+        if(eventToDelete) {
+            setEvents(events.filter(ev => ev.id !== eventToDelete));
+            setEventToDelete(null);
         }
-    }
+    };
 
-    // Hiển thị text mô tả cho Custom Recurring
+    // --- XỬ LÝ RÊ CHUỘT (TOOLTIP) ---
+    const handleMouseMoveProduct = (e, item) => {
+        setTooltip({ show: true, x: e.clientX, y: e.clientY - 15, data: item });
+    };
+    const handleMouseLeaveProduct = () => {
+        setTooltip({ ...tooltip, show: false });
+    };
+
     const getCustomRecurringText = () => {
         const { frequency, interval, daysOfWeek } = customConfig;
         const freqText = frequency === 'daily' ? 'ngày' : frequency === 'weekly' ? 'tuần' : frequency === 'monthly' ? 'tháng' : 'năm';
-        
         if (frequency === 'weekly') {
             const dayNames = daysOfWeek.map(d => d === 0 ? 'CN' : `T${d+1}`).join(', ');
             return `Sự kiện sẽ diễn ra mỗi ${interval} tuần vào ${dayNames}.`;
@@ -195,34 +181,27 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    // Render Lưới Lịch
     const renderCalendarCells = () => {
         const cells = [];
         
-        // Ô trống đầu tháng
         for (let i = 0; i < firstDay; i++) {
             cells.push(<div key={`empty-${i}`} className="bg-transparent border border-transparent p-2 h-36"></div>);
         }
 
-        // Ô ngày thực tế
         for (let day = 1; day <= daysInMonth; day++) {
             const cellDateStr = formatDateStr(new Date(currentYear, currentMonth, day));
             const isToday = cellDateStr === todayStr;
 
-            // 1. Quét sâu vào TẤT CẢ các item trong "Chi tiết sản phẩm" của các đợt bán
             const daySales = [];
             sessions.forEach(s => {
                 if (s.daily && Array.isArray(s.daily)) {
                     s.daily.forEach(item => {
                         const itemDateStr = item.ngay_ban ? item.ngay_ban.substring(0, 10) : '';
-                        if (itemDateStr === cellDateStr) {
-                            daySales.push(item);
-                        }
+                        if (itemDateStr === cellDateStr) daySales.push(item);
                     });
                 }
             });
 
-            // 2. Tìm sự kiện cá nhân (Nhắc nhở)
             const dayPersonalEvents = events.filter(ev => isEventOnDate(ev, cellDateStr));
 
             cells.push(
@@ -231,7 +210,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                         <span className={`text-[15px] font-bold ${isToday ? 'text-white bg-[#26D0CE] w-7 h-7 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
                             {day}
                         </span>
-                        {/* Ngày Âm lịch giả định */}
                         <span className="text-[10px] font-medium text-gray-400 mt-1">
                             {day}/{currentMonth === 0 ? 12 : currentMonth}
                         </span>
@@ -239,16 +217,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 mt-1 pr-1">
                         
-                        {/* Render "Chi tiết sản phẩm" đã bán (Các thẻ màu xanh/xám nhẹ) */}
+                        {/* --- SẢN PHẨM (Giao diện giống hình mẫu + Tooltip) --- */}
                         {daySales.map((item, idx) => (
-                            <div key={`sale-${idx}`} className="bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold px-1.5 py-1 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
-                                <span>🛍️</span> 
-                                <span className="truncate flex-1">{item.ten_san_pham}</span>
-                                <span className="bg-blue-200/50 px-1 rounded-sm">{item.so_luong || 0}</span>
+                            <div 
+                                key={`sale-${idx}`} 
+                                className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[11px] font-bold px-1.5 py-1.5 rounded-[8px] shadow-sm flex items-center justify-between shrink-0 cursor-default hover:bg-[#e6eff9] transition-colors"
+                                onMouseMove={(e) => handleMouseMoveProduct(e, item)}
+                                onMouseLeave={handleMouseLeaveProduct}
+                            >
+                                <div className="flex items-center gap-1.5 truncate">
+                                    <span className="text-[12px]">🛍️</span>
+                                    <span className="truncate">{item.ten_san_pham}</span>
+                                </div>
+                                <span className="bg-[#dae5f2] text-[#1A5B82] px-1.5 py-[2px] rounded-[4px] ml-1 shrink-0 text-[10px]">{item.so_luong || 0}</span>
                             </div>
                         ))}
 
-                        {/* Render "Nhắc việc cá nhân" (Các thẻ Đỏ/Cam) */}
+                        {/* --- SỰ KIỆN CÁ NHÂN --- */}
                         {dayPersonalEvents.map((ev) => {
                             const isCompleted = ev.completedDates.includes(cellDateStr);
                             const isPastDue = cellDateStr < todayStr && !isCompleted;
@@ -258,7 +243,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                     isCompleted ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' : 
                                     isPastDue ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-orange-50 text-orange-600 border-orange-200'
                                 }`}>
-                                    <div className="flex items-center gap-1 min-w-0 flex-1 cursor-pointer" onClick={() => deleteEvent(ev.id)} title="Bấm để xoá chuỗi nhắc nhở">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1 cursor-pointer" onClick={() => requestDeleteEvent(ev.id)} title="Bấm để xoá chuỗi nhắc nhở">
                                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCompleted ? 'bg-gray-300' : isPastDue ? 'bg-rose-400 animate-pulse' : 'bg-orange-400'}`}></div>
                                         <span className="truncate">{ev.title}</span>
                                     </div>
@@ -282,7 +267,27 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     return (
         <div className="w-full h-full liquid-glass rounded-[32px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up">
             
-            {/* --- HEADER LỊCH --- */}
+            {/* TOOLTIP NỔI (Render Toàn cục để không bị cắt xén) */}
+            {tooltip.show && tooltip.data && (
+                <div 
+                    className="fixed z-[9999] bg-[#1D1D1F]/95 backdrop-blur-md text-white p-3.5 rounded-[16px] shadow-2xl pointer-events-none transform -translate-x-1/2 -translate-y-full border border-white/10 w-max min-w-[200px] animate-scale-up origin-bottom"
+                    style={{ left: tooltip.x, top: tooltip.y }}
+                >
+                    <div className="text-[13px] font-black text-[#26D0CE] mb-2 border-b border-white/10 pb-1.5 truncate">
+                        {tooltip.data.ten_san_pham}
+                    </div>
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-[11px] font-bold">
+                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Nhập</span><span className="text-white">{tooltip.data.so_luong_nhap || 0}</span></div>
+                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Bán</span><span className="text-teal-400">{tooltip.data.so_luong || 0}</span></div>
+                        <div className="flex flex-col"><span className="text-gray-400 font-medium text-[9px] uppercase">Còn</span><span className="text-orange-400">{(tooltip.data.so_luong_nhap || 0) - (tooltip.data.so_luong || 0)}</span></div>
+                        <div className="col-span-3 mt-1 pt-1.5 border-t border-white/5 flex justify-between items-center">
+                            <span className="text-gray-400 font-medium text-[9px] uppercase">Doanh thu</span>
+                            <span className="text-yellow-400 text-[12px]">{formatMoney(tooltip.data.so_tien_ban_duoc)}đ</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
@@ -302,7 +307,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </button>
             </div>
 
-            {/* --- LƯỚI LỊCH CHÍNH --- */}
             <div className="flex-1 flex flex-col min-h-[600px]">
                 <div className="grid grid-cols-7 gap-px mb-2 shrink-0">
                     {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => (
@@ -316,9 +320,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </div>
             </div>
 
-            {/* ========================================================= */}
-            {/* MODAL THÊM SỰ KIỆN & TUỲ CHỈNH LẶP LẠI */}
-            {/* ========================================================= */}
+            {/* MODAL THÊM SỰ KIỆN */}
             {showModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
                     <div className="bg-white rounded-[32px] w-full max-w-[420px] p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -362,7 +364,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                 </div>
                             </div>
 
-                            {/* KHU VỰC CẤU HÌNH TUỲ CHỈNH (Hiện ra khi chọn "Tùy chỉnh...") */}
                             {newEvent.recurring === 'custom' && (
                                 <div className="p-5 bg-orange-50/50 border border-orange-200/50 rounded-[20px] space-y-4 animate-scale-up origin-top">
                                     <div className="flex items-center gap-2 mb-2 text-orange-600 font-black text-[13px] uppercase tracking-widest">
@@ -393,7 +394,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                         </div>
                                     </div>
 
-                                    {/* Chọn Thứ trong Tuần (Chỉ hiện khi chọn Hàng Tuần) */}
                                     {customConfig.frequency === 'weekly' && (
                                         <div className="pt-2">
                                             <div className="flex flex-wrap justify-between gap-1 mt-2">
@@ -414,7 +414,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                         </div>
                                     )}
 
-                                    {/* Dòng chữ mô tả Tùy chỉnh (Giống iOS) */}
                                     <p className="text-[11px] font-bold text-gray-400 pt-2 border-t border-orange-200/50 text-center">
                                         {getCustomRecurringText()}
                                     </p>
@@ -425,6 +424,25 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                 <Check size={20} strokeWidth={3} /> LƯU SỰ KIỆN
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL XÁC NHẬN XOÁ SỰ KIỆN (Style Đồng bộ) */}
+            {eventToDelete && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
+                    <div className="bg-white rounded-[24px] w-full max-w-[360px] p-6 shadow-2xl relative text-center">
+                        <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500">
+                            <Trash2 size={24} />
+                        </div>
+                        <h3 className="text-[18px] font-black text-[#1D1D1F] mb-2">Xác nhận xoá</h3>
+                        <p className="text-[13px] text-gray-500 font-medium mb-6 px-2">
+                            Bạn có chắc muốn xoá toàn bộ chuỗi nhắc nhở này không? Hành động này không thể hoàn tác.
+                        </p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setEventToDelete(null)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold text-[14px] rounded-[14px] hover:bg-gray-200 transition-colors active:scale-95">Huỷ</button>
+                            <button onClick={confirmDeleteEvent} className="flex-1 py-3 bg-rose-500 text-white font-bold text-[14px] rounded-[14px] hover:bg-rose-600 transition-colors active:scale-95 shadow-[0_4px_12px_rgba(244,63,94,0.3)]">Xoá ngay</button>
+                        </div>
                     </div>
                 </div>
             )}
