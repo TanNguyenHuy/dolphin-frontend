@@ -13,19 +13,9 @@ const formatDateStr = (date) => {
     return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
 };
 
-// HÀM TÍNH LỊCH ÂM CHUẨN XÁC (Dựa trên API Quốc Tế của trình duyệt)
-const getLunarDate = (date) => {
-    try {
-        const formatter = new Intl.DateTimeFormat('vi-VN-u-ca-chinese', { day: 'numeric', month: 'numeric' });
-        const parts = formatter.formatToParts(date);
-        const day = parts.find(p => p.type === 'day')?.value;
-        const month = parts.find(p => p.type === 'month')?.value;
-        if (day && month) return { day: parseInt(day, 10), month: parseInt(month, 10) };
-    } catch(e) {}
-    return { day: date.getDate(), month: date.getMonth() + 1 };
-};
-
-// DANH SÁCH NGÀY LỄ LỚN Ở VIỆT NAM
+// ============================================================================
+// BỘ DỮ LIỆU NGÀY LỄ VIỆT NAM (DƯƠNG LỊCH & ÂM LỊCH QUY ĐỔI) ĐỘC LẬP VÀ CHUẨN XÁC
+// ============================================================================
 const SOLAR_HOLIDAYS = {
     "01-01": "Tết Dương Lịch", "14-02": "Lễ Tình nhân", "08-03": "Quốc tế Phụ nữ",
     "30-04": "Giải phóng miền Nam", "01-05": "Quốc tế Lao động", "01-06": "Quốc tế Thiếu nhi",
@@ -33,10 +23,27 @@ const SOLAR_HOLIDAYS = {
     "22-12": "Quân đội Nhân dân", "24-12": "Lễ Giáng sinh"
 };
 
-const LUNAR_HOLIDAYS = {
-    "01-01": "Tết Nguyên Đán", "15-01": "Tết Nguyên Tiêu", "10-03": "Giỗ Tổ Hùng Vương",
-    "15-04": "Lễ Phật Đản", "05-05": "Tết Đoan Ngọ", "15-07": "Lễ Vu Lan",
-    "15-08": "Tết Trung Thu", "23-12": "Ông Công Ông Táo"
+// Đã nạp sẵn quy đổi Âm -> Dương chuẩn xác 100% cho các năm (Tránh lỗi sai lệch múi giờ của Trình duyệt)
+const EXACT_LUNAR_HOLIDAYS = {
+    // Năm 2026
+    "17-02-2026": "Tết Nguyên Đán", "03-03-2026": "Tết Nguyên Tiêu", "26-04-2026": "Giỗ Tổ Hùng Vương",
+    "31-05-2026": "Lễ Phật Đản", "19-06-2026": "Tết Đoan Ngọ", "27-08-2026": "Lễ Vu Lan", "25-09-2026": "Tết Trung Thu",
+    // Năm 2027
+    "06-02-2027": "Tết Nguyên Đán", "20-02-2027": "Tết Nguyên Tiêu", "16-04-2027": "Giỗ Tổ Hùng Vương",
+    "20-05-2027": "Lễ Phật Đản", "09-06-2027": "Tết Đoan Ngọ", "16-08-2027": "Lễ Vu Lan", "15-09-2027": "Tết Trung Thu",
+    // Năm 2028
+    "26-01-2028": "Tết Nguyên Đán", "09-02-2028": "Tết Nguyên Tiêu", "04-04-2028": "Giỗ Tổ Hùng Vương",
+    "08-05-2028": "Lễ Phật Đản", "27-05-2028": "Tết Đoan Ngọ", "04-09-2028": "Lễ Vu Lan", "03-10-2028": "Tết Trung Thu",
+};
+
+// Hàm lấy text Lịch Âm an toàn từ trình duyệt (Chỉ dùng để hiển thị số ngày nhỏ góc phải)
+const getLunarDateStr = (date) => {
+    try {
+        const str = new Intl.DateTimeFormat('en-US-u-ca-chinese', { day: 'numeric', month: 'numeric' }).format(date);
+        const matches = str.match(/\d+/g);
+        if (matches && matches.length >= 2) return `${matches[1]}/${matches[0]}`;
+    } catch(e) {}
+    return "";
 };
 
 export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }) {
@@ -46,11 +53,16 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return saved ? JSON.parse(saved) : [];
     });
     
+    // States Quản lý UI
     const [showModal, setShowModal] = useState(false);
-    const [newEvent, setNewEvent] = useState({ title: '', startDate: formatDateStr(new Date()), recurring: 'none' });
-    const [customConfig, setCustomConfig] = useState({ frequency: 'daily', interval: 1, daysOfWeek: [new Date().getDay()] });
+    const [showMonthPicker, setShowMonthPicker] = useState(false);
+    const [pickerYear, setPickerYear] = useState(currentDate.getFullYear());
     const [eventToDelete, setEventToDelete] = useState(null);
     const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, data: null });
+
+    // States Data
+    const [newEvent, setNewEvent] = useState({ title: '', startDate: formatDateStr(new Date()), recurring: 'none' });
+    const [customConfig, setCustomConfig] = useState({ frequency: 'daily', interval: 1, daysOfWeek: [new Date().getDay()] });
 
     useEffect(() => {
         localStorage.setItem('dolphin_personal_events', JSON.stringify(events));
@@ -69,11 +81,10 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const todayStr = formatDateStr(new Date());
 
+    // --- LOGIC NHẮC VIỆC (GIỮ NGUYÊN BẢN CHUẨN) ---
     const isEventOnDate = (ev, checkDateStr) => {
-        const start = new Date(ev.startDate);
-        start.setHours(0,0,0,0);
-        const check = new Date(checkDateStr);
-        check.setHours(0,0,0,0);
+        const start = new Date(ev.startDate); start.setHours(0,0,0,0);
+        const check = new Date(checkDateStr); check.setHours(0,0,0,0);
 
         if (check < start) return false;
         if (ev.recurring === 'none') return check.getTime() === start.getTime();
@@ -128,7 +139,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
     const prevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
-    const goToToday = () => setCurrentDate(new Date());
+    const goToToday = () => { setCurrentDate(new Date()); setShowMonthPicker(false); };
 
     const handleSaveEvent = (e) => {
         e.preventDefault();
@@ -167,17 +178,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         }
     };
 
-    // --- FIX LỖI TOOLTIP NHẤP NHÁY BẰNG CÁCH DÙNG useMemo ---
+    // --- FIX TRIỆT ĐỂ LỖI TOOLTIP BỊ GIẬT & TRÀN MÀN HÌNH ---
     const handleMouseEnterProduct = (e, item) => {
         const rect = e.currentTarget.getBoundingClientRect();
+        const tooltipWidth = 220; // Độ rộng dự kiến của Tooltip
+        
+        // Tính toán tọa độ X an toàn để không bị đẩy tràn thanh scrollbar
+        let safeX = rect.left + rect.width / 2;
+        if (safeX + tooltipWidth / 2 > window.innerWidth) { safeX = window.innerWidth - tooltipWidth / 2 - 20; }
+        if (safeX - tooltipWidth / 2 < 0) { safeX = tooltipWidth / 2 + 20; }
+
         setTooltip({ 
             show: true, 
-            x: rect.left + rect.width / 2, 
-            y: rect.top - 8, // Đẩy xa chuột một chút
+            x: safeX, 
+            y: rect.top - 8, 
             data: item 
         });
     };
-    
     const handleMouseLeaveProduct = () => setTooltip({ show: false, x: 0, y: 0, data: null });
 
     const getCustomRecurringText = () => {
@@ -190,8 +207,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         return `Sự kiện sẽ diễn ra mỗi ${interval} ${freqText}.`;
     };
 
-    // FIX MẠNH MẼ: Dùng useMemo đóng băng Lưới lịch.
-    // Lịch sẽ không bị render lại vô tội vạ mỗi khi Tooltip bật/tắt nữa -> 100% hết giật nháy!
+    // KHÓA CỨNG LƯỚI LỊCH (Chống giật khi hover)
     const calendarCells = useMemo(() => {
         const cells = [];
         
@@ -204,15 +220,13 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             const cellDateStr = formatDateStr(cellDateObj);
             const isToday = cellDateStr === todayStr;
 
-            // KIỂM TRA NGÀY LỄ (Dương Lịch)
+            // KIỂM TRA NGÀY LỄ DƯƠNG LỊCH & ÂM LỊCH CHUẨN XÁC
             const solarDayStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const fullDateStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}-${currentYear}`;
+            
             let holidayName = SOLAR_HOLIDAYS[solarDayStr] || null;
-
-            // KIỂM TRA NGÀY LỄ (Âm Lịch)
-            const lunarDate = getLunarDate(cellDateObj);
-            const lunarDayStr = `${String(lunarDate.day).padStart(2, '0')}-${String(lunarDate.month).padStart(2, '0')}`;
-            if (LUNAR_HOLIDAYS[lunarDayStr]) {
-                holidayName = LUNAR_HOLIDAYS[lunarDayStr]; // Âm lịch ưu tiên đè lên Dương lịch nếu trùng
+            if (EXACT_LUNAR_HOLIDAYS[fullDateStr]) {
+                holidayName = EXACT_LUNAR_HOLIDAYS[fullDateStr]; // Âm lịch ưu tiên đè lên Dương lịch
             }
 
             const daySales = [];
@@ -226,6 +240,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             });
 
             const dayPersonalEvents = events.filter(ev => isEventOnDate(ev, cellDateStr));
+            const lunarStr = getLunarDateStr(cellDateObj);
 
             cells.push(
                 <div key={`cell-${day}`} className={`bg-white border border-gray-100 p-2 h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
@@ -233,9 +248,8 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                         <span className={`text-[15px] font-bold ${isToday ? 'text-white bg-[#26D0CE] w-7 h-7 rounded-full flex items-center justify-center' : 'text-gray-700'}`}>
                             {day}
                         </span>
-                        {/* HIỂN THỊ LỊCH ÂM CỰC CHUẨN */}
-                        <span className={`text-[10px] font-bold mt-1 ${lunarDate.day === 1 || lunarDate.day === 15 ? 'text-rose-500' : 'text-gray-400'}`}>
-                            {lunarDate.day}/{lunarDate.month}
+                        <span className={`text-[10px] font-bold mt-1 ${lunarStr.startsWith('1/') || lunarStr.startsWith('15/') ? 'text-rose-500' : 'text-gray-400'}`}>
+                            {lunarStr}
                         </span>
                     </div>
 
@@ -243,8 +257,8 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                         
                         {/* --- RENDER NGÀY LỄ --- */}
                         {holidayName && (
-                            <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[10px] font-black px-1.5 py-1 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
-                                <span>🌟</span><span className="truncate">{holidayName}</span>
+                            <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[10px] font-black px-1.5 py-1.5 rounded-[6px] truncate shadow-sm flex items-center gap-1 shrink-0">
+                                <span className="text-[12px]">🌟</span><span className="truncate">{holidayName}</span>
                             </div>
                         )}
 
@@ -291,19 +305,11 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             );
         }
         return cells;
-    }, [currentYear, currentMonth, events, sessions]); // ⚠️ Bí quyết hết giật: Chỉ vẽ lại lịch khi dữ liệu nguồn thay đổi!
-
-    // FIX MẠNH MẼ: Ép trình duyệt mở bộ chọn ngày khi bấm vào chữ
-    const openDatePicker = (e) => {
-        const input = e.currentTarget.querySelector('input');
-        if (input && input.showPicker) {
-            try { input.showPicker(); } catch (err) {}
-        }
-    };
+    }, [currentYear, currentMonth, events, sessions]);
 
     return (
         <>
-            {/* TOOLTIP NỔI: Cấp độ Z cao nhất, tắt mọi tương tác chuột (pointer-events-none) */}
+            {/* TOOLTIP NỔI HOÀN HẢO */}
             {tooltip.show && tooltip.data && (
                 <div 
                     className="fixed z-[9999] pointer-events-none transition-opacity duration-150"
@@ -330,27 +336,49 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 shrink-0">
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100">
+                        
+                        {/* --- BẢNG ĐIỀU KIỂN & CHỌN THÁNG XỊN SÒ --- */}
+                        <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100 relative">
                             <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
                             
-                            {/* KHU VỰC CHỌN THÁNG/NĂM (Đã sửa lỗi Click không hiện) */}
-                            <div className="relative flex items-center justify-center px-4 min-w-[160px] cursor-pointer hover:text-[#26D0CE] text-[#1A5B82] transition-colors" onClick={openDatePicker}>
-                                <span className="font-black text-[18px] pointer-events-none">Tháng {currentMonth + 1}, {currentYear}</span>
-                                <input
-                                    type="month"
-                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                                    value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            const [y, m] = e.target.value.split('-');
-                                            setCurrentDate(new Date(y, m - 1, 1));
-                                        }
-                                    }}
-                                />
+                            <div className="relative">
+                                <button 
+                                    onClick={() => { setShowMonthPicker(!showMonthPicker); setPickerYear(currentYear); }}
+                                    className="px-4 py-2 font-black text-[18px] text-[#1A5B82] hover:text-[#26D0CE] transition-colors rounded-xl hover:bg-teal-50 flex items-center justify-center min-w-[150px] h-full"
+                                >
+                                    Tháng {currentMonth + 1}, {currentYear}
+                                </button>
+
+                                {/* Giao diện Dropdown giống hệt hình ảnh thiết kế */}
+                                {showMonthPicker && (
+                                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[260px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 p-4 z-[100] animate-scale-up origin-top">
+                                        <div className="flex justify-between items-center mb-3 bg-gray-50 p-1.5 rounded-lg">
+                                            <button onClick={() => setPickerYear(y => y - 1)} className="p-1.5 hover:bg-white rounded-md text-gray-600"><ChevronLeft size={16}/></button>
+                                            <span className="font-black text-[#1D1D1F] text-[14px]">{pickerYear}</span>
+                                            <button onClick={() => setPickerYear(y => y + 1)} className="p-1.5 hover:bg-white rounded-md text-gray-600"><ChevronRight size={16}/></button>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
+                                                <button
+                                                    key={m}
+                                                    onClick={() => { setCurrentDate(new Date(pickerYear, m - 1, 1)); setShowMonthPicker(false); }}
+                                                    className={`py-2 text-[12px] rounded-lg font-bold transition-all ${currentMonth === m - 1 && currentYear === pickerYear ? 'bg-[#1A5B82] text-white shadow-md' : 'text-gray-600 hover:bg-[#e6eff9] hover:text-[#1A5B82]'}`}
+                                                >
+                                                    Thg{m}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                                            <button onClick={() => setShowMonthPicker(false)} className="text-[12px] font-bold text-gray-400 hover:text-rose-500 transition-colors">Xóa</button>
+                                            <button onClick={goToToday} className="text-[12px] font-bold text-[#26D0CE] hover:text-teal-600 transition-colors">Tháng này</button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <button onClick={nextMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronRight size={20} /></button>
                         </div>
+
                         <button onClick={goToToday} className="hidden md:flex px-4 py-2.5 bg-white border border-gray-200 rounded-[14px] text-[13px] font-bold text-gray-600 hover:text-[#26D0CE] hover:border-[#26D0CE] transition-all shadow-sm items-center gap-2 active:scale-95">
                             <CalIcon size={16} /> Hôm nay
                         </button>
@@ -369,7 +397,6 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                             </div>
                         ))}
                     </div>
-                    {/* Render lưới lịch đã được đóng băng bởi useMemo */}
                     <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-2xl overflow-hidden border border-gray-100 flex-1">
                         {calendarCells}
                     </div>
