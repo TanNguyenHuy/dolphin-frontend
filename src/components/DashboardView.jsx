@@ -5,6 +5,7 @@ import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
 import TopMVP from './dashboard/TopMVP';
+import SmartCalendar from './dashboard/SmartCalendar'; // Bổ sung lại Lịch thông minh
 import { formatCurrency, formatDateDisplay, API_URL, AD_COST_PER_SALE } from '../utils';
 import { calculateDetailStats } from '../logic';
 import axios from 'axios';
@@ -95,21 +96,12 @@ export default function DashboardView({
     return (
         <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
             
-            {/* CSS Tùy chỉnh để ép khối MiniCharts thành 2x2 khi nằm ở cột phải */}
-            <style dangerouslySetInnerHTML={{ __html: `
-                .fix-minicharts-grid > div {
-                    display: grid !important;
-                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                    gap: 1rem !important;
-                }
-            `}} />
-
             {/* ========================================================= */}
             {/* KHU VỰC 1: BIỂU ĐỒ VÀ THỐNG KÊ (GRID 2 CỘT LỆCH) */}
             {/* ========================================================= */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
                 
-                {/* CỘT TRÁI (8 phần): Chứa Biểu đồ tổng và Bảng Xếp Hạng */}
+                {/* CỘT TRÁI (8 phần): Chứa Biểu đồ tổng, MiniCharts và Bảng Xếp Hạng */}
                 <div className="xl:col-span-8 flex flex-col gap-6 lg:gap-8">
                     
                     {/* 1. Biểu đồ Đường Tổng quan */}
@@ -119,26 +111,28 @@ export default function DashboardView({
                         </ScrollReveal>
                     </div>
                     
-                    {/* 2. Bảng Xếp Hạng Đợt Bán */}
+                    {/* 2. Khối 4 Ô MiniCharts */}
+                    <ScrollReveal delay={50}>
+                        <MiniCharts sessions={completedSessions} />
+                    </ScrollReveal>
+
+                    {/* 3. Bảng Xếp Hạng Đợt Bán */}
                     <ScrollReveal delay={150}>
                         <TopMVP sessions={completedSessions} />
                     </ScrollReveal>
 
                 </div>
 
-                {/* CỘT PHẢI (4 phần): Chứa Kho Vốn & Các ô Doanh Thu */}
+                {/* CỘT PHẢI (4 phần): Chứa Lịch SmartCalendar & Kho Vốn */}
                 <div className="xl:col-span-4 relative h-full">
                     <ScrollReveal delay={100}>
-                        {/* Thuộc tính sticky giúp khối cột phải trượt mượt mà theo màn hình */}
                         <div className="sticky top-6 space-y-6 lg:space-y-8">
                             
+                            {/* Lịch Thông Minh */}
+                            <SmartCalendar sessions={safeEnrichedSessions} />
+
                             {/* Khối Kho, Vốn, Thuế */}
                             <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
-                            
-                            {/* Khối 4 Ô MiniCharts (Đã được CSS ép thành dạng lưới 2x2 cho vừa vặn) */}
-                            <div className="fix-minicharts-grid">
-                                <MiniCharts sessions={completedSessions} />
-                            </div>
 
                         </div>
                     </ScrollReveal>
