@@ -5,7 +5,7 @@ import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
 import TopMVP from './dashboard/TopMVP';
-import SmartCalendar from './dashboard/SmartCalendar'; // Bổ sung lại Lịch thông minh
+import SmartCalendar from './dashboard/SmartCalendar'; 
 import { formatCurrency, formatDateDisplay, API_URL, AD_COST_PER_SALE } from '../utils';
 import { calculateDetailStats } from '../logic';
 import axios from 'axios';
@@ -47,7 +47,6 @@ export default function DashboardView({
     const safeEnrichedSessions = enrichedSessions || []; 
     const visibleSessions = safeEnrichedSessions.slice(0, visibleCount);
     const hasMore = visibleCount < safeEnrichedSessions.length;
-    // Lọc ra các đợt ĐÃ CHỐT SỔ để dùng cho Biểu đồ
     const completedSessions = safeEnrichedSessions.filter(s => s.is_completed === true);
 
     const [quickViewData, setQuickViewData] = useState(null);
@@ -96,59 +95,40 @@ export default function DashboardView({
     return (
         <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
             
-            {/* ========================================================= */}
-            {/* KHU VỰC 1: BIỂU ĐỒ VÀ THỐNG KÊ (GRID 2 CỘT LỆCH) */}
-            {/* ========================================================= */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
                 
-                {/* CỘT TRÁI (8 phần): Chứa Biểu đồ tổng, MiniCharts và Bảng Xếp Hạng */}
                 <div className="xl:col-span-8 flex flex-col gap-6 lg:gap-8">
-                    
-                    {/* 1. Biểu đồ Đường Tổng quan */}
                     <div className="h-[380px] md:h-[450px]">
                         <ScrollReveal delay={0}>
                             <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
                         </ScrollReveal>
                     </div>
                     
-                    {/* 2. Khối 4 Ô MiniCharts */}
                     <ScrollReveal delay={50}>
                         <MiniCharts sessions={completedSessions} />
                     </ScrollReveal>
 
-                    {/* 3. Bảng Xếp Hạng Đợt Bán */}
                     <ScrollReveal delay={150}>
                         <TopMVP sessions={completedSessions} />
                     </ScrollReveal>
-
                 </div>
 
-                {/* CỘT PHẢI (4 phần): Chứa Lịch SmartCalendar & Kho Vốn */}
                 <div className="xl:col-span-4 relative h-full">
                     <ScrollReveal delay={100}>
                         <div className="sticky top-6 space-y-6 lg:space-y-8">
-                            
-                            {/* Lịch Thông Minh */}
                             <SmartCalendar sessions={safeEnrichedSessions} />
-
-                            {/* Khối Kho, Vốn, Thuế */}
                             <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
-
                         </div>
                     </ScrollReveal>
                 </div>
-
             </div>
 
-            {/* ========================================================= */}
-            {/* KHU VỰC 2: DANH SÁCH ĐỢT BÁN & BẢNG XEM NHANH */}
-            {/* ========================================================= */}
             <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
                     <div className="relative w-full" onMouseLeave={handleMouseLeaveList}>
                         
-                        {/* 1. KHUNG DANH SÁCH */}
-                        <div className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[400px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
+                        {/* ĐÃ SỬA: Giảm padding-right (xl:pr) từ 400px xuống còn 320px để Thẻ Đợt Bán có thêm không gian */}
+                        <div className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[320px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
                             
                             <div className="flex justify-between items-center mb-8 px-2 md:px-0 relative z-10">
@@ -173,8 +153,8 @@ export default function DashboardView({
                             )}
                         </div>
 
-                        {/* 2. BẢNG XEM NHANH */}
-                        <div className="hidden xl:block absolute right-8 top-10 bottom-10 w-[350px] pointer-events-none z-[100]">
+                        {/* ĐÃ SỬA: Thu hẹp độ rộng bảng xem nhanh xuống còn 290px và nhích ra sát mép phải (right-6) */}
+                        <div className="hidden xl:block absolute right-6 top-10 bottom-10 w-[290px] pointer-events-none z-[100]">
                             <div className={`sticky top-[120px] transition-all duration-[500ms] cubic-bezier(0.16, 1, 0.3, 1) ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
                                 
                                 {quickViewData && (
@@ -185,56 +165,56 @@ export default function DashboardView({
                                                 <Calendar size={13} />{formatDateDisplay(quickViewData.actual_start_date)} ➔ {formatDateDisplay(quickViewData.actual_end_date)}
                                             </div>
                                         </div>
-                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-5 border border-white/60 relative overflow-hidden shrink-0">
+                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 relative overflow-hidden shrink-0">
                                             <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-100/50 rounded-full blur-2xl"></div>
                                             <div className="flex items-center gap-2 text-[#1D1D1F] font-black text-[14px] mb-3"><Box size={16} className="text-blue-500"/> Cấu trúc Vốn</div>
                                             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100/50 rounded-[16px] p-3 mb-3 relative overflow-hidden">
                                                 <Package size={64} strokeWidth={1} className="absolute -right-4 -bottom-4 text-amber-500/10" />
-                                                <div className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1 relative z-10">Tổng vốn nhập kho</div>
-                                                <div className="text-[24px] font-black text-[#663C00] relative z-10 leading-none">{formatCurrency((quickViewData.so_tien_cua_kien || 0) + (quickViewData.computedGiatUi || 0))} <span className="text-[15px] opacity-70">đ</span></div>
+                                                <div className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-1 relative z-10">Tổng vốn nhập kho</div>
+                                                <div className="text-[20px] font-black text-[#663C00] relative z-10 leading-none">{formatCurrency((quickViewData.so_tien_cua_kien || 0) + (quickViewData.computedGiatUi || 0))} <span className="text-[13px] opacity-70">đ</span></div>
                                             </div>
-                                            <div className="space-y-2 text-[12px] font-bold">
-                                                <div className="flex justify-between items-center text-gray-500 border-b border-gray-100 pb-1.5"><span className="uppercase text-[9px] tracking-wider">Phí giặt ủi (Auto 4%)</span><span className="text-[#1D1D1F]">{formatCurrency(quickViewData.computedGiatUi || 0)}</span></div>
-                                                <div className="flex justify-between items-center text-gray-500"><span>Tổng Hàng Nhập</span><span className="text-[#1D1D1F] text-[13px]">{quickViewData.tong_sl_nhap || 0}</span></div>
-                                                <div className="flex justify-between items-center text-gray-500"><span>Tổng Đã Bán</span><span className="text-teal-600 text-[13px]">{quickViewData.tong_sl_ban || 0}</span></div>
+                                            <div className="space-y-2 text-[11px] font-bold">
+                                                <div className="flex justify-between items-center text-gray-500 border-b border-gray-100 pb-1.5"><span className="uppercase text-[8px] tracking-wider">Phí giặt ủi (Auto 4%)</span><span className="text-[#1D1D1F]">{formatCurrency(quickViewData.computedGiatUi || 0)}</span></div>
+                                                <div className="flex justify-between items-center text-gray-500"><span>Tổng Hàng Nhập</span><span className="text-[#1D1D1F] text-[12px]">{quickViewData.tong_sl_nhap || 0}</span></div>
+                                                <div className="flex justify-between items-center text-gray-500"><span>Tổng Đã Bán</span><span className="text-teal-600 text-[12px]">{quickViewData.tong_sl_ban || 0}</span></div>
                                                 <div className="flex justify-between items-center text-gray-500 pt-1.5 border-t border-gray-100"><span>Phí Quảng cáo (Auto)</span><span className="text-[#1D1D1F]">{formatCurrency(quickViewData.autoAdCost || 0)}</span></div>
                                             </div>
                                         </div>
-                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-5 border border-white/60 flex flex-col shrink-0">
+                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 flex flex-col shrink-0">
                                             <div className="flex justify-between items-center mb-3">
-                                                <div className="flex items-center gap-2 font-black text-[14px] text-[#1D1D1F]"><ShoppingBag size={15} className="text-teal-500"/> Top Doanh Thu</div>
-                                                <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">{quickViewDetails.length} mục</span>
+                                                <div className="flex items-center gap-1.5 font-black text-[13px] text-[#1D1D1F]"><ShoppingBag size={14} className="text-teal-500"/> Top Doanh Thu</div>
+                                                <span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-lg">{quickViewDetails.length} mục</span>
                                             </div>
                                             <div className="flex flex-col gap-2">
                                                 {isLoadingDetails ? (
-                                                    <div className="flex flex-col items-center justify-center py-4 gap-2"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-500"></div><span className="text-[10px] text-gray-400 font-bold">Đang tải xếp hạng...</span></div>
+                                                    <div className="flex flex-col items-center justify-center py-4 gap-2"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-500"></div><span className="text-[9px] text-gray-400 font-bold">Đang tải...</span></div>
                                                 ) : quickViewDetails.length === 0 ? (
-                                                    <div className="flex items-center justify-center py-4 text-[11px] font-bold text-gray-400">Chưa có sản phẩm nào</div>
+                                                    <div className="flex items-center justify-center py-4 text-[10px] font-bold text-gray-400">Chưa có sản phẩm nào</div>
                                                 ) : (
                                                     <>
                                                         {quickViewDetails.slice(0, 4).map((item, idx) => (
-                                                            <div key={idx} className="bg-white border border-gray-100 rounded-[16px] p-2.5 shadow-sm">
-                                                                <div className="flex justify-between items-start mb-1.5">
-                                                                    <div className="font-black text-[12px] text-[#1D1D1F] truncate pr-2 flex-1"><span className="text-gray-400 mr-1">#{idx + 1}</span> {item.ten_san_pham}</div>
-                                                                    <div className={`text-[11px] font-black shrink-0 ${item.loi >= 0 ? 'text-[#1DB2A0]' : 'text-rose-500'}`}>{item.loi >= 0 ? '+' : ''}{formatCurrency(item.loi)}đ</div>
+                                                            <div key={idx} className="bg-white border border-gray-100 rounded-[12px] p-2 shadow-sm">
+                                                                <div className="flex justify-between items-start mb-1">
+                                                                    <div className="font-black text-[11px] text-[#1D1D1F] truncate pr-2 flex-1"><span className="text-gray-400 mr-1">#{idx + 1}</span> {item.ten_san_pham}</div>
+                                                                    <div className={`text-[10px] font-black shrink-0 ${item.loi >= 0 ? 'text-[#1DB2A0]' : 'text-rose-500'}`}>{item.loi >= 0 ? '+' : ''}{formatCurrency(item.loi)}đ</div>
                                                                 </div>
-                                                                <div className="flex justify-between items-center text-[10px] font-bold text-gray-500">
-                                                                    <div className="flex gap-1"><span className="bg-gray-50 px-1 rounded border border-gray-100">N: {item.sl_nhap}</span><span className="bg-teal-50 text-teal-600 px-1 rounded border border-teal-100">B: {item.so_luong || 0}</span><span className="bg-orange-50 text-orange-600 px-1 rounded border border-orange-100">C: {item.sl_con}</span></div>
-                                                                    <div className="text-blue-600">Doanh thu: {formatCurrency(item.so_tien_ban_duoc || 0)}đ</div>
+                                                                <div className="flex justify-between items-center text-[9px] font-bold text-gray-500">
+                                                                    <div className="flex gap-1"><span className="bg-gray-50 px-1 rounded border border-gray-100">N:{item.sl_nhap}</span><span className="bg-teal-50 text-teal-600 px-1 rounded border border-teal-100">B:{item.so_luong || 0}</span></div>
+                                                                    <div className="text-blue-600">Thu: {formatCurrency(item.so_tien_ban_duoc || 0)}</div>
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                        {quickViewDetails.length > 4 && <div className="text-center text-[10px] font-bold text-gray-400 mt-1">+ {quickViewDetails.length - 4} sản phẩm khác...</div>}
+                                                        {quickViewDetails.length > 4 && <div className="text-center text-[9px] font-bold text-gray-400 mt-1">+ {quickViewDetails.length - 4} sản phẩm khác...</div>}
                                                     </>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-5 border border-white/60 shrink-0">
-                                            <div className="flex justify-between items-center mb-3"><span className="font-black text-[14px] text-[#1D1D1F]">Tổng kết Hiệu suất</span><span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">Gọn</span></div>
-                                            <div className="space-y-2.5">
-                                                <div className="flex justify-between items-center text-[12px] bg-gray-50/50 p-2 rounded-[12px]"><span className="font-bold text-gray-500 flex items-center gap-1.5"><TrendingUp size={13} className="text-blue-500"/> Doanh thu</span><span className="font-black text-[#1D1D1F]">{formatCurrency(quickViewData.tong_doanh_thu || 0)}đ</span></div>
-                                                <div className="flex justify-between items-center text-[12px] bg-gray-50/50 p-2 rounded-[12px]"><span className="font-bold text-gray-400 flex items-center gap-1.5"><Package size={13} className="text-gray-400"/> Ước tính Vốn tồn</span><span className="font-bold text-gray-500">{formatCurrency(quickViewData.tong_tien_ton_computed || 0)}đ</span></div>
-                                                <div className="flex justify-between items-center pt-2.5 px-1 border-t border-gray-100"><span className="font-black text-gray-600 uppercase tracking-widest text-[10px] flex items-center gap-1.5"><Activity size={13} className={quickViewData.realProfit >= 0 ? 'text-teal-500' : 'text-rose-500'}/> LỢI NHUẬN</span><span className={`text-[18px] font-black ${quickViewData.realProfit >= 0 ? 'text-[#1DB2A0]' : 'text-rose-600'}`}>{formatCurrency(quickViewData.realProfit || 0)}đ</span></div>
+                                        <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 shrink-0">
+                                            <div className="flex justify-between items-center mb-3"><span className="font-black text-[13px] text-[#1D1D1F]">Hiệu suất</span><span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-lg">Gọn</span></div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center text-[11px] bg-gray-50/50 p-1.5 rounded-[10px]"><span className="font-bold text-gray-500 flex items-center gap-1"><TrendingUp size={12} className="text-blue-500"/> Doanh thu</span><span className="font-black text-[#1D1D1F]">{formatCurrency(quickViewData.tong_doanh_thu || 0)}đ</span></div>
+                                                <div className="flex justify-between items-center text-[11px] bg-gray-50/50 p-1.5 rounded-[10px]"><span className="font-bold text-gray-400 flex items-center gap-1"><Package size={12} className="text-gray-400"/> Vốn tồn</span><span className="font-bold text-gray-500">{formatCurrency(quickViewData.tong_tien_ton_computed || 0)}đ</span></div>
+                                                <div className="flex justify-between items-center pt-2 px-1 border-t border-gray-100"><span className="font-black text-gray-600 uppercase tracking-widest text-[9px] flex items-center gap-1"><Activity size={12} className={quickViewData.realProfit >= 0 ? 'text-teal-500' : 'text-rose-500'}/> LỢI NHUẬN</span><span className={`text-[16px] font-black ${quickViewData.realProfit >= 0 ? 'text-[#1DB2A0]' : 'text-rose-600'}`}>{formatCurrency(quickViewData.realProfit || 0)}đ</span></div>
                                             </div>
                                         </div>
                                     </div>
