@@ -44,7 +44,7 @@ export default function SessionCard({
                 </div>
             </div>
 
-            <div className="flex flex-col justify-center xl:w-[20%] shrink-0 pl-12 md:pl-16 xl:pl-0 w-full xl:w-auto">
+            <div className="flex flex-col justify-center xl:w-[22%] shrink-0 pl-12 md:pl-16 xl:pl-0 w-full xl:w-auto">
                 <div className="flex items-center justify-between xl:justify-start gap-2 text-[11px] md:text-[12px]">
                     <span className="text-[#5c5c5c]">Chi phí</span>
                     <span className="font-bold text-[#1D1D1F] tabular-nums">{formatCurrency((session.so_tien_cua_kien || 0) + (session.so_tien_giat_ui || 0) + session.autoAdCost)}</span>
@@ -53,9 +53,14 @@ export default function SessionCard({
                     <span className="text-[#8E8E93]">Vốn tồn</span>
                     <span className="font-medium text-[#5c5c5c] tabular-nums">{formatCurrency(session.tong_tien_ton_computed || 0)}</span>
                 </div>
+                {/* DÒNG MỚI THÊM VÀO ĐÂY: GIÁ TB */}
+                <div className="flex items-center justify-between xl:justify-start gap-2 text-[10px] md:text-[11px] mt-1 xl:mt-0.5">
+                    <span className="text-[#8E8E93]">Giá TB</span>
+                    <span className="font-bold text-orange-500 tabular-nums">{formatCurrency(session.avgPrice || 0)}đ</span>
+                </div>
             </div>
 
-            <div className="flex items-center justify-between xl:justify-end gap-4 w-full xl:w-[30%] pl-12 md:pl-16 xl:pl-0 border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 mt-1 xl:mt-0">
+            <div className="flex items-center justify-between xl:justify-end gap-4 w-full xl:w-[28%] pl-12 md:pl-16 xl:pl-0 border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 mt-1 xl:mt-0">
                 <div className="text-left xl:text-right shrink-0 min-w-[100px]">
                     <div className="text-[9px] font-bold text-[#5c5c5c] uppercase tracking-widest mb-0.5">Lợi Nhuận</div>
                     <div className={`text-[15px] md:text-[18px] font-black tabular-nums tracking-tight ${isLoss ? 'text-[#FF453A]' : 'text-[#1DB2A0]'}`}>

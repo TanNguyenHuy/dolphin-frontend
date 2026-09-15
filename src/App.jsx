@@ -185,6 +185,15 @@ export default function App() {
 
                     let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
                     const safeBalesData = Array.isArray(balesData) ? balesData : [];
+                    
+                    // ===============================================
+                    // TÍNH TOÁN GIÁ TRUNG BÌNH SẢN PHẨM TRONG ĐỢT
+                    // ===============================================
+                    const tongTienKien = safeBalesData.reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
+                    const tongSlKien = safeBalesData.reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
+                    ss.avgPrice = tongSlKien > 0 ? Math.round(tongTienKien / tongSlKien) : 0;
+                    // ===============================================
+
                     const sortedBales = [...safeBalesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
                     let computedVonTon = 0; let trungBinh = ss.tong_sl_nhap > 0 ? (ss.so_tien_cua_kien / ss.tong_sl_nhap) : 0;
                     
