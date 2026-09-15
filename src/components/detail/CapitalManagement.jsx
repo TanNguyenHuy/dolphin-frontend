@@ -70,19 +70,45 @@ export default function CapitalManagement({
                     <div className="space-y-3">
                         {(importedBales || []).map(b => {
                             if (!b) return null;
+                            
+                            // ==========================================
+                            // THUẬT TOÁN MỚI SẾP YÊU CẦU:
+                            // Tính tổng lượng NHẬP từ Danh sách SP Khớp với Tên Lô Hàng
+                            // ==========================================
+                            const originalQty = Number(b.qty) || 0;
+                            const totalDeducted = (detailData?.daily || []).reduce((sum, row) => {
+                                // Tìm những sản phẩm có chứa tên kiện hàng này
+                                if (String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase())) {
+                                    return sum + (Number(row.so_luong_nhap) || 0);
+                                }
+                                return sum;
+                            }, 0);
+                            const remainingQty = originalQty - totalDeducted;
+
                             return (
                             <div key={b._id} className="p-4 bg-white/70 hover:bg-white transition-all duration-300 border border-white/80 rounded-[20px] flex items-center justify-between group shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] min-w-0">
                                 <div className="flex-1 min-w-0 pr-3">
                                     <div className="text-[14px] font-bold text-[#1D1D1F] truncate group-hover:text-[#1A5B82] transition-colors">{b.name || ''}</div>
                                     <div className="text-[12px] text-gray-500 mt-1 font-medium truncate flex items-center gap-1.5">
-                                        SL: <span className="font-bold text-gray-800">{b.qty || 0}</span> 
+                                        SL gốc: <span className="font-bold text-gray-800">{b.qty || 0}</span> 
                                         <span className="w-1 h-1 rounded-full bg-gray-300"></span> 
                                         TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}
                                     </div>
+                                    
+                                    {/* DÒNG HIỂN THỊ CÒN LẠI / ĐÃ LẤY RA (MỚI THÊM) */}
+                                    <div className="mt-2.5 inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-100/60 px-2.5 py-1.5 rounded-[8px] shadow-sm">
+                                        <span className="text-[10px] md:text-[11px] font-bold text-gray-500">
+                                            Đã lấy ra: <span className="text-orange-600 font-black">{totalDeducted}</span>
+                                        </span>
+                                        <span className="w-1 h-1 rounded-full bg-orange-200 mx-0.5"></span>
+                                        <span className="text-[10px] md:text-[11px] font-bold text-gray-500">
+                                            Còn kho: <span className={`font-black text-[12px] ${remainingQty < 0 ? 'text-rose-500' : remainingQty === 0 ? 'text-gray-400' : 'text-[#1DB2A0]'}`}>{remainingQty}</span>
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0">
+                                <div className="flex flex-col items-end gap-2 shrink-0">
                                     <span className="font-black text-[#1D1D1F] text-[15px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                    {canDelete && <button type="button" onClick={() => { handleDeleteBale ? handleDeleteBale(b._id) : alert("Lỗi"); }} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm hover:bg-red-50 rounded-full transition-all active:scale-90"><X size={14} strokeWidth={3}/></button>}
+                                    {canDelete && <button type="button" onClick={() => { handleDeleteBale ? handleDeleteBale(b._id) : alert("Lỗi"); }} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm hover:bg-red-50 rounded-full transition-all active:scale-90"><X size={14} strokeWidth={3}/></button>}
                                 </div>
                             </div>
                         )})}
