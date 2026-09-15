@@ -14,13 +14,14 @@ export default function SessionCard({
             onClick={() => fetchDetail(session.id)}
             className="bg-white/60 hover:bg-white border border-white/80 shadow-sm hover:shadow-md rounded-[24px] p-4 md:p-5 transition-all cursor-pointer flex flex-col xl:flex-row xl:items-center justify-between gap-4 relative group"
         >
-            {/* 1. KHỐI TRÁI: STT & Tên Đợt Bán (Tự động chiếm không gian trống để đẩy các khối kia sang phải) */}
-            <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+            {/* 1. KHỐI TRÁI: STT & Tên Đợt Bán (ĐÃ SỬA LẠI ĐỂ CHỮ XUỐNG DÒNG, KHÔNG BỊ CẮT) */}
+            <div className="flex items-center gap-3 md:gap-4 min-w-[200px] lg:min-w-[250px] flex-1">
                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-[13px] md:text-[14px] bg-white border border-gray-100 shadow-sm text-[#1D1D1F] shrink-0 tabular-nums">
                     {totalCount - index}
                 </div>
-                <div className="min-w-0 pr-4">
-                    <h3 className="font-bold text-[#1D1D1F] text-[14px] md:text-[15px] truncate group-hover:text-[#1A5B82] transition-colors">
+                <div className="min-w-0 pr-2 md:pr-4 flex-1">
+                    {/* Bỏ truncate, thay bằng line-clamp-2, giảm size chữ một chút và cho phép rớt dòng */}
+                    <h3 className="font-bold text-[#1D1D1F] text-[13px] md:text-[14px] leading-snug line-clamp-2 break-words group-hover:text-[#1A5B82] transition-colors">
                         {getSessionName(session.name, session.actual_start_date, session.actual_end_date)}
                     </h3>
                     <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-gray-500 font-medium mt-1">
@@ -30,8 +31,8 @@ export default function SessionCard({
                 </div>
             </div>
 
-            {/* KHỐI PHẢI: Wrapper chứa tất cả số liệu, được thiết kế lại để không bao giờ bị đè chữ */}
-            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 xl:gap-8 shrink-0 w-full xl:w-auto pl-12 md:pl-15 xl:pl-0">
+            {/* KHỐI PHẢI: Wrapper chứa tất cả số liệu */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 xl:gap-8 shrink-0 w-full xl:w-auto pl-12 md:pl-[60px] xl:pl-0">
                 
                 {/* Khu vực Nhập - Bán - Còn */}
                 <div className="flex gap-2 shrink-0">
@@ -49,7 +50,7 @@ export default function SessionCard({
                     </div>
                 </div>
 
-                {/* Khu vực Chi Phí - Đã được thêm border-l để ngăn cách và tăng khoảng trống */}
+                {/* Khu vực Chi Phí */}
                 <div className="flex flex-col gap-1.5 shrink-0 xl:border-l xl:border-gray-200/60 xl:pl-6 min-w-[145px]">
                     <div className="flex justify-between items-center gap-3 text-[12px]">
                         <span className="text-gray-500 font-bold">Chi phí</span>
@@ -59,7 +60,6 @@ export default function SessionCard({
                         <span className="text-gray-400 font-bold">Vốn tồn</span>
                         <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(session.tong_tien_ton_computed || 0)}<span className="text-[9px] text-gray-400 ml-0.5">đ</span></span>
                     </div>
-                    {/* Đường kẻ mờ phân tách Giá TB */}
                     <div className="flex justify-between items-center gap-3 text-[11px] mt-0.5 pt-1.5 border-t border-gray-100">
                         <span className="text-orange-500 font-bold flex items-center gap-1"><Tag size={10}/> Giá TB</span>
                         <span className="font-black text-orange-500 tabular-nums">{formatCurrency(session.avgPrice || 0)}<span className="text-[9px] text-orange-400 ml-0.5">đ</span></span>
@@ -76,7 +76,6 @@ export default function SessionCard({
                         </div>
                     </div>
 
-                    {/* Gom các nút hành động vào một cụm xám nhạt để gọn gàng hơn */}
                     <div className="flex items-center gap-1.5 md:gap-2 shrink-0 bg-gray-50/80 p-1.5 rounded-full border border-gray-200/50">
                         {canPay && (
                             <button onClick={(e) => { e.stopPropagation(); setSalarySession(session); setShowSalaryModal(true); }} className="w-8 h-8 flex items-center justify-center text-gray-400 bg-white hover:text-teal-600 rounded-full transition-all shadow-sm border border-gray-200/60 hover:border-teal-200 active:scale-95" title="Phát lương">
