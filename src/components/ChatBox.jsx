@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { MessageCircle, Send, X, AlertCircle } from 'lucide-react';
 import { API_URL } from '../utils';
+import { useReducedMotion } from './motion/motion';
 
 export default function ChatBox({ authUser }) {
+    const reducedMotion = useReducedMotion();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
@@ -12,13 +14,13 @@ export default function ChatBox({ authUser }) {
     // PHÂN QUYỀN CHAT THEO YÊU CẦU CỦA SẾP
     const isAdmin = authUser?.role === 'admin';
     const plan = authUser?.plan || '10k';
-    
+
     // Gói Cơ Bản (10k) không được nhìn thấy chat
     const canViewChat = isAdmin || plan === '50k' || plan === '100k' || plan === 'premium';
-    
+
     // Kiểm tra xem có đang bị cấm chat không
     const isBanned = authUser?.isChatBanned || (authUser?.chatRestrictedUntil && new Date(authUser.chatRestrictedUntil) > new Date());
-    
+
     // Chỉ VVIP và Premium mới được chat (và không bị cấm)
     const canChat = isAdmin || ((plan === '100k' || plan === 'premium') && !isBanned);
 
@@ -31,8 +33,8 @@ export default function ChatBox({ authUser }) {
     }, [isOpen, canViewChat]);
 
     useEffect(() => {
-        if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isOpen]);
+        if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth' });
+    }, [messages, isOpen, reducedMotion]);
 
     if (!canViewChat) return null; // Khách Cơ Bản thì giấu luôn cái cục Chat đi
 
@@ -57,8 +59,8 @@ export default function ChatBox({ authUser }) {
     return (
         <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-[100] font-sans">
             {isOpen ? (
-                <div className="w-[340px] md:w-[380px] h-[500px] md:h-[600px] liquid-glass bg-white/50 backdrop-blur-2xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden border border-white/80 animate-scale-up origin-bottom-right">
-                    
+                <div className="w-[min(340px,calc(100vw-3rem))] md:w-[380px] h-[min(500px,calc(100dvh-6rem))] md:h-[min(600px,calc(100dvh-6rem))] liquid-glass bg-white/50 backdrop-blur-2xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden border border-white/80 animate-scale-up origin-bottom-right">
+
                     {/* HEADER: Kính mờ sang trọng */}
                     <div className="bg-white/40 backdrop-blur-md p-5 flex justify-between items-center border-b border-white/50">
                         <div className="flex items-center gap-3">
@@ -75,7 +77,7 @@ export default function ChatBox({ authUser }) {
                             <X size={18} strokeWidth={2.5}/>
                         </button>
                     </div>
-                    
+
                     {/* BODY: Danh sách tin nhắn */}
                     <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar bg-gradient-to-b from-transparent to-white/20">
                         {messages.length === 0 ? (
@@ -108,16 +110,16 @@ export default function ChatBox({ authUser }) {
                             </div>
                         ) : (
                             <form onSubmit={sendMessage} className="flex items-center gap-3">
-                                <input 
-                                    type="text" 
-                                    className="flex-1 bg-white/70 border border-white rounded-[20px] px-4 py-3.5 text-[14px] font-medium text-[#1D1D1F] outline-none transition-all focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm placeholder:text-gray-400" 
-                                    placeholder="Nhập tin nhắn..." 
-                                    value={text} 
-                                    onChange={(e) => setText(e.target.value)} 
+                                <input
+                                    type="text"
+                                    className="flex-1 bg-white/70 border border-white rounded-[20px] px-4 py-3.5 text-[14px] font-medium text-[#1D1D1F] outline-none transition-all focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm placeholder:text-gray-400"
+                                    placeholder="Nhập tin nhắn..."
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
                                 />
-                                <button 
-                                    type="submit" 
-                                    disabled={!text.trim()} 
+                                <button
+                                    type="submit"
+                                    disabled={!text.trim()}
                                     className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#1DB2A0] to-[#159a8a] text-white rounded-[18px] flex items-center justify-center disabled:opacity-50 transition-all active:scale-90 shadow-[0_4px_12px_rgba(29,178,160,0.3)] disabled:shadow-none hover:shadow-[0_8px_16px_rgba(29,178,160,0.4)]"
                                 >
                                     <Send size={18} strokeWidth={2.5} className="-ml-0.5" />
@@ -128,13 +130,13 @@ export default function ChatBox({ authUser }) {
                 </div>
             ) : (
                 /* NÚT MỞ CHAT LƠ LỬNG */
-                <button 
-                    onClick={() => setIsOpen(true)} 
+                <button
+                    onClick={() => setIsOpen(true)}
                     className="group relative w-14 h-14 md:w-16 md:h-16 flex items-center justify-center outline-none transition-transform active:scale-90"
                 >
                     {/* Hào quang phát sáng (Ping) */}
                     <div className="absolute inset-0 bg-[#26D0CE] rounded-full animate-ping opacity-40 group-hover:opacity-60 transition-opacity"></div>
-                    
+
                     {/* Nút bấm chính */}
                     <div className="relative w-full h-full bg-gradient-to-br from-[#33A1FD] to-[#26D0CE] text-white rounded-full shadow-[0_8px_24px_rgba(38,208,206,0.4)] flex items-center justify-center group-hover:shadow-[0_12px_32px_rgba(38,208,206,0.5)] transition-all">
                         <MessageCircle size={28} strokeWidth={2.5} className="group-hover:scale-110 transition-transform duration-300" />

@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import { formatCurrency } from '../../utils';
+import { useReducedMotion } from '../motion/motion';
 
 export default function MiniCharts({ sessions }) {
+    const reducedMotion = useReducedMotion();
     const stats = useMemo(() => {
         const result = {
             total: { label: "Tổng Doanh Thu", value: 0, data: [], color: "#33A1FD", bg: "bg-blue-50/50" },
@@ -15,7 +17,7 @@ export default function MiniCharts({ sessions }) {
         [...sessions].reverse().forEach(s => {
             const name = (s.name || "").toLowerCase();
             const rev = s.tong_doanh_thu || 0;
-            
+
             result.total.value += rev;
             result.total.data.push({ val: rev });
 
@@ -50,7 +52,7 @@ export default function MiniCharts({ sessions }) {
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={stat.data}>
                                 <YAxis hide domain={['dataMin', 'dataMax + 10000']} />
-                                <Line type="monotone" dataKey="val" stroke={stat.color} strokeWidth={2.5} dot={false} isAnimationActive={true} />
+                                <Line type="monotone" dataKey="val" stroke={stat.color} strokeWidth={2.5} dot={false} isAnimationActive={!reducedMotion} animationDuration={650} />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>

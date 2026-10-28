@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { createPortal } from 'react-dom';
 
-// Import Icons
 import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw, Settings } from 'lucide-react';
 
-// Import Components
 import Auth from './Auth';
-import AdminPanel from './components/AdminPanel';
-import DashboardView from './components/DashboardView';
-import DetailView from './components/DetailView';
 import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
-import PersonalCalendar from './components/dashboard/PersonalCalendar';
 import SettingsView from './components/SettingsView';
 import { settingsKey, readSettings, writeSettings } from './settings';
+import useToast from './hooks/useToast';
+import { readAuthUser, readStoredText, writeStoredText } from './lib/browserStorage';
+import { buildSessionSummary } from './lib/sessionSummary';
+import MotionProvider from './components/motion/MotionProvider';
 
-// Import Modals (Khớp nối hoàn hảo theo code gốc của bạn)
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
@@ -26,9 +23,13 @@ import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
-// Import Utils
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
+
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const DetailView = lazy(() => import('./components/DetailView'));
+const PersonalCalendar = lazy(() => import('./components/dashboard/PersonalCalendar'));
 
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
@@ -52,15 +53,7 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-    const [authUser, setAuthUser] = useState(() => {
-        if (typeof window !== 'undefined') { 
-            const sessionUser = sessionStorage.getItem('authUser');
-            if (sessionUser) return JSON.parse(sessionUser);
-            const localUser = localStorage.getItem('authUser');
-            if (localUser) return JSON.parse(localUser);
-        }
-        return null;
-    });
+    const [authUser, setAuthUser] = useState(readAuthUser);
 
     const preferenceKey = settingsKey(authUser);
     const [savedPreferences, setSavedPreferences] = useState({});
@@ -76,28 +69,32 @@ export default function App() {
     }, [preferences.reduceMotion]);
 
     const [view, setView] = useState('DASHBOARD');
-    const [activeTab, setActiveTab] = useState('CHART');
     const [sessions, setSessions] = useState([]);
+    const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+    const [dashboardError, setDashboardError] = useState('');
+    const dashboardRequest = useRef(0);
+    const detailRequest = useRef(0);
     const [currentId, setCurrentId] = useState(null);
     const [detailData, setDetailData] = useState(null);
-    
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [pendingTasksCount, setPendingTasksCount] = useState(0); 
 
-    // STATE QUẢN LÝ MODAL (Đã đồng bộ tuyệt đối với các components con)
+    const mainRef = useRef(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [pendingTasksCount, setPendingTasksCount] = useState(0);
+
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
-    
+
     const [showDeleteRowModal, setShowDeleteRowModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
-    
+
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
     const [syncRow, setSyncRow] = useState(null);
-    
+
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [salarySession, setSalarySession] = useState(null);
-    
+
     const [syncText, setSyncText] = useState('');
     const [syncManualQty, setSyncManualQty] = useState('');
     const [syncManualRev, setSyncManualRev] = useState('');
@@ -106,11 +103,8 @@ export default function App() {
     const [isProcessingAdd, setIsProcessingAdd] = useState(false);
     const [isProcessingEdit, setIsProcessingEdit] = useState(false);
     const [showFireworks, setShowFireworks] = useState(false);
-    
-    const [momoPhone, setMomoPhone] = useState(() => {
-        if (typeof window !== 'undefined') return localStorage.getItem('momoPhone') || ''; 
-        return '';
-    });
+
+    const [momoPhone, setMomoPhone] = useState(() => readStoredText('momoPhone'));
     const [newItem, setNewItem] = useState({ ten_san_pham: '', link_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
@@ -124,39 +118,28 @@ export default function App() {
 
     const [timeLeftDisplay, setTimeLeftDisplay] = useState('');
     const [isExpiredState, setIsExpiredState] = useState(false);
-    const [blockModal, setBlockModal] = useState({ show: false, message: '' });
-    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [blockModal] = useState({ show: false, message: '' });
+    const { toast, showToast } = useToast();
 
     useEffect(() => {
-        if (!window.history.state || !window.history.state.view) window.history.replaceState({ view: 'DASHBOARD' }, '');
-        const handlePopState = (event) => {
-            if (event.state && event.state.view) {
-                setView(event.state.view);
-                if (event.state.view === 'DASHBOARD') { fetchDashboard(); setDetailData(null); setImportedBales([]); }
-            }
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
+        mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    }, [view, currentId]);
 
     const handleNavigate = (newView) => {
+        detailRequest.current++;
+        setIsLoadingDetail(false);
         if (view !== newView) {
             window.history.pushState({ view: newView }, '');
             setView(newView);
-            setIsSidebarOpen(false); 
         }
-    };
-
-    const showToast = (message, type = 'success') => {
-        setToast({ show: true, message, type });
-        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+        setIsSidebarOpen(false);
     };
 
     useEffect(() => {
-        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) { setIsExpiredState(false); return; }
+        if (!authUser || authUser.role === 'admin' || authUser.plan === 'premium' || !authUser.planExpiry) { setIsExpiredState(false); setTimeLeftDisplay(''); return; }
         const checkExpiry = () => {
             const now = new Date(); const exp = new Date(authUser.planExpiry);
-            if (now >= exp) { if (!isExpiredState) setIsExpiredState(true); } 
+            if (now >= exp) { if (!isExpiredState) setIsExpiredState(true); }
             else {
                 if (isExpiredState) setIsExpiredState(false);
                 const diff = Math.abs(exp - now);
@@ -175,221 +158,253 @@ export default function App() {
         return () => clearInterval(timer);
     }, [authUser, isExpiredState]);
 
-    useEffect(() => { localStorage.setItem('momoPhone', momoPhone); }, [momoPhone]);
-    useEffect(() => { if(authUser) fetchDashboard(); }, [authUser]);
+    useEffect(() => { writeStoredText('momoPhone', momoPhone); }, [momoPhone]);
 
-    const handleLogout = () => { setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); handleNavigate('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
+    const handleLogout = () => { dashboardRequest.current++; detailRequest.current++; setSessions([]); setDetailData(null); setImportedBales([]); setAuthUser(null); localStorage.removeItem('authUser'); sessionStorage.removeItem('authUser'); handleNavigate('DASHBOARD'); setDetailData(null); setIsExpiredState(false); };
 
-    const fetchDashboard = async () => { 
-        try { 
-            const res = await axios.get(`${API_URL}/sessions`); 
-            const sessionsData = Array.isArray(res.data) ? res.data : [];
-            let enrichedSessions = await Promise.all(sessionsData.map(async (ss) => {
-                try {
-                    const detailRes = await axios.get(`${API_URL}/data/${ss.id}`);
-                    const dailyList = detailRes.data?.daily || [];
-                    
-                    let computedTongNhap = 0; let computedTongBan = 0; let computedDoanhThu = 0;
-                    dailyList.forEach(item => {
-                        computedTongNhap += (Number(item.so_luong_nhap) || 0);
-                        computedTongBan += (Number(item.so_luong) || 0);
-                        computedDoanhThu += (Number(item.so_tien_ban_duoc) || 0);
-                    });
-
-                    ss.tong_sl_nhap = computedTongNhap; ss.tong_sl_ban = computedTongBan; ss.tong_doanh_thu = computedDoanhThu; ss.quang_cao = dailyList.length * AD_COST_PER_SALE; ss.daily = dailyList;
-
-                    let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${ss.id}`)).data; } catch(e) {}
-                    const safeBalesData = Array.isArray(balesData) ? balesData : [];
-                    
-                    // ===============================================
-                    // TÍNH TOÁN GIÁ TRUNG BÌNH SẢN PHẨM TRONG ĐỢT
-                    // ===============================================
-                    const tongTienKien = safeBalesData.reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
-                    const tongSlKien = safeBalesData.reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
-                    ss.avgPrice = tongSlKien > 0 ? Math.round(tongTienKien / tongSlKien) : 0;
-                    // ===============================================
-
-                    const sortedBales = [...safeBalesData].sort((a,b) => String(b.name || '').length - String(a.name || '').length);
-                    let computedVonTon = 0; let trungBinh = ss.tong_sl_nhap > 0 ? (ss.so_tien_cua_kien / ss.tong_sl_nhap) : 0;
-                    
-                    dailyList.forEach((row) => {
-                        const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
-                        let sl_con = (Number(row.so_luong_nhap) || 0) - (Number(row.so_luong) || 0);
-                        if (matchedBale) { computedVonTon += Math.round(sl_con * ((matchedBale.cost || 0) / (matchedBale.qty || 1))); } else { computedVonTon += Math.round(sl_con * trungBinh); }
-                    });
-                    ss.tong_tien_ton_computed = computedVonTon;
-                    
-                    const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
-                    if (dates.length > 0) { 
-                        ss.actual_start_date = new Date(Math.min(...dates)).toISOString().split('T')[0]; 
-                        ss.actual_end_date = new Date(Math.max(...dates)).toISOString().split('T')[0]; 
-                    } else { ss.actual_start_date = ss.start_date || getTodayString(); ss.actual_end_date = ss.end_date || ss.actual_start_date; }
-                } catch(e) { ss.quang_cao = 0; ss.tong_tien_ton_computed = 0; ss.actual_start_date = ss.start_date || getTodayString(); ss.actual_end_date = ss.start_date || getTodayString(); }
-                return ss;
+    const fetchDashboard = useCallback(async () => {
+        const request = ++dashboardRequest.current;
+        setIsLoadingDashboard(true);
+        setDashboardError('');
+        try {
+            const { data } = await axios.get(`${API_URL}/sessions`);
+            if (!Array.isArray(data)) throw new Error('Invalid session response');
+            const summaries = await Promise.all(data.map(async (session, originalIndex) => {
+                const [detail, bales] = await Promise.all([
+                    axios.get(`${API_URL}/data/${session.id}`),
+                    axios.get(`${API_URL}/bales/${session.id}`),
+                ]);
+                return { ...buildSessionSummary(session, detail.data, bales.data, AD_COST_PER_SALE), originalIndex };
             }));
-            enrichedSessions.forEach((ss, idx) => ss.originalIndex = idx);
-            enrichedSessions.sort((a, b) => {
-                const dateA = new Date(a.actual_start_date || a.start_date || Date.now()).getTime();
-                const dateB = new Date(b.actual_start_date || b.start_date || Date.now()).getTime();
-                if (dateB === dateA) return b.originalIndex - a.originalIndex; return dateB - dateA;
-            });
-            setSessions(enrichedSessions); 
-        } catch (err) {} 
-    };
+            summaries.sort((a, b) => new Date(b.actual_start_date) - new Date(a.actual_start_date) || b.originalIndex - a.originalIndex);
+            if (request === dashboardRequest.current) setSessions(summaries);
+        } catch {
+            if (request === dashboardRequest.current) setDashboardError('Không tải được thống kê. Kiểm tra kết nối và thử lại.');
+        } finally {
+            if (request === dashboardRequest.current) setIsLoadingDashboard(false);
+        }
+    }, []);
 
-    const fetchDetail = async (id) => { 
-        if (!canViewDetail) { showToast("Gói của bạn không hỗ trợ xem chi tiết!", "error"); return; }
-        try { 
-            const res = await axios.get(`${API_URL}/data/${id}`); 
-            let balesData = []; try { balesData = (await axios.get(`${API_URL}/bales/${id}`)).data; } catch(e) {}
-            
-            if(res.data && typeof res.data === 'object' && !Array.isArray(res.data)) { 
-                const safeData = { 
-                    ...res.data, name: res.data.name || 'Đợt bán', start_date: res.data.start_date || getTodayString(), end_date: res.data.end_date || getTodayString(), daily: Array.isArray(res.data.daily) ? res.data.daily : [] 
-                };
-                setDetailData(safeData); setImportedBales(Array.isArray(balesData) ? balesData : []); setCurrentId(id); 
-                window.history.pushState({ view: 'DETAIL', id: id }, ''); setView('DETAIL'); 
+    const fetchDetail = useCallback(async (id, { navigate = true } = {}) => {
+        if (!canViewDetail) { showToast('Gói của bạn không hỗ trợ xem chi tiết!', 'error'); return; }
+        const request = ++detailRequest.current;
+        setIsLoadingDetail(true);
+        try {
+            const [detail, bales] = await Promise.all([
+                axios.get(`${API_URL}/data/${id}`),
+                axios.get(`${API_URL}/bales/${id}`),
+            ]);
+            if (!detail.data || typeof detail.data !== 'object' || Array.isArray(detail.data)) throw new Error('Invalid detail response');
+            if (request !== detailRequest.current) return;
+            setDetailData({ ...detail.data, daily: Array.isArray(detail.data.daily) ? detail.data.daily : [] });
+            setImportedBales(Array.isArray(bales.data) ? bales.data : []);
+            setCurrentId(id);
+            if (navigate) window.history.pushState({ view: 'DETAIL', id }, '');
+            setView('DETAIL');
+            setIsSidebarOpen(false);
+        } catch {
+            if (request === detailRequest.current) {
+                showToast('Không tải được chi tiết. Vui lòng thử lại.', 'error');
+                if (!navigate) setView('DASHBOARD');
             }
-        } catch (err) { showToast("Lỗi tải dữ liệu. Vui lòng thử lại.", "error"); } 
-    };
+        } finally {
+            if (request === detailRequest.current) setIsLoadingDetail(false);
+        }
+    }, [canViewDetail, showToast]);
 
-    // ============================================================================
-    // CÁC HÀM XỬ LÝ SỰ KIỆN: KHỚP 100% VỚI DASHBOARDVIEW & DETAILVIEW CỦA BẠN
-    // ============================================================================
+    useEffect(() => {
+        if (authUser) fetchDashboard();
+        return () => { dashboardRequest.current++; detailRequest.current++; };
+    }, [authUser, fetchDashboard]);
 
-    const handleStartEditSession = (e, session) => {
+    useEffect(() => { window.history.replaceState({ view: 'DASHBOARD' }, ''); }, []);
+
+    useEffect(() => {
+        const handlePopState = event => {
+            const destination = event.state?.view || 'DASHBOARD';
+            detailRequest.current++;
+            setIsLoadingDetail(false);
+            setIsSidebarOpen(false);
+            if (destination === 'DETAIL' && event.state?.id) {
+                fetchDetail(event.state.id, { navigate: false });
+            } else {
+                setView(destination);
+                if (destination === 'DASHBOARD' && authUser) fetchDashboard();
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [authUser, fetchDashboard, fetchDetail]);
+
+
+    const handleStartEditSession = useCallback((e, session) => {
         if (e && e.stopPropagation) e.stopPropagation();
         setEditingSession({ ...session, name: session.name === 'Thống kê tự động' ? '' : session.name });
-    };
+    }, []);
 
-    const handleDeleteSession = (e, id) => {
+    const handleDeleteSession = useCallback((e, id) => {
         if (e && e.stopPropagation) e.stopPropagation();
         setDeleteId(id);
         setShowDeleteModal(true);
-    };
+    }, []);
 
-    const handleStartEdit = (row) => {
+    const handleStartEdit = useCallback((row) => {
         setEditingRow({ ...row });
-    };
+    }, []);
 
-    const handleDeleteRow = (id) => {
+    const handleDeleteRow = useCallback((id) => {
         setRowToDelete(id);
         setShowDeleteRowModal(true);
-    };
+    }, []);
 
-    const handleStartSync = (row) => {
+    const handleStartSync = useCallback((row) => {
         setSyncRow({ ...row });
+    }, []);
+
+
+    const refreshDetail = async () => {
+        const request = detailRequest.current;
+        const { data } = await axios.get(`${API_URL}/data/${currentId}`);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid detail response');
+        if (request === detailRequest.current) setDetailData({ ...data, daily: Array.isArray(data.daily) ? data.daily : [] });
     };
 
-    // ============================================================================
-    // API CẬP NHẬT
-    // ============================================================================
-    const handleCreateAutoSession = async () => { if (!canEdit || isProcessingCreate) return; setIsProcessingCreate(true); try { const res = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() }); await fetchDashboard(); if(res.data && res.data.id) fetchDetail(res.data.id); } catch (err) {} finally { setIsProcessingCreate(false); } };
-    const confirmDeleteSession = async () => { if (!deleteId) return; try { await axios.delete(`${API_URL}/sessions/${deleteId}`); fetchDashboard(); setShowDeleteModal(false); setDeleteId(null); } catch(err) {} };
-    const confirmDeleteRow = async () => { const id = rowToDelete; if (!id || isProcessingDelete) return; setIsProcessingDelete(true); setRowToDelete(null); try { await axios.delete(`${API_URL}/daily/${id}`); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setShowDeleteRowModal(false); } catch (err) { setShowDeleteRowModal(false); } finally { setIsProcessingDelete(false); } };
-    const updateSessionField = async (field, value) => { if(!canEdit || !detailData) return; const newData = { ...detailData, [field]: value }; setDetailData(newData); try { await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value }); } catch (err) {} };
+    const handleCreateAutoSession = async () => {
+        if (!canEdit || isProcessingCreate) return;
+        setIsProcessingCreate(true);
+        try {
+            const { data } = await axios.post(`${API_URL}/sessions`, { name: 'Thống kê tự động', start_date: getTodayString() });
+            await fetchDashboard();
+            if (data?.id) await fetchDetail(data.id);
+        } catch { showToast('Không tạo được đợt bán. Vui lòng thử lại.', 'error'); }
+        finally { setIsProcessingCreate(false); }
+    };
 
-    const handleAddBale = async (e) => { 
-        e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if(!baleName || cost === 0) return; 
-        try { 
-            const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty }); 
-            const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated); 
-            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
+    const confirmDeleteSession = async () => {
+        if (!canDelete || !deleteId || isProcessingDelete) return;
+        setIsProcessingDelete(true);
+        try {
+            await axios.delete(`${API_URL}/sessions/${deleteId}`);
+            await fetchDashboard();
+            setShowDeleteModal(false);
+            setDeleteId(null);
+        } catch { showToast('Không xóa được đợt bán. Vui lòng thử lại.', 'error'); }
+        finally { setIsProcessingDelete(false); }
+    };
+
+    const confirmDeleteRow = async () => {
+        if (!canDelete || !rowToDelete || isProcessingDelete) return;
+        setIsProcessingDelete(true);
+        try {
+            await axios.delete(`${API_URL}/daily/${rowToDelete}`);
+            await refreshDetail();
+            setShowDeleteRowModal(false);
+            setRowToDelete(null);
+        } catch { showToast('Không xóa được sản phẩm. Vui lòng thử lại.', 'error'); }
+        finally { setIsProcessingDelete(false); }
+    };
+
+    const updateSessionField = async (field, value) => {
+        if (!canEdit || !detailData) return;
+        try {
+            await axios.put(`${API_URL}/sessions/${currentId}`, { [field]: value });
+            setDetailData(previous => ({ ...previous, [field]: value }));
+            showToast('Đã cập nhật đợt bán.');
+        } catch { showToast('Không lưu được thay đổi. Vui lòng thử lại.', 'error'); }
+    };
+
+    const handleAddBale = async (e) => {
+        e.preventDefault(); if(!canEdit) return; const cost = parseInput(baleCost); const qty = parseInput(baleQty); if (!baleName.trim() || cost <= 0 || qty <= 0) { showToast('Nhập tên lô hàng, giá vốn và số lượng lớn hơn 0.', 'error'); return; }
+        try {
+            const res = await axios.post(`${API_URL}/bales`, { session_id: currentId, name: baleName, cost: cost, qty: qty });
+            const updated = [...(Array.isArray(importedBales) ? importedBales : []), res.data]; setImportedBales(updated);
+            const newCost = updated.reduce((sum, b) => sum + (Number(b.cost) || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
-            setBaleName(''); setBaleCost(''); setBaleQty(''); 
-        } catch (err) {} 
+            setBaleName(''); setBaleCost(''); setBaleQty('');
+        } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); }
     };
 
-    const handleDeleteBale = async (id) => { 
-        if(!canDelete) return; 
-        try { 
-            await axios.delete(`${API_URL}/bales/${id}`); 
-            const safeBales = Array.isArray(importedBales) ? importedBales : []; const updated = safeBales.filter(b => b._id !== id); setImportedBales(updated); 
-            const newCost = updated.reduce((sum, b) => sum + (b.cost || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
+    const handleDeleteBale = async (id) => {
+        if(!canDelete) return;
+        try {
+            await axios.delete(`${API_URL}/bales/${id}`);
+            const safeBales = Array.isArray(importedBales) ? importedBales : []; const updated = safeBales.filter(b => b._id !== id); setImportedBales(updated);
+            const newCost = updated.reduce((sum, b) => sum + (Number(b.cost) || 0), 0); const newGiatUi = Math.round(newCost * 0.04);
             await axios.put(`${API_URL}/sessions/${currentId}`, { so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi });
             setDetailData(prev => ({...prev, so_tien_cua_kien: newCost, so_tien_giat_ui: newGiatUi}));
-        } catch (err) {} 
+        } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); }
     };
 
-    const handleAddItem = async (e) => { 
+    const handleAddItem = async (e) => {
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch (err) {} finally { setIsProcessingAdd(false); }
+        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); await refreshDetail(); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingAdd(false); }
     };
-    
-    const handleSaveEdit = async () => { 
-        if (!editingRow || isProcessingEdit) return; setIsProcessingEdit(true); 
-        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); const freshRes = await axios.get(`${API_URL}/data/${currentId}`); if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); setEditingRow(null); } catch (err) {} finally { setIsProcessingEdit(false); } 
+
+    const handleSaveEdit = async () => {
+        if (!canEdit || !editingRow || isProcessingEdit) return; setIsProcessingEdit(true);
+        try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); await refreshDetail(); setEditingRow(null); } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingEdit(false); }
     };
 
     useEffect(() => {
         if (typeof syncText !== 'string' || !syncText.trim()) { setSyncManualQty(''); setSyncManualRev(''); return; }
         const { q, r } = parseIGSyncText(syncText);
-        setSyncManualQty(q > 0 ? q.toString() : ''); setSyncManualRev(r > 0 ? r.toString() : (q > 0 ? '0' : '0'));
+        setSyncManualQty(q > 0 ? q.toString() : ''); setSyncManualRev(String(r));
     }, [syncText]);
 
     const handleConfirmSync = async () => {
-        if (!syncRow || isProcessingEdit) return; setIsProcessingEdit(true);
+        if (!canEdit || !syncRow || isProcessingEdit) return; setIsProcessingEdit(true);
         try {
             const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
             const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
             const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
-            await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow); 
-            const freshRes = await axios.get(`${API_URL}/data/${currentId}`); 
-            if(freshRes.data) setDetailData({ ...freshRes.data, daily: Array.isArray(freshRes.data.daily) ? freshRes.data.daily : [] }); 
+            await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow);
+            await refreshDetail();
             setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');
-        } catch (err) {} finally { setIsProcessingEdit(false); }
+        } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingEdit(false); }
     };
 
-    const handleSaveSession = async () => { 
-        if (!editingSession) return; 
-        try { 
+    const handleSaveSession = async () => {
+        if (!canEdit || !editingSession) return;
+        try {
             const newKien = parseInput(editingSession.so_tien_cua_kien); const newGiatUi = Math.round(newKien * 0.04);
-            await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: newKien, so_tien_giat_ui: newGiatUi }); 
-            await fetchDashboard(); 
-            if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId); 
-            setEditingSession(null); 
-        } catch (err) {} 
+            await axios.put(`${API_URL}/sessions/${editingSession.id}`, { name: editingSession.name || 'Thống kê tự động', end_date: editingSession.end_date, so_tien_cua_kien: newKien, so_tien_giat_ui: newGiatUi });
+            await fetchDashboard();
+            if (view === 'DETAIL' && currentId === editingSession.id) fetchDetail(currentId, { navigate: false });
+            setEditingSession(null);
+        } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); }
     };
-    
-    const handleBack = () => { 
-        if (window.history.state) { window.history.back(); } 
+
+    const handleBack = () => {
+        if (window.history.state) { window.history.back(); }
         else { handleNavigate('DASHBOARD'); fetchDashboard(); setDetailData(null); setImportedBales([]); }
     };
 
-    const safeSessions = Array.isArray(sessions) ? sessions : [];
-    const enrichedSessions = safeSessions.map(ss => {
-        const autoAdCost = ss.quang_cao || 0; 
-        const computedGiatUi = Math.round((ss.so_tien_cua_kien || 0) * 0.04); 
-        const realProfit = (ss.tong_doanh_thu || 0) - (ss.so_tien_cua_kien || 0) - computedGiatUi - autoAdCost;
-        return { ...ss, autoAdCost, realProfit, computedGiatUi };
-    });
-
-    let dashboardProfit = 0, totalRevenueForTax = 0, taxAmount = 0, showTax = false, displayRevenueTr = 0, globalTongNhap = 0, globalTongBan = 0, globalVonTon = 0, globalTongCon = 0;
-    try {
-        const completedSessions = enrichedSessions.filter(ss => ss.is_completed === true);
-        const gStats = calculateGlobalStats(completedSessions) || {};
-        dashboardProfit = gStats.dashboardProfit || 0; totalRevenueForTax = gStats.totalRevenueForTax || 0; taxAmount = gStats.taxAmount || 0; showTax = gStats.showTax || false; displayRevenueTr = gStats.displayRevenueTr || 0; globalTongNhap = gStats.globalTongNhap || 0; globalTongBan = gStats.globalTongBan || 0; globalVonTon = gStats.globalVonTon || 0; globalTongCon = gStats.globalTongCon || 0;
-    } catch(e) {}
-
-    let detailProfit = 0, mvpRowId = null, enrichedDaily = [], detailAutoAdCost = 0, actualStartDate = null, actualEndDate = null, dynamicTarget = 0, isTargetReached = false;
-    try {
-        const dStats = calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE) || {};
-        detailProfit = dStats.detailProfit || 0; mvpRowId = dStats.mvpRowId || null; enrichedDaily = Array.isArray(dStats.enrichedDaily) ? dStats.enrichedDaily : []; detailAutoAdCost = dStats.detailAutoAdCost || 0; actualStartDate = dStats.actualStartDate || null; actualEndDate = dStats.actualEndDate || null; dynamicTarget = dStats.dynamicTarget || 0; isTargetReached = dStats.isTargetReached || false;
-    } catch(e) {}
+    const enrichedSessions = useMemo(() => sessions.map(session => {
+        const autoAdCost = Number(session.quang_cao) || 0;
+        const cost = Number(session.so_tien_cua_kien) || 0;
+        const computedGiatUi = Math.round(cost * 0.04);
+        return { ...session, autoAdCost, computedGiatUi, realProfit: (Number(session.tong_doanh_thu) || 0) - cost - computedGiatUi - autoAdCost };
+    }), [sessions]);
+    const { taxAmount, globalTongNhap, globalVonTon, globalTongCon } = useMemo(
+        () => calculateGlobalStats(enrichedSessions.filter(session => session.is_completed === true)), [enrichedSessions],
+    );
+    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = useMemo(
+        () => calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE), [detailData, importedBales],
+    );
 
     const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
 
     useEffect(() => {
-        if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); } 
+        if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); }
         else { setShowFireworks(false); }
     }, [view, isTargetReached, currentId]);
 
-    const handleExport = () => { 
+    const handleExport = () => {
         if (!canExportExcel) { showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error"); return; }
-        if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n"; 
-        enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; }); 
-        csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`); 
+        if (!detailData) return; let csv = "STT,Ngay Ban,Ten San Pham,Link SP,SL Nhap,SL Ban,SL Con,Von Uoc Tinh,Doanh Thu,So Tien Loi\n";
+        enrichedDaily.forEach((row) => { csv += `${row.stt || ''},${formatDateDisplay(row.ngay_ban)},"${row.ten_san_pham || ''}","${row.link_san_pham || ''}",${row.sl_nhap},${row.so_luong || 0},${row.sl_con},${row.tien_ton},${Math.round(row.so_tien_ban_duoc || 0)},${row.loi}\n`; });
+        csv += `\n,,,,,,,,,TONG LOI: ${Math.round(detailProfit)}\n`; saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), `${getSessionName(detailData.name, actualStartDate, actualEndDate)}.csv`);
     };
 
     if (!authUser || isExpiredState) {
@@ -397,27 +412,19 @@ export default function App() {
     }
 
     return (
+        <MotionProvider reduced={preferences.reduceMotion}>
         <div data-dolphin-theme={preferences.theme} className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
             {showFireworks && !preferences.reduceMotion && <Confetti />}
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
-            <style dangerouslySetInnerHTML={{ __html: `
-                .tabular-nums { font-variant-numeric: tabular-nums; }
-                .liquid-glass { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(24px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px rgba(0,0,0,0.05); }
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
-            `}} />
-
             <div className="dolphin-background fixed inset-0 z-0 bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden opacity-40">
-                <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
+                <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_45s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
             </div>
 
             <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-[10px_0_30px_rgba(0,0,0,0.03)] transform transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:static md:flex-shrink-0`}>
                 <div className="h-20 flex items-center px-6 border-b border-gray-100 shrink-0">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 w-full">
                         <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shadow-sm bg-white overflow-hidden shrink-0 border border-gray-100">
                             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
                         </div>
@@ -432,7 +439,7 @@ export default function App() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar py-6 px-4 space-y-8">
                     {canEdit && (
                         <div className="mb-2">
-                            <button 
+                            <button
                                 onClick={handleCreateAutoSession} disabled={isProcessingCreate}
                                 className="w-full bg-[#26D0CE] hover:bg-[#1DB2A0] text-white px-4 py-3.5 rounded-[16px] font-bold text-[14px] tracking-wide shadow-[0_8px_20px_rgba(38,208,206,0.25)] hover:shadow-[0_10px_25px_rgba(38,208,206,0.35)] active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
@@ -486,7 +493,7 @@ export default function App() {
                             <Clock size={14} /> {timeLeftDisplay}
                         </div>
                     )}
-                    
+
                     <div className="flex justify-center">
                         <button onClick={handleLogout} className="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 p-3 rounded-[14px] transition-colors w-full flex justify-center items-center gap-2 shadow-sm" title="Đăng xuất">
                             <LogOut size={20} strokeWidth={2.5}/>
@@ -501,41 +508,56 @@ export default function App() {
             )}
 
             <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
-                <button 
-                    onClick={() => setIsSidebarOpen(true)} 
+                <button
+                    onClick={() => setIsSidebarOpen(true)}
                     className="md:hidden fixed top-4 left-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-xl shadow-md text-[#1A5B82] border border-gray-200 active:scale-95 transition-all"
                 >
-                    <Menu size={24} />
+                    <Menu size={24} aria-label="Mở menu" />
                 </button>
 
-                <main className="flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24 relative z-10">
+                <main ref={mainRef} className="dolphin-main flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24 relative z-10">
+                    <Suspense fallback={<div role="status" className="loading-indicator">Đang mở trang…</div>}>
                     <ErrorBoundary>
                         <div className="w-full max-w-[1600px] mx-auto space-y-6">
-                            
-                            {view === 'DASHBOARD' && (
-                                <DashboardView 
-                                    activeTab={activeTab} dashboardProfit={dashboardProfit} globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} showTax={showTax} taxAmount={taxAmount} displayRevenueTr={displayRevenueTr} totalRevenueForTax={totalRevenueForTax} safeSessions={safeSessions} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} isAdmin={isAdmin} canEdit={canEdit} canDelete={canDelete} canPay={canPay} 
-                                    
-                                    setSalarySession={setSalarySession} 
-                                    setShowSalaryModal={setShowSalaryModal} 
-                                    handleStartEditSession={handleStartEditSession} 
+
+                            {isLoadingDetail && <div role="status" className="loading-indicator"><RefreshCw size={16} className="animate-spin" /> Đang tải chi tiết…</div>}
+                            {view === 'DASHBOARD' && isLoadingDashboard && (
+                                <div role="status" aria-label="Đang tải thống kê" className="dashboard-skeleton grid gap-5 md:grid-cols-3">
+                                    <span className="sr-only">Đang tải thống kê…</span>
+                                    {[0, 1, 2].map(item => <div key={item} className="skeleton-panel h-40 rounded-3xl" />)}
+                                    <div className="skeleton-panel h-80 rounded-3xl md:col-span-3" />
+                                </div>
+                            )}
+                            {view === 'DASHBOARD' && dashboardError && !isLoadingDashboard && (
+                                <div role="alert" className="bg-white border border-rose-100 rounded-3xl p-6 text-center">
+                                    <p className="text-gray-700 mb-4">{dashboardError}</p>
+                                    <button type="button" onClick={fetchDashboard} className="bg-teal-700 text-white rounded-xl px-5 py-3 font-bold">Thử lại</button>
+                                </div>
+                            )}
+                            {view === 'DASHBOARD' && !isLoadingDashboard && !dashboardError && (
+                                <DashboardView
+                                    globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} canEdit={canEdit} canDelete={canDelete} canPay={canPay}
+
+                                    setSalarySession={setSalarySession}
+                                    setShowSalaryModal={setShowSalaryModal}
+                                    handleStartEditSession={handleStartEditSession}
                                     handleDeleteSession={handleDeleteSession}
                                 />
                             )}
-                            
+
                             {view === 'DETAIL' && detailData && (
-                                <DetailView 
+                                <DetailView
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
                                     isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
-                                    newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId} 
-                                    
-                                    handleStartEdit={handleStartEdit} 
-                                    handleStartSync={handleStartSync} 
+                                    newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}
+
+                                    handleStartEdit={handleStartEdit}
+                                    handleStartSync={handleStartSync}
                                     handleDeleteRow={handleDeleteRow}
 
-                                    isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete} 
+                                    isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete}
                                 />
                             )}
 
@@ -543,19 +565,20 @@ export default function App() {
                                 <SettingsView key={preferenceKey} settings={preferences} onSave={savePreferences} onBack={() => handleNavigate('DASHBOARD')} />
                             )}
 
-                            {view === 'USERS' && isAdmin && ( 
-                                <AdminPanel setView={handleNavigate} authUser={authUser} /> 
+                            {view === 'USERS' && isAdmin && (
+                                <AdminPanel setView={handleNavigate} authUser={authUser} />
                             )}
 
-                            {view === 'CALENDAR' && ( 
-                                <PersonalCalendar 
-                                    sessions={enrichedSessions} 
-                                    onUpdatePendingCount={setPendingTasksCount} 
+                            {view === 'CALENDAR' && (
+                                <PersonalCalendar
+                                    sessions={enrichedSessions}
+                                    onUpdatePendingCount={setPendingTasksCount}
                                 />
                             )}
 
                         </div>
                     </ErrorBoundary>
+                    </Suspense>
                 </main>
             </div>
 
@@ -565,65 +588,66 @@ export default function App() {
             {typeof document !== 'undefined' && createPortal(
                 <>
                     {showDeleteModal && (
-                        <DeleteSessionModal 
-                            showDeleteModal={showDeleteModal} 
-                            setShowDeleteModal={setShowDeleteModal} 
-                            confirmDeleteSession={confirmDeleteSession} 
+                        <DeleteSessionModal
+                            showDeleteModal={showDeleteModal}
+                            setShowDeleteModal={setShowDeleteModal}
+                            confirmDeleteSession={confirmDeleteSession}
                         />
                     )}
-                    
+
                     {showDeleteRowModal && (
-                        <DeleteRowModal 
-                            showDeleteRowModal={showDeleteRowModal} 
-                            setShowDeleteRowModal={setShowDeleteRowModal} 
-                            confirmDeleteRow={confirmDeleteRow} 
-                            isProcessingDelete={isProcessingDelete} 
+                        <DeleteRowModal
+                            showDeleteRowModal={showDeleteRowModal}
+                            setShowDeleteRowModal={setShowDeleteRowModal}
+                            confirmDeleteRow={confirmDeleteRow}
+                            isProcessingDelete={isProcessingDelete}
                         />
                     )}
-                    
+
                     {editingRow && (
-                        <EditRowModal 
-                            editingRow={editingRow} 
-                            setEditingRow={setEditingRow} 
-                            handleSaveEdit={handleSaveEdit} 
-                            isProcessingEdit={isProcessingEdit} 
+                        <EditRowModal
+                            editingRow={editingRow}
+                            setEditingRow={setEditingRow}
+                            handleSaveEdit={handleSaveEdit}
+                            isProcessingEdit={isProcessingEdit}
                         />
                     )}
-                    
+
                     {editingSession && (
-                        <EditSessionModal 
-                            editingSession={editingSession} 
-                            setEditingSession={setEditingSession} 
-                            handleSaveSession={handleSaveSession} 
+                        <EditSessionModal
+                            editingSession={editingSession}
+                            setEditingSession={setEditingSession}
+                            handleSaveSession={handleSaveSession}
                         />
                     )}
-                    
+
                     {syncRow && (
-                        <SyncModal 
-                            syncRow={syncRow} 
-                            setSyncRow={setSyncRow} 
-                            syncText={syncText} 
-                            setSyncText={setSyncText} 
-                            syncManualQty={syncManualQty} 
-                            setSyncManualQty={setSyncManualQty} 
-                            syncManualRev={syncManualRev} 
-                            setSyncManualRev={setSyncManualRev} 
-                            handleConfirmSync={handleConfirmSync} 
-                            isProcessingEdit={isProcessingEdit} 
+                        <SyncModal
+                            syncRow={syncRow}
+                            setSyncRow={setSyncRow}
+                            syncText={syncText}
+                            setSyncText={setSyncText}
+                            syncManualQty={syncManualQty}
+                            setSyncManualQty={setSyncManualQty}
+                            syncManualRev={syncManualRev}
+                            setSyncManualRev={setSyncManualRev}
+                            handleConfirmSync={handleConfirmSync}
+                            isProcessingEdit={isProcessingEdit}
                         />
                     )}
-                    
+
                     {showSalaryModal && (
-                        <SalaryModal 
-                            salarySession={salarySession} 
-                            setShowSalaryModal={setShowSalaryModal} 
-                            momoPhone={momoPhone} 
-                            setMomoPhone={setMomoPhone} 
+                        <SalaryModal
+                            salarySession={salarySession}
+                            setShowSalaryModal={setShowSalaryModal}
+                            momoPhone={momoPhone}
+                            setMomoPhone={setMomoPhone}
                         />
                     )}
                 </>,
                 document.body
             )}
         </div>
+        </MotionProvider>
     );
 }

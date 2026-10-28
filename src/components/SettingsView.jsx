@@ -33,9 +33,9 @@ export default function SettingsView({ settings, onSave, onBack }) {
             setFeedback({ error: true, message: 'Không thể lưu cài đặt. Hãy kiểm tra quyền lưu dữ liệu của trình duyệt và thử lại.' });
         }
     };
-    const card = 'bg-white/90 border border-white rounded-[28px] p-5 sm:p-8 shadow-sm';
+    const card = 'settings-section bg-white/90 border border-white rounded-[28px] p-5 sm:p-8 shadow-sm';
     return (
-        <div className="max-w-4xl mx-auto py-3 sm:py-6">
+        <div className="max-w-4xl mx-auto py-3 sm:py-6 animate-fade-in-up">
             <button type="button" onClick={onBack} className="flex items-center gap-2 text-[#1A5B82] font-bold mb-6 px-4 py-3 rounded-full bg-white/80 hover:bg-white"><ArrowLeft size={18} /> Về thống kê</button>
             <div className="flex items-center gap-3 mb-3"><Settings size={30} className="text-[#168b83]" /><h1 className="text-3xl font-black">Cài đặt</h1></div>
             <p className="text-gray-600 mb-7">Tùy chỉnh Dolphin theo cách bạn làm việc. Cài đặt chỉ áp dụng cho tài khoản hiện tại trên trình duyệt này.</p>

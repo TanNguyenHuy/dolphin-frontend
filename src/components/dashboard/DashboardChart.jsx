@@ -2,8 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency, getSessionName } from '../../utils';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { useReducedMotion } from '../motion/motion';
 
 export default function DashboardChart({ enrichedSessions }) {
+    const reducedMotion = useReducedMotion();
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
     // THUẬT TOÁN QUY ĐỔI 15 NGÀY (Giống hệt TopMVP)
@@ -11,7 +13,7 @@ export default function DashboardChart({ enrichedSessions }) {
         if (!s.actual_start_date || !s.actual_end_date) return 0;
         const d1 = new Date(s.actual_start_date);
         const d2 = new Date(s.actual_end_date);
-        
+
         const days = Math.max(1, Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
         const dailyProfit = (s.realProfit || 0) / days;
         return dailyProfit * 15;
@@ -21,10 +23,10 @@ export default function DashboardChart({ enrichedSessions }) {
         const filtered = enrichedSessions.filter(s => {
             if (!s.actual_start_date) return false;
             const isRightYear = new Date(s.actual_start_date).getFullYear() === selectedYear;
-            
+
             const nameLower = (s.name || '').toLowerCase();
             const isSpecial = nameLower.includes('sale') || nameLower.includes('đăng lại');
-            
+
             return isRightYear && !isSpecial;
         });
 
@@ -44,7 +46,7 @@ export default function DashboardChart({ enrichedSessions }) {
 
     return (
         <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 md:p-8 shadow-sm w-full h-full flex flex-col">
-            
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
                 <div>
@@ -84,17 +86,17 @@ export default function DashboardChart({ enrichedSessions }) {
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis 
-                                dataKey="name" 
-                                axisLine={false} 
-                                tickLine={false} 
-                                tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} 
-                                dy={15} 
+                            <XAxis
+                                dataKey="name"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}}
+                                dy={15}
                             />
                             <YAxis hide={true} domain={['dataMin - 1000000', 'auto']} />
-                            
+
                             {/* TOOLTIP HIỂN THỊ CẢ 2 THÔNG SỐ */}
-                            <Tooltip 
+                            <Tooltip
                                 cursor={{stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 4'}}
                                 content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
@@ -102,7 +104,7 @@ export default function DashboardChart({ enrichedSessions }) {
                                         return (
                                             <div className="bg-[#1D1D1F] text-white p-3.5 rounded-[16px] shadow-lg border border-gray-700 min-w-[150px]">
                                                 <p className="text-[11px] font-bold text-gray-400 uppercase mb-2 border-b border-gray-700 pb-1.5">{data.fullName}</p>
-                                                
+
                                                 <div className="flex flex-col gap-1">
                                                     <div className="flex justify-between items-center gap-4">
                                                         <span className="text-[10px] text-gray-400 font-bold">Chuẩn 15N:</span>
@@ -124,7 +126,7 @@ export default function DashboardChart({ enrichedSessions }) {
                                 }}
                             />
                             {/* Chuyển dataKey sang profit15d để vẽ đường */}
-                            <Area type="monotone" dataKey="profit15d" stroke="#33A1FD" strokeWidth={4} fillOpacity={1} fill="url(#colorProfit)" activeDot={{ r: 6, strokeWidth: 0, fill: '#1D1D1F' }} />
+                            <Area isAnimationActive={!reducedMotion} animationDuration={650} type="monotone" dataKey="profit15d" stroke="#33A1FD" strokeWidth={4} fillOpacity={1} fill="url(#colorProfit)" activeDot={{ r: 6, strokeWidth: 0, fill: '#1D1D1F' }} />
                         </AreaChart>
                     </ResponsiveContainer>
                 )}

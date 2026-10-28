@@ -10,9 +10,14 @@ export default function SessionCard({
     const isLoss = session.realProfit < 0;
 
     return (
-        <div 
+        <div
+            role="link"
+            tabIndex={0}
+            onKeyDown={event => {
+                if (event.target === event.currentTarget && event.key === 'Enter') fetchDetail(session.id);
+            }}
             onClick={() => fetchDetail(session.id)}
-            className="bg-white/60 hover:bg-white border border-white/80 shadow-sm hover:shadow-md rounded-[24px] p-4 md:p-5 transition-all cursor-pointer flex flex-col xl:flex-row xl:items-center justify-between gap-4 relative group"
+            className="session-card bg-white/60 hover:bg-white border border-white/80 shadow-sm hover:shadow-md rounded-[24px] p-4 md:p-5 transition-all cursor-pointer flex justify-between gap-4 relative group"
         >
             {/* 1. KHỐI TRÁI: STT & Tên Đợt Bán (ĐÃ SỬA LẠI ĐỂ CHỮ XUỐNG DÒNG, KHÔNG BỊ CẮT) */}
             <div className="flex items-center gap-3 md:gap-4 min-w-[200px] lg:min-w-[250px] flex-1">
@@ -32,8 +37,8 @@ export default function SessionCard({
             </div>
 
             {/* KHỐI PHẢI: Wrapper chứa tất cả số liệu */}
-            <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 xl:gap-8 shrink-0 w-full xl:w-auto pl-12 md:pl-[60px] xl:pl-0">
-                
+            <div className="session-card-metrics flex flex-col md:flex-row md:items-center gap-4 md:gap-6 xl:gap-8 w-full xl:w-auto min-w-0">
+
                 {/* Khu vực Nhập - Bán - Còn */}
                 <div className="flex gap-2 shrink-0">
                     <div className="w-[60px] bg-white/70 border border-gray-200/60 rounded-[12px] py-1.5 text-center shadow-sm">
@@ -54,7 +59,7 @@ export default function SessionCard({
                 <div className="flex flex-col gap-1.5 shrink-0 xl:border-l xl:border-gray-200/60 xl:pl-6 min-w-[145px]">
                     <div className="flex justify-between items-center gap-3 text-[12px]">
                         <span className="text-gray-500 font-bold">Chi phí</span>
-                        <span className="font-black text-[#1D1D1F] tabular-nums">{formatCurrency((session.so_tien_cua_kien || 0) + (session.so_tien_giat_ui || 0) + session.autoAdCost)}<span className="text-[10px] text-gray-400 ml-0.5">đ</span></span>
+                        <span className="font-black text-[#1D1D1F] tabular-nums">{formatCurrency((session.so_tien_cua_kien || 0) + (session.so_tien_giat_ui || 0) + (session.autoAdCost || 0))}<span className="text-[10px] text-gray-400 ml-0.5">đ</span></span>
                     </div>
                     <div className="flex justify-between items-center gap-3 text-[11px]">
                         <span className="text-gray-400 font-bold">Vốn tồn</span>
@@ -67,8 +72,8 @@ export default function SessionCard({
                 </div>
 
                 {/* Khu vực Lợi Nhuận & Action Buttons */}
-                <div className="flex items-center justify-between md:justify-end gap-5 xl:border-l xl:border-gray-200/60 xl:pl-6 pt-3 md:pt-0 border-t border-gray-100 md:border-none w-full md:w-auto mt-2 md:mt-0">
-                    
+                <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 xl:border-l xl:border-gray-200/60 xl:pl-6 pt-3 md:pt-0 border-t border-gray-100 md:border-none w-full md:w-auto mt-2 md:mt-0">
+
                     <div className="text-left md:text-right shrink-0 min-w-[110px]">
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lợi Nhuận</div>
                         <div className={`text-[16px] md:text-[20px] font-black tabular-nums tracking-tight ${isLoss ? 'text-rose-500' : 'text-[#1DB2A0]'}`}>

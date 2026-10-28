@@ -1,91 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { ChevronDown, Calendar, Package, TrendingUp, Activity, Box, ShoppingBag } from 'lucide-react';
 import DashboardChart from './dashboard/DashboardChart';
 import MiniCharts from './dashboard/MiniCharts';
 import DashboardStats from './dashboard/DashboardStats';
 import SessionCard from './dashboard/SessionCard';
 import TopMVP from './dashboard/TopMVP';
-import SmartCalendar from './dashboard/SmartCalendar'; 
-import { formatCurrency, formatDateDisplay, API_URL, AD_COST_PER_SALE } from '../utils';
+import SmartCalendar from './dashboard/SmartCalendar';
+import { formatCurrency, formatDateDisplay, AD_COST_PER_SALE } from '../utils';
 import { calculateDetailStats } from '../logic';
-import axios from 'axios';
+import ScrollReveal from './motion/ScrollReveal';
 
-const ScrollReveal = ({ children, delay = 0 }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const domRef = useRef();
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting) {
-                setIsVisible(true);
-                observer.unobserve(domRef.current);
-            }
-        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-        
-        if (domRef.current) observer.observe(domRef.current);
-        return () => observer.disconnect();
-    }, []);
-
-    return (
-        <div 
-            ref={domRef} 
-            style={{ transitionDelay: `${delay}ms` }}
-            className={`transition-all duration-[1000ms] cubic-bezier(0.16, 1, 0.3, 1) h-full ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-        >
-            {children}
-        </div>
-    );
-};
-
-export default function DashboardView({
-    dashboardProfit, globalTongCon, globalTongNhap, globalVonTon, showTax, taxAmount, displayRevenueTr, totalRevenueForTax, 
-    safeSessions, enrichedSessions, fetchDetail, isAdmin, canEdit, canDelete, canPay, 
+export default memo(function DashboardView({
+    globalTongCon, globalTongNhap, globalVonTon, taxAmount,
+    enrichedSessions, fetchDetail, canEdit, canDelete, canPay,
     setSalarySession, setShowSalaryModal, handleStartEditSession, handleDeleteSession
 }) {
     const [visibleCount, setVisibleCount] = useState(6);
-    
-    const safeEnrichedSessions = enrichedSessions || []; 
+
+    const safeEnrichedSessions = enrichedSessions || [];
     const visibleSessions = safeEnrichedSessions.slice(0, visibleCount);
     const hasMore = visibleCount < safeEnrichedSessions.length;
-    const completedSessions = safeEnrichedSessions.filter(s => s.is_completed === true);
+    const completedSessions = useMemo(() => (enrichedSessions || []).filter(s => s.is_completed === true), [enrichedSessions]);
 
     const [quickViewData, setQuickViewData] = useState(null);
-    const [quickViewDetails, setQuickViewDetails] = useState([]);
-    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [isHoveringList, setIsHoveringList] = useState(false);
-    
     const hoverTimeoutRef = useRef(null);
-    const hoveredSessionIdRef = useRef(null);
-
-    const handleMouseEnterRow = async (session) => {
-        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    useEffect(() => () => clearTimeout(hoverTimeoutRef.current), []);
+    const quickViewDetails = useMemo(() => {
+        if (!quickViewData) return [];
+        const stats = calculateDetailStats(quickViewData.detail, quickViewData.bales, AD_COST_PER_SALE);
+        return [...stats.enrichedDaily].sort((a, b) => Number(b.so_tien_ban_duoc || 0) - Number(a.so_tien_ban_duoc || 0));
+    }, [quickViewData]);
+    const handleMouseEnterRow = session => {
+        clearTimeout(hoverTimeoutRef.current);
         setQuickViewData(session);
         setIsHoveringList(true);
-
-        if (hoveredSessionIdRef.current !== session.id) {
-            hoveredSessionIdRef.current = session.id;
-            setQuickViewDetails([]);
-            setIsLoadingDetails(true);
-
-            try {
-                const [detailRes, balesRes] = await Promise.all([
-                    axios.get(`${API_URL}/data/${session.id}`),
-                    axios.get(`${API_URL}/bales/${session.id}`).catch(() => ({data: []}))
-                ]);
-                
-                if (hoveredSessionIdRef.current === session.id) {
-                    const detailData = { daily: Array.isArray(detailRes.data?.daily) ? detailRes.data.daily : [] };
-                    const balesData = Array.isArray(balesRes.data) ? balesRes.data : [];
-                    const dStats = calculateDetailStats(detailData, balesData, AD_COST_PER_SALE);
-                    const rawDetails = dStats.enrichedDaily || [];
-                    const sortedByRevenue = [...rawDetails].sort((a, b) => (Number(b.so_tien_ban_duoc) || 0) - (Number(a.so_tien_ban_duoc) || 0));
-                    setQuickViewDetails(sortedByRevenue);
-                    setIsLoadingDetails(false);
-                }
-            } catch (err) {
-                if (hoveredSessionIdRef.current === session.id) setIsLoadingDetails(false);
-            }
-        }
     };
 
     const handleMouseLeaveList = () => {
@@ -94,16 +43,20 @@ export default function DashboardView({
 
     return (
         <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
-            
+            <header className="dashboard-heading">
+                <div><h1>Tổng quan kinh doanh</h1><p>Theo dõi doanh thu, tồn kho và các đợt bán trong một không gian.</p></div>
+                <span className="workspace-badge">{safeEnrichedSessions.length} đợt bán</span>
+            </header>
+
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
-                
+
                 <div className="xl:col-span-8 flex flex-col gap-6 lg:gap-8">
                     <div className="h-[380px] md:h-[450px]">
                         <ScrollReveal delay={0}>
-                            <DashboardChart enrichedSessions={completedSessions} dashboardProfit={dashboardProfit} />
+                            <DashboardChart enrichedSessions={completedSessions} />
                         </ScrollReveal>
                     </div>
-                    
+
                     <ScrollReveal delay={50}>
                         <MiniCharts sessions={completedSessions} />
                     </ScrollReveal>
@@ -126,24 +79,23 @@ export default function DashboardView({
             <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
                     <div className="relative w-full" onMouseLeave={handleMouseLeaveList}>
-                        
-                        {/* ĐÃ SỬA: Giảm padding-right (xl:pr) từ 400px xuống còn 320px để Thẻ Đợt Bán có thêm không gian */}
                         <div className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[320px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
-                            
+
                             <div className="flex justify-between items-center mb-8 px-2 md:px-0 relative z-10">
                                 <h2 className="text-[22px] md:text-[28px] font-black text-[#1D1D1F] tracking-tight">Danh sách đợt bán</h2>
                                 <span className="text-[13px] md:text-[14px] font-bold bg-white/80 backdrop-blur-md border border-gray-200 text-[#1D1D1F] px-4 py-1.5 rounded-full shadow-sm">Tổng: {safeEnrichedSessions.length}</span>
                             </div>
-                            
+
                             <div className="flex flex-col gap-4 relative z-10">
+                                {visibleSessions.length === 0 && <div className="empty-state"><ShoppingBag size={32} /><h3>Chưa có đợt bán nào</h3><p>{canEdit ? 'Bấm Tạo thống kê trên thanh bên để bắt đầu.' : 'Các đợt bán sẽ xuất hiện tại đây khi được tạo.'}</p></div>}
                                 {visibleSessions.map((session, index) => (
-                                    <div key={session.id} className="transform transition-all duration-300 hover:-translate-y-1 hover:shadow-md rounded-[24px]" onMouseEnter={() => handleMouseEnterRow(session)}>
+                                    <div key={session.id} onFocus={() => handleMouseEnterRow(session)} className="session-row transform transition-all duration-300 hover:-translate-y-1 hover:shadow-md rounded-[24px]" onMouseEnter={() => handleMouseEnterRow(session)}>
                                         <SessionCard session={session} index={index} totalCount={safeEnrichedSessions.length} fetchDetail={fetchDetail} canPay={canPay} canEdit={canEdit} canDelete={canDelete} setSalarySession={setSalarySession} setShowSalaryModal={setShowSalaryModal} handleStartEditSession={handleStartEditSession} handleDeleteSession={handleDeleteSession} />
                                     </div>
                                 ))}
                             </div>
-                            
+
                             {hasMore && (
                                 <div className="mt-10 flex justify-center relative z-10">
                                     <button onClick={() => setVisibleCount(prev => prev + 6)} className="group flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-8 py-3.5 rounded-[20px] font-bold text-[14px] shadow-sm hover:shadow-md hover:border-teal-300 hover:text-teal-600 transition-all active:scale-95">
@@ -152,11 +104,9 @@ export default function DashboardView({
                                 </div>
                             )}
                         </div>
-
-                        {/* ĐÃ SỬA: Thu hẹp độ rộng bảng xem nhanh xuống còn 290px và nhích ra sát mép phải (right-6) */}
                         <div className="hidden xl:block absolute right-6 top-10 bottom-10 w-[290px] pointer-events-none z-[100]">
-                            <div className={`sticky top-[120px] transition-all duration-[500ms] cubic-bezier(0.16, 1, 0.3, 1) ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
-                                
+                            <div className={`sticky top-[120px] transition-all duration-[500ms] ease-out ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
+
                                 {quickViewData && (
                                     <div className="flex flex-col gap-3 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[calc(100vh-140px)]">
                                         <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 shrink-0">
@@ -186,9 +136,7 @@ export default function DashboardView({
                                                 <span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-lg">{quickViewDetails.length} mục</span>
                                             </div>
                                             <div className="flex flex-col gap-2">
-                                                {isLoadingDetails ? (
-                                                    <div className="flex flex-col items-center justify-center py-4 gap-2"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-500"></div><span className="text-[9px] text-gray-400 font-bold">Đang tải...</span></div>
-                                                ) : quickViewDetails.length === 0 ? (
+                                                {quickViewDetails.length === 0 ? (
                                                     <div className="flex items-center justify-center py-4 text-[10px] font-bold text-gray-400">Chưa có sản phẩm nào</div>
                                                 ) : (
                                                     <>
@@ -228,4 +176,4 @@ export default function DashboardView({
 
         </div>
     );
-}
+});
