@@ -25,7 +25,7 @@ import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
-import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
+import { parseIGSyncText, calculateGlobalStats, calculateDetailStats, calculateProfitTarget } from './logic';
 
 
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -396,11 +396,13 @@ export default function App() {
     const { taxAmount, globalTongNhap, globalVonTon, globalTongCon } = useMemo(
         () => calculateGlobalStats(enrichedSessions.filter(session => session.is_completed === true)), [enrichedSessions],
     );
-    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached } = useMemo(
+    const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate } = useMemo(
         () => calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE), [detailData, importedBales],
     );
 
-    const progressPercent = dynamicTarget > 0 ? Math.min(Math.max((detailProfit / dynamicTarget) * 100, 0), 100) : 0;
+    const { dynamicTarget, targetSession, isTargetReached, progressPercent } = useMemo(
+        () => calculateProfitTarget(enrichedSessions, detailData, detailProfit), [enrichedSessions, detailData, detailProfit],
+    );
 
     useEffect(() => {
         if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); }
@@ -556,7 +558,7 @@ export default function App() {
                             {view === 'DETAIL' && detailData && (
                                 <DetailView
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} targetSession={targetSession} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { ChevronDown, Calendar, Package, TrendingUp, Activity, Box, ShoppingBag } from 'lucide-react';
 import DashboardChart from './dashboard/DashboardChart';
 import MiniCharts from './dashboard/MiniCharts';
@@ -23,23 +23,12 @@ export default memo(function DashboardView({
     const completedSessions = useMemo(() => (enrichedSessions || []).filter(s => s.is_completed === true), [enrichedSessions]);
 
     const [quickViewData, setQuickViewData] = useState(null);
-    const [isHoveringList, setIsHoveringList] = useState(false);
-    const hoverTimeoutRef = useRef(null);
-    useEffect(() => () => clearTimeout(hoverTimeoutRef.current), []);
     const quickViewDetails = useMemo(() => {
         if (!quickViewData) return [];
         const stats = calculateDetailStats(quickViewData.detail, quickViewData.bales, AD_COST_PER_SALE);
         return [...stats.enrichedDaily].sort((a, b) => Number(b.so_tien_ban_duoc || 0) - Number(a.so_tien_ban_duoc || 0));
     }, [quickViewData]);
-    const handleMouseEnterRow = session => {
-        clearTimeout(hoverTimeoutRef.current);
-        setQuickViewData(session);
-        setIsHoveringList(true);
-    };
-
-    const handleMouseLeaveList = () => {
-        hoverTimeoutRef.current = setTimeout(() => setIsHoveringList(false), 150);
-    };
+    const handleMouseEnterRow = session => setQuickViewData(session);
 
     return (
         <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
@@ -57,8 +46,8 @@ export default memo(function DashboardView({
 
             <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
-                    <div className="relative w-full" onMouseLeave={handleMouseLeaveList}>
-                        <div className="session-list-panel liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[320px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
+                    <div className="session-list-layout">
+                        <div className="session-list-panel liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
 
                             <div className="flex justify-between items-center mb-8 px-2 md:px-0 relative z-10">
@@ -83,11 +72,13 @@ export default memo(function DashboardView({
                                 </div>
                             )}
                         </div>
-                        <div className="session-quick-preview hidden xl:block absolute right-6 top-10 bottom-10 w-[290px] pointer-events-none z-[100]">
-                            <div className={`sticky top-[120px] transition-all duration-[500ms] ease-out ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
+                        <aside className="session-quick-preview" aria-label="Xem nhanh đợt bán">
+                            <h2 className="quick-preview-heading">Xem nhanh</h2>
+                            <div className="quick-preview-content">
+                                {!quickViewData && <p className="quick-preview-placeholder">Rê chuột hoặc chọn một đợt bán bằng bàn phím để xem thông tin tại đây.</p>}
 
                                 {quickViewData && (
-                                    <div className="flex flex-col gap-3 drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] max-h-[calc(100vh-140px)]">
+                                    <div className="flex flex-col gap-3">
                                         <div className="bg-white/95 backdrop-blur-3xl rounded-[24px] p-4 border border-white/60 shrink-0">
                                             <h3 className="text-[17px] font-black text-[#1D1D1F] leading-tight mb-1 truncate">{quickViewData.name || 'Đợt bán'}</h3>
                                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-500">
@@ -147,7 +138,7 @@ export default memo(function DashboardView({
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </aside>
 
                     </div>
                 </ScrollReveal>

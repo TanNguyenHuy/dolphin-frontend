@@ -4,7 +4,7 @@ export const parseIGSyncText = (syncText) => {
     let q = 0; let r = 0;
     let matchQ = syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)\s*món/i) || syncText.match(/(?:quét|có|tổng)[:\s]*(\d+)/i);
     let matchR = syncText.match(/(?:tổng|thu)[:\s]*([\d,\.]+)\s*(k|nghìn|nghin|đ|vnd)?/i);
-    
+
     if (matchQ && matchR && syncText.toLowerCase().includes('tổng')) {
         q = Number(matchQ[1]);
         let num = Number(matchR[1].replace(/[^\d]/g, ''));
@@ -15,14 +15,14 @@ export const parseIGSyncText = (syncText) => {
         try {
             let parsed = JSON.parse(syncText);
             let dataArray = [];
-            if (Array.isArray(parsed)) { dataArray = parsed; } 
+            if (Array.isArray(parsed)) { dataArray = parsed; }
             else if (parsed && typeof parsed === 'object') {
                 if (Array.isArray(parsed.data)) dataArray = parsed.data;
                 else if (Array.isArray(parsed.items)) dataArray = parsed.items;
             }
 
             if (dataArray.length > 0) {
-                q = dataArray.length; 
+                q = dataArray.length;
                 dataArray.forEach(item => {
                     let itemPrice = 0;
                     if (typeof item === 'object' && item !== null) {
@@ -32,7 +32,7 @@ export const parseIGSyncText = (syncText) => {
                                 let val = item[key];
                                 if (typeof val === 'number') {
                                     itemPrice = val;
-                                    if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000; 
+                                    if (itemPrice > 0 && itemPrice < 10000) itemPrice *= 1000;
                                     break;
                                 } else if (typeof val === 'string') {
                                     let p = Number(val.replace(/[^\d]/g, ''));
@@ -55,8 +55,8 @@ export const parseIGSyncText = (syncText) => {
                                 let p = Number(m[1].replace(/[^\d]/g, ''));
                                 let unit = m[2] ? m[2].trim() : '';
                                 if (unit === 'k' || unit.includes('nghìn') || unit.includes('nghin') || unit === 'cành') p *= 1000;
-                                else if (p > 0 && p < 10000) p *= 1000; 
-                                if (p > itemPrice && p < 10000000) itemPrice = p; 
+                                else if (p > 0 && p < 10000) p *= 1000;
+                                if (p > itemPrice && p < 10000000) itemPrice = p;
                             }
                         } else {
                             let fallbackMatches = [...itemStr.matchAll(/([0-9\.\,]+)\s*(k|nghìn|nghin|cành)/gi)];
@@ -69,7 +69,7 @@ export const parseIGSyncText = (syncText) => {
                             }
                         }
                     }
-                    r += itemPrice; 
+                    r += itemPrice;
                 });
             }
         } catch (e) { console.error("Lỗi đọc JSON:", e); }
@@ -80,17 +80,17 @@ export const parseIGSyncText = (syncText) => {
 export const calculateGlobalStats = (enrichedSessions) => {
     const dashboardProfit = enrichedSessions.reduce((sum, s) => sum + s.realProfit, 0);
     const totalRevenueForTax = enrichedSessions.reduce((sum, s) => sum + (s.tong_doanh_thu || 0), 0);
-    const taxBase = totalRevenueForTax - 500000000; 
-    const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0; 
+    const taxBase = totalRevenueForTax - 500000000;
+    const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0;
     const showTax = taxAmount > 0;
     const displayRevenueTr = (totalRevenueForTax / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
-    
-    let globalTongNhap = 0; 
-    let globalTongBan = 0; 
-    let globalVonTon = 0;
-    let hangBiLoai = 0; 
 
-    enrichedSessions.forEach(ss => { 
+    let globalTongNhap = 0;
+    let globalTongBan = 0;
+    let globalVonTon = 0;
+    let hangBiLoai = 0;
+
+    enrichedSessions.forEach(ss => {
         const nameLower = String(ss?.name || '').toLowerCase();
         const isSale = nameLower.includes('sale');
         const isDangLai = nameLower.includes('đăng lại') || nameLower.includes('dang lai');
@@ -100,9 +100,9 @@ export const calculateGlobalStats = (enrichedSessions) => {
         } else if (isDangLai) {
             globalTongBan += (ss?.tong_sl_ban || 0);
         } else {
-            globalTongNhap += (ss?.tong_sl_nhap || 0); 
+            globalTongNhap += (ss?.tong_sl_nhap || 0);
             globalTongBan += (ss?.tong_sl_ban || 0);
-            globalVonTon += (ss?.tong_tien_ton_computed || 0); 
+            globalVonTon += (ss?.tong_tien_ton_computed || 0);
         }
     });
 
@@ -114,18 +114,15 @@ export const calculateGlobalStats = (enrichedSessions) => {
 export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE) => {
     let detailProfit = 0; let mvpRowId = null; let enrichedDaily = []; let detailAutoAdCost = 0;
     let actualStartDate = detailData?.start_date; let actualEndDate = detailData?.start_date;
-    let dynamicTarget = 10000000; let isTargetReached = false;
 
-    if (!detailData) return { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached };
+    if (!detailData) return { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate };
 
     const dailyList = Array.isArray(detailData.daily) ? detailData.daily : [];
     const itemCount = dailyList.length;
-    dynamicTarget = Math.max(1, Math.ceil(itemCount / 4)) * 10000000;
     detailAutoAdCost = itemCount * AD_COST_PER_SALE;
-    
+
     const computedGiatUi = Math.round((detailData.so_tien_cua_kien || 0) * 0.04);
     detailProfit = (detailData.computed?.tong_doanh_thu || 0) - (detailData.so_tien_cua_kien || 0) - computedGiatUi - detailAutoAdCost;
-    isTargetReached = detailProfit >= dynamicTarget && itemCount > 0;
 
     const dates = dailyList.map(d => new Date(d.ngay_ban).getTime()).filter(t => !isNaN(t));
     if (dates.length > 0) { actualStartDate = new Date(Math.min(...dates)).toISOString().split('T')[0]; actualEndDate = new Date(Math.max(...dates)).toISOString().split('T')[0]; }
@@ -144,9 +141,9 @@ export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE
     chronologicalList = chronologicalList.map((row, index, arr) => {
         const matchedBale = sortedBales.find(b => String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase()));
         let sl_nhap = row.so_luong_nhap || 0; let sl_con = sl_nhap - (row.so_luong || 0); let loi = 0; let tien_ton = 0; let avgCost = 0;
-        
+
         if (matchedBale) {
-            avgCost = (matchedBale.cost || 0) / (matchedBale.qty || 1); 
+            avgCost = (matchedBale.cost || 0) / (matchedBale.qty || 1);
             tien_ton = Math.round(sl_con * avgCost);
             let cumulativeRevenue = 0;
             for (let i = 0; i <= index; i++) {
@@ -154,15 +151,15 @@ export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE
                     cumulativeRevenue += (arr[i].so_tien_ban_duoc || 0);
                 }
             }
-            loi = Math.round(cumulativeRevenue - (matchedBale.cost || 0)); 
+            loi = Math.round(cumulativeRevenue - (matchedBale.cost || 0));
         } else {
-            avgCost = detailData.computed?.trung_binh || 0; 
-            tien_ton = Math.round(sl_con * avgCost); 
+            avgCost = detailData.computed?.trung_binh || 0;
+            tien_ton = Math.round(sl_con * avgCost);
             loi = Math.round(row.so_tien_ban_duoc || 0);
         }
-        
+
         if ((row.so_tien_ban_duoc || 0) > maxRevenue && (row.so_tien_ban_duoc || 0) > 0) { maxRevenue = row.so_tien_ban_duoc; mvpRowId = row.id; }
-        return { ...row, loi, sl_nhap, sl_con, tien_ton }; 
+        return { ...row, loi, sl_nhap, sl_con, tien_ton };
     });
 
     enrichedDaily = [...chronologicalList].sort((a, b) => {
@@ -174,5 +171,28 @@ export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE
 
     enrichedDaily = enrichedDaily.map((row, idx) => ({ ...row, stt: enrichedDaily.length - idx }));
 
-    return { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate, dynamicTarget, isTargetReached };
+    return { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate };
+};
+// Compare actual profits, including live edits to the currently open session.
+export function calculateProfitTarget(sessions = [], currentSession = null, currentProfit = 0) {
+    const identity = session => String(session?.id || session?._id || '');
+    const currentId = identity(currentSession);
+    const candidates = sessions.filter(session => !currentId || identity(session) !== currentId);
+    if (currentSession) candidates.push({ ...currentSession, realProfit: currentProfit });
+    let targetSession = null;
+    let dynamicTarget = 0;
+    for (const session of candidates) {
+        const profit = Number(session.realProfit);
+        if (Number.isFinite(profit) && profit > dynamicTarget) {
+            dynamicTarget = profit;
+            targetSession = session;
+        }
+    }
+    const profit = Number(currentProfit) || 0;
+    return {
+        dynamicTarget,
+        targetSession,
+        isTargetReached: Boolean(currentSession) && dynamicTarget > 0 && profit >= dynamicTarget,
+        progressPercent: dynamicTarget > 0 ? Math.max(0, Math.min(100, profit / dynamicTarget * 100)) : 0,
+    };
 };
