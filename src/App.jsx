@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { createPortal } from 'react-dom';
 
 // Import Icons
-import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw, Settings } from 'lucide-react';
 
 // Import Components
 import Auth from './Auth';
@@ -14,6 +14,8 @@ import DetailView from './components/DetailView';
 import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import PersonalCalendar from './components/dashboard/PersonalCalendar';
+import SettingsView from './components/SettingsView';
+import { settingsKey, readSettings, writeSettings } from './settings';
 
 // Import Modals (Khớp nối hoàn hảo theo code gốc của bạn)
 import SyncModal from './components/modals/SyncModal';
@@ -59,6 +61,19 @@ export default function App() {
         }
         return null;
     });
+
+    const preferenceKey = settingsKey(authUser);
+    const [savedPreferences, setSavedPreferences] = useState({});
+    const preferences = useMemo(() => savedPreferences[preferenceKey] || readSettings(preferenceKey), [preferenceKey, savedPreferences]);
+    const savePreferences = (draft) => {
+        const saved = writeSettings(preferenceKey, draft);
+        setSavedPreferences(previous => ({ ...previous, [preferenceKey]: saved }));
+        return saved;
+    };
+    useEffect(() => {
+        document.documentElement.dataset.dolphinMotion = preferences.reduceMotion ? 'reduced' : 'normal';
+        return () => { delete document.documentElement.dataset.dolphinMotion; };
+    }, [preferences.reduceMotion]);
 
     const [view, setView] = useState('DASHBOARD');
     const [activeTab, setActiveTab] = useState('CHART');
@@ -382,8 +397,8 @@ export default function App() {
     }
 
     return (
-        <div className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
-            {showFireworks && <Confetti />}
+        <div data-dolphin-theme={preferences.theme} className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
+            {showFireworks && !preferences.reduceMotion && <Confetti />}
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
@@ -396,7 +411,7 @@ export default function App() {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
             `}} />
 
-            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden opacity-40">
+            <div className="dolphin-background fixed inset-0 z-0 bg-gradient-to-b from-[#e0f2fe] to-[#87CEEB] pointer-events-none overflow-hidden opacity-40">
                 <div className="absolute w-[200vw] h-[200vw] sm:w-[150vw] sm:h-[150vw] bg-white/20 rounded-[43%] animate-[spin_12s_linear_infinite] -bottom-[180vw] sm:-bottom-[130vw] left-1/2 -translate-x-1/2"></div>
             </div>
 
@@ -407,8 +422,9 @@ export default function App() {
                             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" onError={(e) => { e.target.style.display='none'; }} />
                         </div>
                         <div className="min-w-0">
-                            <h2 className="font-black text-[16px] text-gray-800 leading-tight truncate">Dolphin_97ers</h2>
+                            <h2 title={preferences.storeName} className="font-black text-[16px] text-gray-800 leading-tight truncate">{preferences.storeName}</h2>
                             <p className="text-[11px] font-bold text-gray-500 truncate">Chào, {authUser?.name || 'bạn'}</p>
+                            {preferences.contactPhone && <p className="text-[11px] text-gray-500 truncate" title={preferences.contactPhone}>{preferences.contactPhone}</p>}
                         </div>
                     </div>
                 </div>
@@ -461,6 +477,10 @@ export default function App() {
                 </div>
 
                 <div className="p-4 border-t border-gray-100 shrink-0">
+                    <button type="button" onClick={() => handleNavigate('SETTINGS')} aria-current={view === 'SETTINGS' ? 'page' : undefined} className={`mb-3 w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${view === 'SETTINGS' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
+                        <Settings size={20} />
+                        <span className="text-[14px]">Cài đặt</span>
+                    </button>
                     {timeLeftDisplay && (
                         <div className="mb-4 px-2 flex items-center gap-2 text-[11px] font-bold text-amber-600 bg-amber-50 py-2 rounded-lg justify-center border border-amber-100">
                             <Clock size={14} /> {timeLeftDisplay}
@@ -519,6 +539,10 @@ export default function App() {
                                 />
                             )}
 
+                            {view === 'SETTINGS' && (
+                                <SettingsView key={preferenceKey} settings={preferences} onSave={savePreferences} onBack={() => handleNavigate('DASHBOARD')} />
+                            )}
+
                             {view === 'USERS' && isAdmin && ( 
                                 <AdminPanel setView={handleNavigate} authUser={authUser} /> 
                             )}
@@ -535,7 +559,7 @@ export default function App() {
                 </main>
             </div>
 
-            <ChatBox authUser={authUser} />
+            {preferences.showChat && <ChatBox authUser={authUser} />}
 
             {/* CÁC MODAL HỆ THỐNG - ĐÃ ĐƯỢC BỌC ĐIỀU KIỆN HIỂN THỊ ĐỂ CHẮC CHẮN ĐÓNG ĐƯỢC */}
             {typeof document !== 'undefined' && createPortal(

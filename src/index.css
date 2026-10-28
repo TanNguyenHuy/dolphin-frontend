@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+[data-dolphin-theme="mint"] .dolphin-background {
+  background-image: linear-gradient(to bottom, #e6faf5, #98dccb);
+}
+
+[data-dolphin-theme="neutral"] .dolphin-background {
+  background-image: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+}
+
+html[data-dolphin-motion="reduced"] *,
+html[data-dolphin-motion="reduced"] *::before,
+html[data-dolphin-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
