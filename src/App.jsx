@@ -9,11 +9,12 @@ import Auth from './Auth';
 import ChatBox from './components/ChatBox';
 import Toast from './components/Toast';
 import SettingsView from './components/SettingsView';
-import { settingsKey, readSettings, writeSettings } from './settings';
+import { settingsKey, readSettings, writeSettings, appearanceVariables } from './settings';
 import useToast from './hooks/useToast';
 import { readAuthUser, readStoredText, writeStoredText } from './lib/browserStorage';
 import { buildSessionSummary } from './lib/sessionSummary';
 import MotionProvider from './components/motion/MotionProvider';
+import { AppearanceContext } from './components/appearance/AppearanceContext';
 
 import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
@@ -25,6 +26,7 @@ import BlockModal from './components/modals/BlockModal';
 
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
 import { parseIGSyncText, calculateGlobalStats, calculateDetailStats } from './logic';
+
 
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const DashboardView = lazy(() => import('./components/DashboardView'));
@@ -65,8 +67,13 @@ export default function App() {
     };
     useEffect(() => {
         document.documentElement.dataset.dolphinMotion = preferences.reduceMotion ? 'reduced' : 'normal';
-        return () => { delete document.documentElement.dataset.dolphinMotion; };
-    }, [preferences.reduceMotion]);
+        const variables = appearanceVariables(preferences);
+        Object.entries(variables).forEach(([name, value]) => document.documentElement.style.setProperty(name, value));
+        return () => {
+            delete document.documentElement.dataset.dolphinMotion;
+            Object.keys(variables).forEach(name => document.documentElement.style.removeProperty(name));
+        };
+    }, [preferences]);
 
     const [view, setView] = useState('DASHBOARD');
     const [sessions, setSessions] = useState([]);
@@ -412,8 +419,9 @@ export default function App() {
     }
 
     return (
+        <AppearanceContext.Provider value={preferences}>
         <MotionProvider reduced={preferences.reduceMotion}>
-        <div data-dolphin-theme={preferences.theme} className="flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
+        <div data-dolphin-theme={preferences.theme} data-layout={preferences.layout} data-density={preferences.density} data-lunar={preferences.showLunar} className="dolphin-app flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
             {showFireworks && !preferences.reduceMotion && <Confetti />}
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
@@ -507,7 +515,7 @@ export default function App() {
                 <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
             )}
 
-            <div className="flex-1 flex flex-col h-screen w-full relative z-10 overflow-hidden">
+            <div className="app-workspace flex-1 flex flex-col h-screen w-full min-w-0 relative z-10 overflow-hidden">
                 <button
                     onClick={() => setIsSidebarOpen(true)}
                     className="md:hidden fixed top-4 left-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-xl shadow-md text-[#1A5B82] border border-gray-200 active:scale-95 transition-all"
@@ -649,5 +657,6 @@ export default function App() {
             )}
         </div>
         </MotionProvider>
+        </AppearanceContext.Provider>
     );
 }

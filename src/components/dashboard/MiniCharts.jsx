@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
-import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+import { ComposedChart, Line, Area, Bar, ResponsiveContainer, YAxis } from 'recharts';
 import { formatCurrency } from '../../utils';
 import { useReducedMotion } from '../motion/motion';
+import { useAppearance } from '../appearance/AppearanceContext';
 
 export default function MiniCharts({ sessions }) {
+    const appearance = useAppearance();
     const reducedMotion = useReducedMotion();
     const stats = useMemo(() => {
         const result = {
@@ -43,17 +45,18 @@ export default function MiniCharts({ sessions }) {
     }, [sessions]);
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div className="overview-cards grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {stats.map((stat, idx) => (
                 <div key={idx} className={`backdrop-blur-xl border border-white/60 rounded-[24px] p-5 shadow-sm flex flex-col ${stat.bg}`}>
                     <span className="text-[12px] font-bold text-gray-500 mb-1">{stat.label}</span>
                     <span className="text-[18px] font-black text-[#1D1D1F] mb-4">{formatCurrency(stat.value)}đ</span>
                     <div className="h-[40px] w-full mt-auto">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={stat.data}>
+                            <ComposedChart data={stat.data}>
                                 <YAxis hide domain={['dataMin', 'dataMax + 10000']} />
-                                <Line type="monotone" dataKey="val" stroke={stat.color} strokeWidth={2.5} dot={false} isAnimationActive={!reducedMotion} animationDuration={650} />
-                            </LineChart>
+                                {appearance.chartType === 'bar' ? <Bar dataKey="val" fill={stat.color} radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={650} /> : appearance.chartType === 'area' ? <Area type={appearance.chartCurve} dataKey="val" stroke={stat.color} fill={stat.color} fillOpacity={0.12} strokeWidth={2.5} isAnimationActive={!reducedMotion} animationDuration={650} /> : <Line type={appearance.chartCurve} dataKey="val" stroke={stat.color} strokeWidth={2.5} dot={false} isAnimationActive={!reducedMotion} animationDuration={650} />}
+
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
                 </div>

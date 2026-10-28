@@ -1,3 +1,4 @@
+import { useAppearance } from '../appearance/AppearanceContext';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Plus, Check, X, Calendar as CalIcon, Clock, Settings2, Trash2 } from 'lucide-react';
@@ -30,7 +31,7 @@ const getLunarDateStr = (date) => {
     try {
         const str = new Intl.DateTimeFormat('en-US-u-ca-chinese', { timeZone: 'Asia/Ho_Chi_Minh', day: 'numeric', month: 'numeric' }).format(date);
         const matches = str.match(/\d+/g);
-        if (matches && matches.length >= 2) return `${matches[1]}/${matches[0]}`; 
+        if (matches && matches.length >= 2) return `${matches[1]}/${matches[0]}`;
     } catch(e) {}
     return "";
 };
@@ -49,7 +50,7 @@ const ProductItem = ({ item }) => {
     const handleMouseLeave = () => setTooltip({ show: false, x: 0, y: 0 });
 
     const tooltipContent = tooltip.show ? (
-        <div 
+        <div
             className="fixed z-[9999] pointer-events-none animate-fade-in-up"
             style={{ left: tooltip.x, top: tooltip.y, transform: 'translate(-50%, -100%)' }}
         >
@@ -72,11 +73,11 @@ const ProductItem = ({ item }) => {
 
     return (
         <>
-            <div 
+            <div
                 className="bg-[#f2f6fb] border border-[#e4ebf5] text-[#1A5B82] text-[9px] md:text-[11px] font-bold px-1.5 md:px-2 py-1 md:py-1.5 rounded-[4px] md:rounded-[8px] shadow-sm flex items-center shrink-0 cursor-pointer hover:bg-[#e6eff9] transition-colors"
                 onMouseEnter={handleInteract}
                 onMouseLeave={handleMouseLeave}
-                onClick={handleInteract} 
+                onClick={handleInteract}
             >
                 <div className="flex items-center gap-0.5 md:gap-1.5 min-w-0 w-full">
                     <span className="text-[10px] md:text-[12px] shrink-0 leading-none">🛍️</span>
@@ -93,12 +94,14 @@ const ProductItem = ({ item }) => {
 // GIAO DIỆN LỊCH CHÍNH (PersonalCalendar)
 // ============================================================================
 export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }) {
+    const appearance = useAppearance();
+    const [calendarView, setCalendarView] = useState(appearance.calendarView);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState(() => {
         const saved = localStorage.getItem('dolphin_personal_events');
         return saved ? JSON.parse(saved) : [];
     });
-    
+
     const [showModal, setShowModal] = useState(false);
     const [showMonthPicker, setShowMonthPicker] = useState(false);
     const [pickerYear, setPickerYear] = useState(currentDate.getFullYear());
@@ -150,7 +153,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             }
             if (frequency === 'monthly') {
                 const monthDiff = (check.getFullYear() - start.getFullYear()) * 12 + (check.getMonth() - start.getMonth());
-                if (monthDiff % interval === 0) return check.getDate() === start.getDate(); 
+                if (monthDiff % interval === 0) return check.getDate() === start.getDate();
                 return false;
             }
             if (frequency === 'yearly') {
@@ -193,9 +196,9 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
         const eventToSave = {
             id: 'evt_' + Date.now(), title: newEvent.title, startDate: newEvent.startDate,
             recurring: newEvent.recurring, customConfig: newEvent.recurring === 'custom' ? customConfig : null,
-            completedDates: [] 
+            completedDates: []
         };
-        
+
         setEvents([...events, eventToSave]);
         setShowModal(false);
         setNewEvent({ title: '', startDate: todayStr, recurring: 'none' });
@@ -232,8 +235,8 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
     const calendarCells = useMemo(() => {
         const cells = [];
-        
-        for (let i = 0; i < firstDay; i++) {
+
+        for (let i = 0; calendarView === 'month' && i < firstDay; i++) {
             cells.push(<div key={`empty-${i}`} className="bg-transparent border border-transparent p-1 md:p-2 h-20 sm:h-24 md:h-36"></div>);
         }
 
@@ -244,10 +247,10 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
             const solarDayStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}`;
             const fullDateStr = `${String(day).padStart(2, '0')}-${String(currentMonth + 1).padStart(2, '0')}-${currentYear}`;
-            
+
             let holidayName = VN_HOLIDAYS[solarDayStr] || null;
             if (VN_HOLIDAYS[fullDateStr]) {
-                holidayName = VN_HOLIDAYS[fullDateStr]; 
+                holidayName = VN_HOLIDAYS[fullDateStr];
             }
 
             const daySales = [];
@@ -262,22 +265,23 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
             const dayPersonalEvents = events.filter(ev => isEventOnDate(ev, cellDateStr));
             const lunarStr = getLunarDateStr(cellDateObj);
+            if (calendarView === 'agenda' && !daySales.length && !dayPersonalEvents.length && !holidayName) continue;
 
             cells.push(
-                <div key={`cell-${day}`} className={`bg-white border border-gray-100 p-1 md:p-2 h-24 sm:h-24 md:h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
-                    
+                <div key={`cell-${day}`} className={`personal-calendar-cell bg-white border border-gray-100 p-1 md:p-2 h-24 sm:h-24 md:h-36 flex flex-col overflow-hidden relative transition-all hover:shadow-md group ${isToday ? 'ring-2 ring-[#26D0CE] bg-teal-50/30' : ''}`}>
+
                     {/* CĂN CHỈNH HEADER NGÀY RIÊNG CHO MOBILE & DESKTOP */}
                     <div className="flex flex-col xl:flex-row justify-center xl:justify-between items-center xl:items-start mb-1 shrink-0 gap-[2px] xl:gap-0">
-                        <span className={`text-[12px] md:text-[15px] font-bold shrink-0 leading-none ${isToday ? 'text-white bg-[#26D0CE] w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center shadow-sm' : 'text-gray-700'}`}>
-                            {day}
+                        <span className={`personal-calendar-date text-[12px] md:text-[15px] font-bold shrink-0 leading-none ${isToday ? 'text-white bg-[#26D0CE] w-5 h-5 md:w-7 md:h-7 rounded-full flex items-center justify-center shadow-sm' : 'text-gray-700'}`}>
+                            {calendarView === 'agenda' ? `${day}/${currentMonth + 1}/${currentYear}` : day}
                         </span>
-                        <span className={`text-[8px] md:text-[10px] font-black xl:mt-1 leading-none ${lunarStr.startsWith('1/') || lunarStr.startsWith('15/') ? 'text-rose-500' : 'text-gray-400'}`}>
+                        <span className={`lunar-label text-[8px] md:text-[10px] font-black xl:mt-1 leading-none ${lunarStr.startsWith('1/') || lunarStr.startsWith('15/') ? 'text-rose-500' : 'text-gray-400'}`}>
                             {lunarStr}
                         </span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1 md:gap-1.5 mt-0.5 md:mt-1 pr-0.5 md:pr-1 pb-1">
-                        
+
                         {holidayName && (
                             <div className="bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-100 text-rose-600 text-[8px] md:text-[10px] font-black px-1 md:px-2 py-1 md:py-1.5 rounded-[4px] md:rounded-[6px] truncate shadow-sm flex items-center gap-1 md:gap-1.5 shrink-0">
                                 <span className="text-[10px] md:text-[12px]">🌟</span><span className="truncate">{holidayName}</span>
@@ -294,15 +298,15 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
 
                             return (
                                 <div key={`pe-${ev.id}`} className={`group/task flex items-center justify-between text-[8px] md:text-[11px] font-bold px-1 md:px-1.5 py-1 md:py-1.5 rounded-[4px] md:rounded-[6px] shadow-sm transition-all border shrink-0 gap-1 ${
-                                    isCompleted ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' : 
+                                    isCompleted ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' :
                                     isPastDue ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-orange-50 text-orange-600 border-orange-200'
                                 }`}>
                                     <div className="flex items-center gap-1 min-w-0 flex-1 cursor-pointer" onClick={() => requestDeleteEvent(ev.id)} title="Bấm để xoá chuỗi nhắc nhở">
                                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCompleted ? 'bg-gray-300' : isPastDue ? 'bg-rose-400 animate-pulse' : 'bg-orange-400'}`}></div>
                                         <span className="truncate leading-tight">{ev.title}</span>
                                     </div>
-                                    <button 
-                                        onClick={() => toggleComplete(ev.id, cellDateStr)} 
+                                    <button
+                                        onClick={() => toggleComplete(ev.id, cellDateStr)}
                                         className={`w-3 h-3 md:w-4 md:h-4 rounded-[3px] md:rounded-[4px] border flex items-center justify-center flex-shrink-0 transition-colors ${isCompleted ? 'bg-gray-300 border-gray-400' : 'bg-white border-orange-300 hover:bg-orange-100'}`}
                                     >
                                         {isCompleted && <Check size={8} className="text-white md:w-[10px] md:h-[10px]" strokeWidth={4} />}
@@ -315,18 +319,18 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
             );
         }
         return cells;
-    }, [currentYear, currentMonth, events, sessions]);
+    }, [currentYear, currentMonth, events, sessions, calendarView]);
 
     return (
-        <div className="w-full h-full liquid-glass rounded-[24px] md:rounded-[32px] p-3 sm:p-4 md:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up mt-4 md:mt-0">
-            
+        <div data-calendar-view={calendarView} className="personal-calendar w-full h-full liquid-glass rounded-[24px] md:rounded-[32px] p-3 sm:p-4 md:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/60 bg-white/60 flex flex-col relative animate-fade-in-up mt-4 md:mt-0">
+
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-6 gap-3 md:gap-4 shrink-0">
                 <div className="flex items-center justify-between w-full md:w-auto gap-4">
                     <div className="flex bg-white rounded-[16px] p-1 shadow-sm border border-gray-100 relative flex-1 md:flex-none justify-between md:justify-start">
                         <button onClick={prevMonth} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600"><ChevronLeft size={20} /></button>
-                        
+
                         <div className="relative flex-1 md:flex-none flex justify-center">
-                            <button 
+                            <button
                                 onClick={() => { setShowMonthPicker(!showMonthPicker); setPickerYear(currentYear); }}
                                 className="px-2 md:px-4 py-2 font-black text-[16px] md:text-[18px] text-[#1A5B82] hover:text-[#26D0CE] transition-colors rounded-[12px] hover:bg-teal-50 flex items-center justify-center min-w-[140px] md:min-w-[160px] h-full"
                             >
@@ -372,16 +376,18 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 </button>
             </div>
 
-            <div className="flex-1 flex flex-col min-h-[400px] md:min-h-[600px]">
-                <div className="grid grid-cols-7 gap-px mb-1 md:mb-2 shrink-0">
+            <div className="calendar-view-switch" role="group" aria-label="Cách xem lịch cá nhân"><button type="button" aria-pressed={calendarView === 'month'} onClick={() => setCalendarView('month')}>Tháng</button><button type="button" aria-pressed={calendarView === 'agenda'} onClick={() => setCalendarView('agenda')}>Danh sách</button></div>
+            <div className="personal-calendar-body flex-1 flex flex-col min-h-[400px] md:min-h-[600px]">
+                <div className="personal-calendar-weekdays grid grid-cols-7 gap-px mb-1 md:mb-2 shrink-0">
                     {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, i) => (
                         <div key={day} className={`text-center py-1 md:py-2 font-black text-[10px] md:text-[13px] tracking-widest uppercase ${i >= 5 ? 'text-rose-500' : 'text-gray-400'}`}>
                             {day}
                         </div>
                     ))}
                 </div>
-                <div className="grid grid-cols-7 gap-px bg-gray-100/50 rounded-xl md:rounded-2xl overflow-hidden border border-gray-100 flex-1">
+                <div className="personal-calendar-grid grid grid-cols-7 gap-px bg-gray-100/50 rounded-xl md:rounded-2xl overflow-hidden border border-gray-100 flex-1">
                     {calendarCells}
+                    {calendarCells.length === 0 && <p className="calendar-empty">Chưa có lịch hẹn hoặc giao dịch trong tháng này.</p>}
                 </div>
             </div>
 
@@ -390,7 +396,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-up">
                     <div className="bg-white rounded-[32px] w-full max-w-[420px] p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-800 bg-gray-100 p-2 rounded-full transition-colors"><X size={20}/></button>
-                        
+
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500"><Clock size={20} className="md:w-[22px] md:h-[22px]" /></div>
                             <div>
@@ -406,7 +412,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                     value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})}
                                 />
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-3 md:gap-4">
                                 <div>
                                     <label className="block text-[11px] md:text-[12px] font-black text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Bắt đầu từ</label>
@@ -434,7 +440,7 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                     <div className="flex items-center gap-2 mb-1 md:mb-2 text-orange-600 font-black text-[12px] md:text-[13px] uppercase tracking-widest">
                                         <Settings2 size={16} /> Cấu hình chi tiết
                                     </div>
-                                    
+
                                     <div className="flex justify-between items-center">
                                         <label className="text-[12px] md:text-[13px] font-bold text-gray-600">Tần suất</label>
                                         <select className="bg-white border border-gray-200 rounded-[10px] px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-[13px] font-bold outline-none focus:border-orange-400"
@@ -463,11 +469,11 @@ export default function PersonalCalendar({ sessions = [], onUpdatePendingCount }
                                         <div className="pt-1 md:pt-2">
                                             <div className="flex flex-wrap justify-between gap-1 mt-1 md:mt-2">
                                                 {[1,2,3,4,5,6,0].map(day => (
-                                                    <button type="button" key={day} 
+                                                    <button type="button" key={day}
                                                         className={`w-8 md:w-10 h-8 md:h-10 rounded-full text-[11px] md:text-[12px] font-black flex items-center justify-center transition-all ${customConfig.daysOfWeek.includes(day) ? 'bg-orange-500 text-white shadow-[0_4px_10px_rgba(249,115,22,0.3)] scale-110' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-100'}`}
                                                         onClick={() => {
                                                             let newDays = [...customConfig.daysOfWeek];
-                                                            if (newDays.includes(day)) { newDays = newDays.filter(d => d !== day); } 
+                                                            if (newDays.includes(day)) { newDays = newDays.filter(d => d !== day); }
                                                             else { newDays.push(day); }
                                                             setCustomConfig({...customConfig, daysOfWeek: newDays});
                                                         }}

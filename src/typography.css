@@ -1,0 +1,99 @@
+/* Typography scales without enlarging layout widths or touch targets. */
+[class~="text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+[class~="text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+[class~="text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+[class~="text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+[class~="text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+[class~="text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+[class~="text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+[class~="text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+[class~="text-[8px]"] { font-size: max(10px, calc(0.5rem * var(--text-scale, 1))); }
+[class~="text-[9px]"] { font-size: max(10px, calc(0.5625rem * var(--text-scale, 1))); }
+[class~="text-[10px]"] { font-size: max(10px, calc(0.625rem * var(--text-scale, 1))); }
+[class~="text-[10.5px]"] { font-size: max(10px, calc(0.65625rem * var(--text-scale, 1))); }
+[class~="text-[11px]"] { font-size: max(10px, calc(0.6875rem * var(--text-scale, 1))); }
+[class~="text-[12px]"] { font-size: max(10px, calc(0.75rem * var(--text-scale, 1))); }
+[class~="text-[13px]"] { font-size: max(10px, calc(0.8125rem * var(--text-scale, 1))); }
+[class~="text-[14px]"] { font-size: max(10px, calc(0.875rem * var(--text-scale, 1))); }
+[class~="text-[15px]"] { font-size: max(10px, calc(0.9375rem * var(--text-scale, 1))); }
+[class~="text-[16px]"] { font-size: max(10px, calc(1rem * var(--text-scale, 1))); }
+[class~="text-[17px]"] { font-size: max(10px, calc(1.0625rem * var(--text-scale, 1))); }
+[class~="text-[18px]"] { font-size: max(10px, calc(1.125rem * var(--text-scale, 1))); }
+[class~="text-[20px]"] { font-size: max(10px, calc(1.25rem * var(--text-scale, 1))); }
+[class~="text-[22px]"] { font-size: max(10px, calc(1.375rem * var(--text-scale, 1))); }
+[class~="text-[24px]"] { font-size: max(10px, calc(1.5rem * var(--text-scale, 1))); }
+[class~="text-[26px]"] { font-size: max(10px, calc(1.625rem * var(--text-scale, 1))); }
+[class~="text-[28px]"] { font-size: max(10px, calc(1.75rem * var(--text-scale, 1))); }
+[class~="text-[30px]"] { font-size: max(10px, calc(1.875rem * var(--text-scale, 1))); }
+[class~="text-[32px]"] { font-size: max(10px, calc(2rem * var(--text-scale, 1))); }
+[class~="text-[36px]"] { font-size: max(10px, calc(2.25rem * var(--text-scale, 1))); }
+[class~="text-[40px]"] { font-size: max(10px, calc(2.5rem * var(--text-scale, 1))); }
+@media (min-width: 640px) {
+  [class~="sm:text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+  [class~="sm:text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+  [class~="sm:text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+  [class~="sm:text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+  [class~="sm:text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+  [class~="sm:text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+  [class~="sm:text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+  [class~="sm:text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+}
+@media (min-width: 768px) {
+  [class~="md:text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+  [class~="md:text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+  [class~="md:text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+  [class~="md:text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+  [class~="md:text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+  [class~="md:text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+  [class~="md:text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+  [class~="md:text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+  [class~="md:text-[9px]"] { font-size: max(10px, calc(0.5625rem * var(--text-scale, 1))); }
+  [class~="md:text-[10px]"] { font-size: max(10px, calc(0.625rem * var(--text-scale, 1))); }
+  [class~="md:text-[11px]"] { font-size: max(10px, calc(0.6875rem * var(--text-scale, 1))); }
+  [class~="md:text-[12px]"] { font-size: max(10px, calc(0.75rem * var(--text-scale, 1))); }
+  [class~="md:text-[13px]"] { font-size: max(10px, calc(0.8125rem * var(--text-scale, 1))); }
+  [class~="md:text-[14px]"] { font-size: max(10px, calc(0.875rem * var(--text-scale, 1))); }
+  [class~="md:text-[15px]"] { font-size: max(10px, calc(0.9375rem * var(--text-scale, 1))); }
+  [class~="md:text-[16px]"] { font-size: max(10px, calc(1rem * var(--text-scale, 1))); }
+  [class~="md:text-[18px]"] { font-size: max(10px, calc(1.125rem * var(--text-scale, 1))); }
+  [class~="md:text-[20px]"] { font-size: max(10px, calc(1.25rem * var(--text-scale, 1))); }
+  [class~="md:text-[24px]"] { font-size: max(10px, calc(1.5rem * var(--text-scale, 1))); }
+  [class~="md:text-[26px]"] { font-size: max(10px, calc(1.625rem * var(--text-scale, 1))); }
+  [class~="md:text-[28px]"] { font-size: max(10px, calc(1.75rem * var(--text-scale, 1))); }
+  [class~="md:text-[32px]"] { font-size: max(10px, calc(2rem * var(--text-scale, 1))); }
+  [class~="md:text-[36px]"] { font-size: max(10px, calc(2.25rem * var(--text-scale, 1))); }
+  [class~="md:text-[38px]"] { font-size: max(10px, calc(2.375rem * var(--text-scale, 1))); }
+  [class~="md:text-[40px]"] { font-size: max(10px, calc(2.5rem * var(--text-scale, 1))); }
+  [class~="md:text-[44px]"] { font-size: max(10px, calc(2.75rem * var(--text-scale, 1))); }
+  [class~="md:text-[48px]"] { font-size: max(10px, calc(3rem * var(--text-scale, 1))); }
+}
+@media (min-width: 1024px) {
+  [class~="lg:text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+  [class~="lg:text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+  [class~="lg:text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+  [class~="lg:text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+  [class~="lg:text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+  [class~="lg:text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+  [class~="lg:text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+  [class~="lg:text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+}
+@media (min-width: 1280px) {
+  [class~="xl:text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+  [class~="xl:text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+  [class~="xl:text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+  [class~="xl:text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+  [class~="xl:text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+  [class~="xl:text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+  [class~="xl:text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+  [class~="xl:text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+}
+@media (min-width: 1536px) {
+  [class~="2xl:text-xs"] { font-size: calc(0.75rem * var(--text-scale, 1)); }
+  [class~="2xl:text-sm"] { font-size: calc(0.875rem * var(--text-scale, 1)); }
+  [class~="2xl:text-base"] { font-size: calc(1rem * var(--text-scale, 1)); }
+  [class~="2xl:text-lg"] { font-size: calc(1.125rem * var(--text-scale, 1)); }
+  [class~="2xl:text-xl"] { font-size: calc(1.25rem * var(--text-scale, 1)); }
+  [class~="2xl:text-2xl"] { font-size: calc(1.5rem * var(--text-scale, 1)); }
+  [class~="2xl:text-3xl"] { font-size: calc(1.875rem * var(--text-scale, 1)); }
+  [class~="2xl:text-4xl"] { font-size: calc(2.25rem * var(--text-scale, 1)); }
+}

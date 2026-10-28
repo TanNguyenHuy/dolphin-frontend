@@ -1,163 +1,51 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatCurrency } from '../../utils';
 import { SolarDate } from 'lunar-date-vn';
+import { formatCurrency, getTodayString } from '../../utils';
+import { useAppearance } from '../appearance/AppearanceContext';
 
-export default function SmartCalendar({ sessions }) {
+function lunarLabel(year, month, day) {
+    try {
+        const lunar = new SolarDate(new Date(year, month, day)).toLunarDate();
+        return lunar.day === 1 ? `${lunar.day}/${lunar.month}` : String(lunar.day);
+    } catch { return ''; }
+}
+
+export default function SmartCalendar({ sessions = [] }) {
+    const appearance = useAppearance();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [hoveredDate, setHoveredDate] = useState(null);
-
-    const dailyDataByDate = useMemo(() => {
-        const map = {};
-        sessions?.forEach(session => {
-            if (session.daily && Array.isArray(session.daily)) {
-                session.daily.forEach(item => {
-                    if (!item.ngay_ban) return;
-                    const d = new Date(item.ngay_ban);
-                    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    
-                    if (!map[dStr]) map[dStr] = [];
-                    map[dStr].push(item);
-                });
-            }
-        });
-        return map;
-    }, [sessions]);
-
-    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-
+    const [view, setView] = useState(appearance.calendarView);
+    const [selectedDate, setSelectedDate] = useState(null);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDay = getFirstDayOfMonth(year, month);
-    const startingDay = firstDay === 0 ? 6 : firstDay - 1; 
-
-    const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
-    const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-
-    const handleJumpToToday = () => {
-        setCurrentDate(new Date());
-    };
-
-    return (
-        <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 shadow-sm flex flex-col h-full relative z-10">
-            <div className="flex justify-between items-center mb-6 px-2">
-                <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors active:scale-95 text-gray-500">
-                    <ChevronLeft size={20} strokeWidth={2.5} />
-                </button>
-                <h3 className="text-[16px] font-black text-[#1D1D1F]">
-                    {monthNames[month]} {year}
-                </h3>
-                <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors active:scale-95 text-gray-500">
-                    <ChevronRight size={20} strokeWidth={2.5} />
-                </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 mb-4 text-center">
-                {dayNames.map(day => <div key={day} className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{day}</div>)}
-            </div>
-
-            <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
-                {[...Array(startingDay)].map((_, i) => <div key={`empty-${i}`} className="h-10"></div>)}
-                
-                {[...Array(daysInMonth)].map((_, i) => {
-                    const day = i + 1;
-                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const dayData = dailyDataByDate[dateString];
-                    const isActive = !!dayData; 
-                    const isToday = new Date().toISOString().split('T')[0] === dateString;
-
-                    // Tính toán Âm Lịch chuẩn VN
-                    let lunarDay = '';
-                    let lunarMonth = '';
-                    try {
-                        const solar = new SolarDate(new Date(year, month, day));
-                        const lunar = solar.toLunarDate();
-                        lunarDay = lunar.day;
-                        lunarMonth = lunar.month;
-                    } catch(e) {}
-
-                    const lunarStr = lunarDay === 1 ? `${lunarDay}/${lunarMonth}` : lunarDay;
-                    const fullLunarStr = `${lunarDay}/${lunarMonth}`;
-
-                    // Nhận diện Ngày Lễ
-                    const isSolarHoliday = ['1/1', '30/4', '1/5', '2/9', '5/5', '13/12'].includes(`${day}/${month + 1}`);
-                    const isLunarHoliday = ['1/1', '2/1', '3/1', '10/3'].includes(`${lunarDay}/${lunarMonth}`);
-                    const isHoliday = isSolarHoliday || isLunarHoliday;
-
-                    // Xử lý Class CSS cho màu nền và chữ Dương lịch
-                    let bgClass = '';
-                    if (isActive) {
-                        bgClass = isHoliday 
-                            ? 'bg-gradient-to-br from-rose-500 to-red-500 text-white shadow-[0_4px_10px_rgba(244,63,94,0.4)] hover:scale-110'
-                            : 'bg-[#33A1FD] text-white shadow-[0_4px_10px_rgba(51,161,253,0.4)] hover:bg-[#208bea] hover:scale-110';
-                    } else if (isToday) {
-                        bgClass = `bg-gray-100 ${isHoliday ? 'text-rose-600' : 'text-[#1D1D1F]'}`;
-                    } else {
-                        bgClass = isHoliday ? 'text-rose-500 font-black hover:bg-rose-50' : 'text-gray-600 group-hover:bg-gray-50';
-                    }
-
-                    // Xử lý Class CSS cho màu chữ Âm lịch
-                    let lunarTextClass = '';
-                    if (isActive) lunarTextClass = 'text-white/90';
-                    else if (isToday) lunarTextClass = 'text-gray-500';
-                    else if (isHoliday) lunarTextClass = 'text-rose-400 font-bold';
-                    else lunarTextClass = 'text-gray-400';
-
-                    return (
-                        <div 
-                            key={day} 
-                            className="flex justify-center items-center h-10 relative group"
-                            onMouseEnter={() => isActive && setHoveredDate(dateString)}
-                            onMouseLeave={() => setHoveredDate(null)}
-                        >
-                            <div className={`w-[38px] h-[38px] flex flex-col items-center justify-center rounded-full z-10 transition-all cursor-default ${bgClass}`}>
-                                <span className="text-[13px] font-bold leading-none">{day}</span>
-                                <span className={`text-[9px] mt-[3px] font-medium leading-none ${lunarTextClass}`}>
-                                    {lunarStr}
-                                </span>
-                            </div>
-
-                            {hoveredDate === dateString && isActive && (
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200 rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[150] p-4 pointer-events-none animate-fade-in-up">
-                                    <div className="text-[12px] font-black text-[#1D1D1F] mb-3 border-b border-gray-100 pb-2 flex justify-between items-center">
-                                        <span>Ngày {day}/{month+1}/{year} <span className={`${isHoliday ? 'text-rose-500' : 'text-gray-400'} font-medium ml-1`}>(ÂL: {fullLunarStr})</span></span>
-                                        <span className="bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full text-[10px]">{dayData.length} đơn</span>
-                                    </div>
-                                    <div className="flex flex-col gap-2.5">
-                                        {dayData.slice(0, 5).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center text-[11px]">
-                                                <div className="flex-1 pr-2 truncate font-bold text-gray-700">
-                                                    {item.ten_san_pham}
-                                                </div>
-                                                <div className="flex flex-col items-end shrink-0">
-                                                    <span className="text-[#1DB2A0] font-black">{formatCurrency(item.so_tien_ban_duoc || 0)}đ</span>
-                                                    <span className="text-[9px] text-gray-400 font-bold">Bán: {item.so_luong || 0} / Nhập: {item.so_luong_nhap || 0}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {dayData.length > 5 && (
-                                            <div className="text-center text-[10px] font-bold text-gray-400 mt-1 italic">
-                                                ... và {dayData.length - 5} mặt hàng khác
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-            
-            <div className="mt-auto pt-6">
-                <button 
-                    onClick={handleJumpToToday}
-                    className="w-full bg-[#33A1FD] hover:bg-[#208bea] text-white font-bold py-3.5 rounded-[16px] text-[13px] transition-all active:scale-95 shadow-[0_4px_12px_rgba(51,161,253,0.3)]"
-                >
-                    Trở về tháng hiện tại
-                </button>
-            </div>
-        </div>
-    );
+    const today = getTodayString();
+    const dailyData = useMemo(() => {
+        const grouped = {};
+        for (const session of sessions) for (const item of session.daily || []) {
+            const date = String(item.ngay_ban || '').slice(0, 10);
+            if (date) (grouped[date] ||= []).push(item);
+        }
+        return grouped;
+    }, [sessions]);
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+    const activeDates = Object.keys(dailyData).filter(date => date.startsWith(monthPrefix)).sort();
+    const days = new Date(year, month + 1, 0).getDate();
+    const offset = (new Date(year, month, 1).getDay() + 6) % 7;
+    const navigate = offset => { setCurrentDate(new Date(year, month + offset, 1)); setSelectedDate(null); };
+    return <section className="smart-calendar reading-panel" aria-label="Lịch bán hàng">
+        <div className="calendar-toolbar"><button type="button" aria-label="Tháng trước" onClick={() => navigate(-1)}><ChevronLeft size={20} /></button><h2>Tháng {month + 1} {year}</h2><button type="button" aria-label="Tháng sau" onClick={() => navigate(1)}><ChevronRight size={20} /></button></div>
+        <div className="calendar-view-switch" role="group" aria-label="Cách xem lịch bán hàng"><button type="button" aria-pressed={view === 'month'} onClick={() => setView('month')}>Tháng</button><button type="button" aria-pressed={view === 'agenda'} onClick={() => setView('agenda')}>Danh sách</button></div>
+        {view === 'month' ? <div className="smart-month-grid">
+            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => <span className="calendar-weekday" key={day}>{day}</span>)}
+            {Array.from({ length: offset }, (_, index) => <span key={`empty-${index}`} />)}
+            {Array.from({ length: days }, (_, index) => {
+                const day = index + 1;
+                const date = monthPrefix + String(day).padStart(2, '0');
+                const active = Boolean(dailyData[date]);
+                return <button type="button" key={day} className={`calendar-day ${active ? 'has-sales' : ''} ${date === today ? 'is-today' : ''}`} aria-label={`${day}/${month + 1}/${year}${active ? `, ${dailyData[date].length} giao dịch` : ''}`} aria-pressed={selectedDate === date} aria-current={date === today ? 'date' : undefined} onClick={() => setSelectedDate(date)}><span>{day}</span>{appearance.showLunar && <small>{lunarLabel(year, month, day)}</small>}</button>;
+            })}
+        </div> : <div className="calendar-agenda">{activeDates.length ? activeDates.map(date => <button type="button" className="agenda-sale" aria-pressed={selectedDate === date} key={date} onClick={() => setSelectedDate(date)}><span><strong>{Number(date.slice(-2))}/{month + 1}</strong><small>{dailyData[date].length} giao dịch</small></span><strong>{formatCurrency(dailyData[date].reduce((sum, item) => sum + (Number(item.so_tien_ban_duoc) || 0), 0))} đ</strong></button>) : <p className="calendar-empty">Chưa có giao dịch trong tháng này.</p>}</div>}
+        {selectedDate && <div className="calendar-day-detail" aria-live="polite"><h3>Ngày {Number(selectedDate.slice(-2))}/{month + 1}/{year}</h3>{dailyData[selectedDate]?.length ? <ul>{dailyData[selectedDate].map((item, index) => <li key={item.id || index}><span>{item.ten_san_pham || 'Sản phẩm'}</span><strong>{formatCurrency(item.so_tien_ban_duoc)} đ</strong></li>)}</ul> : <p>Chưa có giao dịch.</p>}</div>}
+        <button type="button" className="calendar-today" onClick={() => { setCurrentDate(new Date()); setSelectedDate(today); }}>Về tháng hiện tại</button>
+    </section>;
 }

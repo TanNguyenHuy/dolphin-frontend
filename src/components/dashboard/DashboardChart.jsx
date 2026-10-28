@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency, getSessionName } from '../../utils';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { useReducedMotion } from '../motion/motion';
+import { useAppearance } from '../appearance/AppearanceContext';
 
 export default function DashboardChart({ enrichedSessions }) {
+    const appearance = useAppearance();
     const reducedMotion = useReducedMotion();
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -45,7 +47,7 @@ export default function DashboardChart({ enrichedSessions }) {
     const chartTotalRealProfit = chartData.reduce((sum, item) => sum + item.realProfit, 0);
 
     return (
-        <div className="bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 md:p-8 shadow-sm w-full h-full flex flex-col">
+        <div data-chart-type={appearance.chartType} className="profit-chart bg-white/90 backdrop-blur-xl border border-white/60 rounded-[32px] p-6 md:p-8 shadow-sm w-full h-full flex flex-col">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
@@ -78,11 +80,11 @@ export default function DashboardChart({ enrichedSessions }) {
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
                         {/* ĐÃ SỬA: margin bottom: 20 để chữ ngày tháng hiển thị đầy đủ, không bị cắt đứt */}
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                        <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                             <defs>
                                 <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#33A1FD" stopOpacity={0.4}/>
-                                    <stop offset="95%" stopColor="#33A1FD" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -90,7 +92,7 @@ export default function DashboardChart({ enrichedSessions }) {
                                 dataKey="name"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}}
+                                tick={{fill: '#9CA3AF', fontSize: 11 * ({ small: 0.95, normal: 1, large: 1.15, extra: 1.3 }[appearance.fontSize]), fontWeight: 'bold'}}
                                 dy={15}
                             />
                             <YAxis hide={true} domain={['dataMin - 1000000', 'auto']} />
@@ -126,8 +128,9 @@ export default function DashboardChart({ enrichedSessions }) {
                                 }}
                             />
                             {/* Chuyển dataKey sang profit15d để vẽ đường */}
-                            <Area isAnimationActive={!reducedMotion} animationDuration={650} type="monotone" dataKey="profit15d" stroke="#33A1FD" strokeWidth={4} fillOpacity={1} fill="url(#colorProfit)" activeDot={{ r: 6, strokeWidth: 0, fill: '#1D1D1F' }} />
-                        </AreaChart>
+                            {appearance.chartType === 'bar' ? <Bar dataKey="profit15d" fill="var(--accent)" radius={[5, 5, 0, 0]} maxBarSize={48} isAnimationActive={!reducedMotion} animationDuration={650} /> : appearance.chartType === 'line' ? <Line dataKey="profit15d" type={appearance.chartCurve} stroke="var(--accent)" strokeWidth={3} dot={chartData.length < 8} isAnimationActive={!reducedMotion} animationDuration={650} /> : <Area dataKey="profit15d" type={appearance.chartCurve} stroke="var(--accent)" strokeWidth={3} fill="url(#colorProfit)" isAnimationActive={!reducedMotion} animationDuration={650} />}
+
+                        </ComposedChart>
                     </ResponsiveContainer>
                 )}
             </div>

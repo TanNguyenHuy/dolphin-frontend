@@ -48,38 +48,17 @@ export default memo(function DashboardView({
                 <span className="workspace-badge">{safeEnrichedSessions.length} đợt bán</span>
             </header>
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
-
-                <div className="xl:col-span-8 flex flex-col gap-6 lg:gap-8">
-                    <div className="h-[380px] md:h-[450px]">
-                        <ScrollReveal delay={0}>
-                            <DashboardChart enrichedSessions={completedSessions} />
-                        </ScrollReveal>
-                    </div>
-
-                    <ScrollReveal delay={50}>
-                        <MiniCharts sessions={completedSessions} />
-                    </ScrollReveal>
-
-                    <ScrollReveal delay={150}>
-                        <TopMVP sessions={completedSessions} />
-                    </ScrollReveal>
-                </div>
-
-                <div className="xl:col-span-4 relative h-full">
-                    <ScrollReveal delay={100}>
-                        <div className="sticky top-6 space-y-6 lg:space-y-8">
-                            <SmartCalendar sessions={safeEnrichedSessions} />
-                            <DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} />
-                        </div>
-                    </ScrollReveal>
-                </div>
+            <ScrollReveal><MiniCharts sessions={completedSessions} /></ScrollReveal>
+            <div className="dashboard-grid">
+                <div className="dashboard-chart"><ScrollReveal><DashboardChart enrichedSessions={completedSessions} /></ScrollReveal></div>
+                <div className="dashboard-inventory"><ScrollReveal delay={50}><DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} /></ScrollReveal></div>
+                <div className="dashboard-calendar"><ScrollReveal delay={100}><SmartCalendar sessions={safeEnrichedSessions} /></ScrollReveal></div>
             </div>
 
             <div id="section-danh-sach" className="scroll-mt-[120px] w-full pt-6">
                 <ScrollReveal delay={300}>
                     <div className="relative w-full" onMouseLeave={handleMouseLeaveList}>
-                        <div className="liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[320px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
+                        <div className="session-list-panel liquid-glass rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-10 xl:pr-[320px] border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)] relative overflow-hidden bg-white/40">
                             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-200/30 to-emerald-100/10 rounded-full blur-[100px] pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
 
                             <div className="flex justify-between items-center mb-8 px-2 md:px-0 relative z-10">
@@ -104,7 +83,7 @@ export default memo(function DashboardView({
                                 </div>
                             )}
                         </div>
-                        <div className="hidden xl:block absolute right-6 top-10 bottom-10 w-[290px] pointer-events-none z-[100]">
+                        <div className="session-quick-preview hidden xl:block absolute right-6 top-10 bottom-10 w-[290px] pointer-events-none z-[100]">
                             <div className={`sticky top-[120px] transition-all duration-[500ms] ease-out ${isHoveringList ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[40px] blur-sm'}`}>
 
                                 {quickViewData && (
@@ -174,6 +153,7 @@ export default memo(function DashboardView({
                 </ScrollReveal>
             </div>
 
+            <details className="dashboard-rankings reading-panel"><summary>So sánh hiệu suất các đợt bán</summary><TopMVP sessions={completedSessions} /></details>
         </div>
     );
 });
