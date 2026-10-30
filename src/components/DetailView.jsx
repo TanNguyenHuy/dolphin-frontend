@@ -8,7 +8,7 @@ export default function DetailView({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate, isTargetReached, detailProfit,
     dynamicTarget, targetSession, progressPercent, detailAutoAdCost, canEdit, canDelete,
     handleAddBale, baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
-    importedBales, handleDeleteBale, updateSessionField, handleAddItem, newItem, setNewItem,
+    importedBales, handleDeleteBale, handleUpdateBale, updateSessionField, handleAddItem, newItem, setNewItem,
     isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete,
     handleStartSync
 }) {
@@ -54,6 +54,7 @@ export default function DetailView({
                             baleQty={baleQty} setBaleQty={setBaleQty}
                             importedBales={importedBales}
                             handleDeleteBale={handleDeleteBale}
+                            handleUpdateBale={handleUpdateBale}
                         />
                     </div>
 

@@ -1,13 +1,36 @@
-import React from 'react';
-import { Box, Package, X } from 'lucide-react';
-import { formatCurrency, formatInput, AD_COST_PER_SALE } from '../../utils';
+import React, { useEffect, useRef, useState } from 'react';
+import { Box, Package, X, Pencil } from 'lucide-react';
+import { formatCurrency, formatInput, parseInput, AD_COST_PER_SALE } from '../../utils';
 import { calculateBaleSales, allocateLaundryCosts } from '../../logic';
 
 export default function CapitalManagement({
     detailData, detailAutoAdCost, canEdit, canDelete, handleAddBale,
     baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
-    importedBales, handleDeleteBale
+    importedBales, handleDeleteBale, handleUpdateBale
 }) {
+    const [editingBale, setEditingBale] = useState(null);
+    const [savingBale, setSavingBale] = useState(false);
+    const [editError, setEditError] = useState('');
+    const editTrigger = useRef(null);
+    useEffect(() => { if (!editingBale) editTrigger.current?.focus(); }, [editingBale]);
+    const saveBale = async (event, minimumQty) => {
+        event.preventDefault();
+        if (!canEdit || !editingBale || savingBale) return;
+        const cost = parseInput(editingBale.cost);
+        const qty = parseInput(editingBale.qty);
+        if (!Number.isSafeInteger(cost) || cost <= 0 || !Number.isSafeInteger(qty) || qty <= 0) {
+            setEditError('Giá vốn và số lượng phải là số nguyên lớn hơn 0.'); return;
+        }
+        if (qty < minimumQty) { setEditError(`Lô đã phân bổ ${minimumQty} sản phẩm. Số lượng nhập không được nhỏ hơn ${minimumQty}.`); return; }
+        setSavingBale(true);
+        setEditError('');
+        try {
+            await handleUpdateBale(editingBale.id, { cost, qty });
+            setEditingBale(null);
+        } catch (error) {
+            setEditError(error.response?.data?.error || error.message || 'Không lưu được lô hàng. Vui lòng thử lại.');
+        } finally { setSavingBale(false); }
+    };
     // TÍNH TOÁN THEO ĐÚNG CÔNG THỨC: (Tổng tiền 1 + ... + n) / (Số lượng 1 + ... + n)
     const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
     const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
@@ -80,8 +103,18 @@ export default function CapitalManagement({
                                 <article key={bale._id} role="listitem" className="bale-card" aria-labelledby={titleId} style={{ '--card-delay': `${Math.min(index * 40, 160)}ms` }}>
                                     <header className="bale-card-heading">
                                         <div className="bale-card-identity"><span className="bale-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div><p>Lô hàng</p><h4 id={titleId}>{bale.name || 'Chưa đặt tên'}</h4></div></div>
-                                        {canDelete && <button type="button" className="bale-delete" aria-label={`Xóa lô ${bale.name || ''}`} onClick={() => handleDeleteBale(bale._id)}><X size={18} aria-hidden="true" /></button>}
+                                        <div className="bale-card-actions">
+                                            {canEdit && <button type="button" className="bale-edit" disabled={savingBale || Boolean(editingBale)} aria-label={`Chỉnh sửa lô ${bale.name || ''}`} onClick={event => { editTrigger.current = event.currentTarget; setEditError(''); setEditingBale({ id: String(bale._id), qty: String(bale.qty || ''), cost: String(bale.cost || '') }); }}><Pencil size={16} aria-hidden="true" /><span>Sửa</span></button>}
+                                            {canDelete && <button type="button" className="bale-delete" disabled={savingBale || Boolean(editingBale)} aria-label={`Xóa lô ${bale.name || ''}`} onClick={() => handleDeleteBale(bale._id)}><X size={18} aria-hidden="true" /></button>}
+                                        </div>
                                     </header>
+                                    {canEdit && editingBale?.id === String(bale._id) && <form className="bale-edit-form" aria-label={`Chỉnh sửa lô ${bale.name}`} onSubmit={event => saveBale(event, totalDeducted)} aria-busy={savingBale}>
+                                        <label>Số lượng nhập<input autoFocus required inputMode="numeric" disabled={savingBale} value={formatInput(editingBale.qty)} onChange={event => setEditingBale(previous => ({ ...previous, qty: event.target.value }))} /></label>
+                                        <label>Giá vốn lô (VNĐ)<input required inputMode="numeric" disabled={savingBale} value={formatInput(editingBale.cost)} onChange={event => setEditingBale(previous => ({ ...previous, cost: event.target.value }))} /></label>
+                                        <p>Đã phân bổ {formatInput(totalDeducted)} sản phẩm. Lưu sẽ cập nhật tổng giá vốn và phí giặt ủi 4% của đợt.</p>
+                                        {editError && <p role="alert" className="bale-edit-error">{editError}</p>}
+                                        <div><button type="button" disabled={savingBale} onClick={() => { setEditingBale(null); setEditError(''); }}>Hủy</button><button type="submit" disabled={savingBale}>{savingBale ? 'Đang lưu…' : 'Lưu thay đổi'}</button></div>
+                                    </form>}
                                     <div className="bale-card-stock"><span>SL gốc<strong>{formatInput(originalQty)}</strong></span><span>Đã lấy ra<strong>{formatInput(totalDeducted)}</strong></span><span>Còn kho<strong className={remainingQty < 0 ? 'is-negative' : ''}>{formatInput(remainingQty)}</strong></span></div>
                                     <dl className="bale-capital-values"><div><dt>Giá vốn lô</dt><dd>{formatCurrency(bale.cost || 0)} đ</dd></div><div><dt>Giá vốn / sản phẩm</dt><dd>{formatCurrency((bale.cost || 0) / (bale.qty || 1))} đ</dd></div></dl>
                                     <dl className="bale-sales-summary" aria-label={`Thống kê bán hàng ${bale.name || ''}`}>

@@ -97,7 +97,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 setStep('pricing');
             }
             else {
-                const user = res.data.user;
+                const user = { ...res.data.user, token: res.data.token };
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
                     setRegisteredEmail(user.email);
                     setStep('pricing');

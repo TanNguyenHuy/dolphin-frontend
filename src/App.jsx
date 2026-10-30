@@ -332,6 +332,25 @@ export default function App() {
         } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); }
     };
 
+    const handleUpdateBale = async (id, values) => {
+        if (!canEdit) throw new Error('Bạn không có quyền chỉnh sửa lô hàng.');
+        if (!authUser?.token) throw new Error('Vui lòng đăng xuất và đăng nhập lại để chỉnh sửa lô hàng.');
+        const request = detailRequest.current;
+        const { data } = await axios.put(`${API_URL}/bales/${id}`, values, { headers: { Authorization: `Bearer ${authUser.token}` } });
+        if (!data?.bale?._id || !data?.session?.id) throw new Error('Máy chủ trả về dữ liệu không hợp lệ. Hãy tải lại trang để kiểm tra.');
+        if (request === detailRequest.current) {
+            setImportedBales(previous => previous.map(bale => String(bale._id) === String(data.bale._id) ? data.bale : bale));
+            setDetailData(previous => ({
+                ...previous,
+                so_tien_cua_kien: data.session.so_tien_cua_kien,
+                so_tien_giat_ui: data.session.so_tien_giat_ui,
+                computed: { ...previous.computed, trung_binh: previous.computed?.tong_sl_nhap > 0 ? data.session.so_tien_cua_kien / previous.computed.tong_sl_nhap : 0 },
+            }));
+            showToast('Đã cập nhật số lượng và giá vốn lô hàng.');
+        }
+        fetchDashboard();
+    };
+
     const handleDeleteBale = async (id) => {
         if(!canDelete) return;
         try {
@@ -560,7 +579,7 @@ export default function App() {
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
                                     isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} targetSession={targetSession} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
-                                    baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
+                                    baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} handleUpdateBale={handleUpdateBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}
 
                                     handleStartEdit={handleStartEdit}
