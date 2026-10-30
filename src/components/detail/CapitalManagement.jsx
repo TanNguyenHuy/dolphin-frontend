@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Package, X } from 'lucide-react';
 import { formatCurrency, formatInput, AD_COST_PER_SALE } from '../../utils';
-import { calculateBaleSales } from '../../logic';
+import { calculateBaleSales, allocateLaundryCosts } from '../../logic';
 
 export default function CapitalManagement({
     detailData, detailAutoAdCost, canEdit, canDelete, handleAddBale,
@@ -11,13 +11,15 @@ export default function CapitalManagement({
     // TÍNH TOÁN THEO ĐÚNG CÔNG THỨC: (Tổng tiền 1 + ... + n) / (Số lượng 1 + ... + n)
     const tongTienKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
     const tongSlKien = (importedBales || []).reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
+    const totalLaundryCost = Number(detailData?.so_tien_giat_ui ?? Math.round(tongTienKien * 0.04)) || 0;
+    const laundryCosts = allocateLaundryCosts(importedBales || [], totalLaundryCost);
     const avgPrice = tongSlKien > 0 ? tongTienKien / tongSlKien : 0;
 
     // Tính tổng vốn nhập kho (Bao gồm cả phí giặt ủi và ads)
     const totalCapital = (detailData?.so_tien_cua_kien || 0) + (detailData?.so_tien_giat_ui || 0) + (detailAutoAdCost || 0);
 
     return (
-        <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col h-full min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
+        <div className="capital-panel liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] overflow-hidden flex flex-col h-full min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
             {/* Header của Khối */}
             <div className="px-6 py-5 border-b border-white/60 flex items-center gap-3 bg-white/40">
                 <div className="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 shadow-sm">
@@ -50,80 +52,50 @@ export default function CapitalManagement({
 
                 {/* Form thêm lô hàng */}
                 {canEdit && (
-                    <form onSubmit={handleAddBale} className="bg-white/60 p-4 md:p-5 rounded-[24px] space-y-4 border border-white/80 shadow-sm backdrop-blur-md">
-                        <input required placeholder="Tên lô hàng (VD: Lô Áo Thun)..." className="w-full min-w-0 bg-white/70 border border-white/80 rounded-[16px] px-4 py-3.5 text-[14px] font-bold text-[#1D1D1F] focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 outline-none transition-all placeholder:text-gray-400 placeholder:font-medium shadow-sm hover:bg-white/90"
-                            value={baleName || ''}
-                            onChange={e => setBaleName ? setBaleName(e.target.value) : alert("Lỗi")} />
-                        <div className="flex gap-3 w-full">
-                            <input required placeholder="Giá vốn (VNĐ)" className="flex-1 min-w-0 bg-white/70 border border-white/80 rounded-[16px] px-4 py-3.5 text-[14px] font-bold text-[#1D1D1F] text-right focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 outline-none transition-all tabular-nums placeholder:text-gray-400 placeholder:font-medium shadow-sm hover:bg-white/90"
-                                value={formatInput(baleCost) || ''}
-                                onChange={e => setBaleCost ? setBaleCost(e.target.value) : alert("Lỗi")} />
-                            <input required placeholder="SL" className="w-[80px] shrink-0 bg-white/70 border border-white/80 rounded-[16px] px-2 py-3.5 text-[15px] font-black text-[#33A1FD] text-center focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 outline-none transition-all tabular-nums placeholder:text-blue-300 placeholder:font-medium shadow-sm hover:bg-white/90"
-                                value={formatInput(baleQty) || ''}
-                                onChange={e => setBaleQty ? setBaleQty(e.target.value) : alert("Lỗi")} />
+                    <form onSubmit={handleAddBale} className="bale-create-form">
+                        <label htmlFor="bale-name">Tên lô hàng</label>
+                        <input id="bale-name" required placeholder="VD: Sơ mi, Dài tay…" value={baleName || ''} onChange={event => setBaleName(event.target.value)} />
+                        <div className="bale-create-fields">
+                            <label>Giá vốn lô (VNĐ)<input required inputMode="numeric" placeholder="0" value={formatInput(baleCost) || ''} onChange={event => setBaleCost(event.target.value)} /></label>
+                            <label>Số lượng<input required inputMode="numeric" placeholder="0" value={formatInput(baleQty) || ''} onChange={event => setBaleQty(event.target.value)} /></label>
                         </div>
-                        <button type="submit" className="w-full min-w-0 bg-white/80 text-[#1A5B82] border border-gray-200/50 shadow-sm py-3.5 rounded-[16px] text-[14px] font-bold hover:bg-white hover:border-[#26D0CE] hover:text-[#26D0CE] hover:shadow-md transition-all active:scale-95 whitespace-nowrap">Ghi nhận kiện hàng</button>
+                        <button type="submit">Ghi nhận kiện hàng</button>
                     </form>
                 )}
 
-                {/* Danh sách lô hàng */}
+                <div className="bale-section-heading"><h3>Các lô hàng</h3><span>{(importedBales || []).length} lô</span></div>
+                <p className="bale-allocation-note">Giặt ủi phân bổ theo giá vốn, tính một lần cho mỗi lô.</p>
                 {(importedBales || []).length > 0 ? (
-                    <div className="space-y-3">
-                        {(importedBales || []).map(b => {
-                            if (!b) return null;
-
-                            // ==========================================
-                            // THUẬT TOÁN MỚI SẾP YÊU CẦU:
-                            // Tính tổng lượng NHẬP từ Danh sách SP Khớp với Tên Lô Hàng
-                            // ==========================================
-                            const originalQty = Number(b.qty) || 0;
-                            const totalDeducted = (detailData?.daily || []).reduce((sum, row) => {
-                                // Tìm những sản phẩm có chứa tên kiện hàng này
-                                if (String(row.ten_san_pham || '').toLowerCase().includes(String(b.name || '').toLowerCase())) {
-                                    return sum + (Number(row.so_luong_nhap) || 0);
-                                }
-                                return sum;
-                            }, 0);
+                    <div className="bale-list" role="list" aria-label="Danh sách lô hàng">
+                        {(importedBales || []).map((bale, index) => {
+                            if (!bale) return null;
+                            const originalQty = Number(bale.qty) || 0;
+                            const totalDeducted = (detailData?.daily || []).reduce((sum, row) =>
+                                String(row.ten_san_pham || '').toLowerCase().includes(String(bale.name || '').toLowerCase())
+                                    ? sum + (Number(row.so_luong_nhap) || 0) : sum, 0);
                             const remainingQty = originalQty - totalDeducted;
-                            const { totalRevenue, saleCount, advertisingCost, revenueAfterAds } = calculateBaleSales(b.name, detailData?.daily, AD_COST_PER_SALE);
-
+                            const { totalRevenue, saleCount, advertisingCost, laundryCost, netRevenue } = calculateBaleSales(bale.name, detailData?.daily, AD_COST_PER_SALE, laundryCosts[index]);
+                            const titleId = `bale-title-${bale._id || index}`;
                             return (
-                            <div key={b._id} className="bale-card p-4 bg-white/70 hover:bg-white transition-all duration-300 border border-white/80 rounded-[20px] flex flex-wrap items-center justify-between group shadow-sm hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] min-w-0">
-                                <div className="flex-1 min-w-0 pr-3">
-                                    <div className="text-[14px] font-bold text-[#1D1D1F] truncate group-hover:text-[#1A5B82] transition-colors">{b.name || ''}</div>
-                                    <div className="text-[12px] text-gray-500 mt-1 font-medium truncate flex items-center gap-1.5">
-                                        SL gốc: <span className="font-bold text-gray-800">{b.qty || 0}</span>
-                                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                        TB: {formatCurrency((b.cost || 0) / (b.qty || 1))}
-                                    </div>
-
-                                    {/* DÒNG HIỂN THỊ CÒN LẠI / ĐÃ LẤY RA (MỚI THÊM) */}
-                                    <div className="mt-2.5 inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-100/60 px-2.5 py-1.5 rounded-[8px] shadow-sm">
-                                        <span className="text-[10px] md:text-[11px] font-bold text-gray-500">
-                                            Đã lấy ra: <span className="text-orange-600 font-black">{totalDeducted}</span>
-                                        </span>
-                                        <span className="w-1 h-1 rounded-full bg-orange-200 mx-0.5"></span>
-                                        <span className="text-[10px] md:text-[11px] font-bold text-gray-500">
-                                            Còn kho: <span className={`font-black text-[12px] ${remainingQty < 0 ? 'text-rose-500' : remainingQty === 0 ? 'text-gray-400' : 'text-[#1DB2A0]'}`}>{remainingQty}</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2 shrink-0">
-                                    <span className="font-black text-[#1D1D1F] text-[15px] tabular-nums whitespace-nowrap">{formatCurrency(b.cost || 0)}</span>
-                                    {canDelete && <button type="button" onClick={() => { handleDeleteBale ? handleDeleteBale(b._id) : alert("Lỗi"); }} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm hover:bg-red-50 rounded-full transition-all active:scale-90"><X size={14} strokeWidth={3}/></button>}
-                                </div>
-                                <dl className="bale-sales-summary" aria-label={`Thống kê bán hàng ${b.name || ''}`}>
-                                    <div><dt>Tổng doanh thu</dt><dd>{formatCurrency(totalRevenue)} đ</dd></div>
-                                    <div><dt>Số lần bán</dt><dd>{formatInput(saleCount)} lần</dd></div>
-                                    <div title={`${formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận`}><dt>Tiền quảng cáo</dt><dd>{formatCurrency(advertisingCost)} đ</dd></div>
-                                    <div><dt>Doanh thu sau quảng cáo</dt><dd className={revenueAfterAds < 0 ? 'text-rose-600' : 'text-[#1A5B82]'}>{formatCurrency(revenueAfterAds)} đ</dd></div>
-                                </dl>
-                            </div>
-                        )})}
+                                <article key={bale._id} role="listitem" className="bale-card" aria-labelledby={titleId} style={{ '--card-delay': `${Math.min(index * 40, 160)}ms` }}>
+                                    <header className="bale-card-heading">
+                                        <div className="bale-card-identity"><span className="bale-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div><p>Lô hàng</p><h4 id={titleId}>{bale.name || 'Chưa đặt tên'}</h4></div></div>
+                                        {canDelete && <button type="button" className="bale-delete" aria-label={`Xóa lô ${bale.name || ''}`} onClick={() => handleDeleteBale(bale._id)}><X size={18} aria-hidden="true" /></button>}
+                                    </header>
+                                    <div className="bale-card-stock"><span>SL gốc<strong>{formatInput(originalQty)}</strong></span><span>Đã lấy ra<strong>{formatInput(totalDeducted)}</strong></span><span>Còn kho<strong className={remainingQty < 0 ? 'is-negative' : ''}>{formatInput(remainingQty)}</strong></span></div>
+                                    <dl className="bale-capital-values"><div><dt>Giá vốn lô</dt><dd>{formatCurrency(bale.cost || 0)} đ</dd></div><div><dt>Giá vốn / sản phẩm</dt><dd>{formatCurrency((bale.cost || 0) / (bale.qty || 1))} đ</dd></div></dl>
+                                    <dl className="bale-sales-summary" aria-label={`Thống kê bán hàng ${bale.name || ''}`}>
+                                        <div className="bale-revenue"><dt>Tổng doanh thu</dt><dd><strong>{formatCurrency(totalRevenue)} đ</strong></dd></div>
+                                        <div><dt>Số lần bán</dt><dd><strong>{formatInput(saleCount)} lần</strong></dd></div>
+                                        <div className="bale-expense"><dt>Tiền quảng cáo</dt><dd><strong>{formatCurrency(advertisingCost)} đ</strong><small>{formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận</small></dd></div>
+                                        <div className="bale-expense"><dt>Chi phí giặt ủi</dt><dd><strong>{formatCurrency(laundryCost)} đ</strong><small>Phân bổ theo giá vốn</small></dd></div>
+                                        <div className={`bale-net ${netRevenue < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
+                                    </dl>
+                                </article>
+                            );
+                        })}
                     </div>
-                ) : (
-                    <div className="text-center p-6 bg-white/40 border border-dashed border-gray-300/60 rounded-[24px] text-[13px] font-medium text-gray-400">Chưa có kiện hàng nào được ghi nhận</div>
-                )}
+                ) : <div className="empty-state"><Package size={28} aria-hidden="true" /><p>Chưa có lô hàng. Ghi nhận kiện hàng đầu tiên để theo dõi vốn và doanh thu.</p></div>}
 
                 {/* Thông số phụ */}
                 <div className="mt-auto space-y-5 pt-6 border-t border-white/50 min-w-0 relative z-10">
@@ -132,7 +104,7 @@ export default function CapitalManagement({
                         <input
                             disabled readOnly
                             className="w-full min-w-0 bg-white/40 border border-white/60 rounded-[20px] px-5 py-4 font-black text-right text-gray-600 text-[20px] outline-none tabular-nums shadow-inner cursor-not-allowed"
-                            value={formatInput(detailData?.so_tien_giat_ui || 0)}
+                            value={formatInput(totalLaundryCost)}
                         />
                     </div>
 

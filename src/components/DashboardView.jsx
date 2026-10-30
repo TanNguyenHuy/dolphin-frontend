@@ -31,7 +31,7 @@ export default memo(function DashboardView({
     const handleMouseEnterRow = session => setQuickViewData(session);
 
     return (
-        <div className="space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
+        <div className="dashboard-page space-y-6 lg:space-y-8 animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4 md:pt-8 relative">
             <header className="dashboard-heading">
                 <div><h1>Tổng quan kinh doanh</h1><p>Theo dõi doanh thu, tồn kho và các đợt bán trong một không gian.</p></div>
                 <span className="workspace-badge">{safeEnrichedSessions.length} đợt bán</span>

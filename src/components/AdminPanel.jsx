@@ -174,7 +174,7 @@ export default function AdminPanel({ setView, authUser }) {
     }, []);
 
     return (
-        <div className="relative animate-fade-in-up pb-24 pt-6 max-w-[1400px] mx-auto">
+        <div className="admin-page relative animate-fade-in-up pb-24 pt-6 max-w-[1400px] mx-auto">
 
             {/* AMBIENT GLOW: Không gian chỉ huy bóng tối mờ ảo */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none z-[-1]">

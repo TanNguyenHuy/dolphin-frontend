@@ -19,12 +19,12 @@ const formatDateTime = (dateString) => {
 // 🚀 THUẬT TOÁN MỚI: Vừa phân tách, vừa sắp xếp từ A-Z (nhỏ đến lớn)
 const splitRawData = (text) => {
     if (!text) return { avail: [], sold: [] };
-    
+
     // 1. Tách các sản phẩm bằng cách tìm chữ "Số " + "con số" hoặc "cuối" ở ĐẦU DÒNG.
     const blocks = text.split(/(?=(?:^|\n)\s*Số\s+(?:\d+|cuối))/i);
     const avail = [];
     const sold = [];
-    
+
     // 2. Phân loại CÒN HÀNG và ĐÃ BÁN
     blocks.forEach(b => {
         const trimmed = b.trim();
@@ -46,11 +46,11 @@ const splitRawData = (text) => {
         };
         return getVal(a) - getVal(b);
     };
-    
+
     // Trả về mảng đã được sắp xếp
-    return { 
-        avail: avail.sort(sorter), 
-        sold: sold.sort(sorter) 
+    return {
+        avail: avail.sort(sorter),
+        sold: sold.sort(sorter)
     };
 };
 
@@ -74,11 +74,11 @@ export default function TransactionList({
     // ==========================================
     // STATE & HANDLER CHO MODAL DỮ LIỆU THÔ ẨN
     // ==========================================
-    const [rawModal, setRawModal] = useState({ 
-        isOpen: false, 
-        rowData: null, 
-        textAvail: '', 
-        textSold: '' 
+    const [rawModal, setRawModal] = useState({
+        isOpen: false,
+        rowData: null,
+        textAvail: '',
+        textSold: ''
     });
     const [isSavingRaw, setIsSavingRaw] = useState(false);
 
@@ -100,13 +100,13 @@ export default function TransactionList({
         try {
             // Gộp 2 cột lại để lưu vào DB
             const combinedText = [rawModal.textAvail, rawModal.textSold].filter(t => t.trim() !== '').join('\n\n');
-            
-            await axios.put(`${API_URL}/daily/${rawModal.rowData.id}`, { 
-                ...rawModal.rowData, 
-                hidden_raw_data: combinedText 
+
+            await axios.put(`${API_URL}/daily/${rawModal.rowData.id}`, {
+                ...rawModal.rowData,
+                hidden_raw_data: combinedText
             });
-            
-            rawModal.rowData.hidden_raw_data = combinedText; 
+
+            rawModal.rowData.hidden_raw_data = combinedText;
             setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' });
         } catch (error) {
             console.error("Lỗi khi lưu dữ liệu ẩn:", error);
@@ -118,7 +118,7 @@ export default function TransactionList({
 
     // HÀM XỬ LÝ DÁN (PASTE) SIÊU THÔNG MINH
     const handleSmartPaste = (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
         const pastedText = e.clipboardData.getData('text');
         if (!pastedText) return;
 
@@ -126,17 +126,17 @@ export default function TransactionList({
         const start = target.selectionStart;
         const end = target.selectionEnd;
         const isAvailBox = target.name === 'avail';
-        
+
         // 1. Lấy text của ô đang dán (trừ đi phần text đang bị bôi đen đen nếu có)
         const currentText = isAvailBox ? rawModal.textAvail : rawModal.textSold;
         const textBefore = currentText.substring(0, start);
         const textAfter = currentText.substring(end);
-        
+
         // 2. Chèn đoạn text mới dán vào đúng vị trí con trỏ chuột
         const newBoxText = textBefore + '\n\n' + pastedText + '\n\n' + textAfter;
-        
+
         // 3. Gom TẤT CẢ văn bản của CẢ 2 CỘT lại thành một cục siêu to
-        const combinedEverything = isAvailBox 
+        const combinedEverything = isAvailBox
             ? (newBoxText + '\n\n' + rawModal.textSold)
             : (rawModal.textAvail + '\n\n' + newBoxText);
 
@@ -144,34 +144,34 @@ export default function TransactionList({
         const { avail, sold } = splitRawData(combinedEverything);
 
         // 5. Cập nhật lại giao diện ngay tức thì
-        setRawModal(prev => ({ 
-            ...prev, 
-            textAvail: avail.join('\n\n'), 
-            textSold: sold.join('\n\n') 
+        setRawModal(prev => ({
+            ...prev,
+            textAvail: avail.join('\n\n'),
+            textSold: sold.join('\n\n')
         }));
     };
 
     return (
-        <div className="liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] p-4 sm:p-8 min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
+        <div className="transactions-panel liquid-glass bg-white/50 backdrop-blur-xl rounded-[32px] md:rounded-[40px] p-4 sm:p-8 min-w-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-white/80">
             <div className="flex justify-between items-center mb-6 md:mb-8 px-2">
                 <h2 className="text-[18px] md:text-[24px] font-black text-[#1D1D1F] tracking-tight">Chi tiết sản phẩm</h2>
                 <span className="text-[12px] md:text-[14px] font-bold bg-white/90 border border-gray-200/60 text-[#1D1D1F] px-4 py-1.5 rounded-full shadow-sm">
                     {(detailData?.daily || []).length} mục
                 </span>
             </div>
-            
+
             <div className="flex flex-col gap-4 min-w-0">
                 {(enrichedDaily || []).map((row, index) => {
                     if (!row) return null;
                     const isBanGreater = (row.so_luong || 0) > (row.sl_con || 0);
-                    const isMVP = row.id === mvpRowId && index !== 0; 
-                    
+                    const isMVP = row.id === mvpRowId && index !== 0;
+
                     const loiTrungBinh = (row.so_tien_ban_duoc || 0) - ((row.sl_nhap || 0) * avgPrice + 350000);
-                    
+
                     return (
-                        <div 
-                            key={row.id || index} 
-                            className={`group relative bg-white/70 hover:bg-white backdrop-blur-md rounded-[20px] md:rounded-[28px] p-4 transition-all duration-500 ease-out flex flex-col xl:flex-row xl:flex-wrap items-start xl:items-center justify-between gap-4 xl:gap-5 w-full min-w-0 overflow-hidden ${isMVP ? 'border-2 border-[#FF9500]/50 shadow-[0_8px_24px_rgba(255,149,0,0.15)]' : 'border border-white/80 hover:shadow-[0_15px_40px_rgba(38,208,206,0.12)] hover:border-[#26D0CE]/30'}`}
+                        <div
+                            key={row.id || index}
+                            className={`transaction-card group relative bg-white/70 hover:bg-white backdrop-blur-md rounded-[20px] md:rounded-[28px] p-4 transition-all duration-500 ease-out flex flex-col xl:flex-row xl:flex-wrap items-start xl:items-center justify-between gap-4 xl:gap-5 w-full min-w-0 overflow-hidden ${isMVP ? 'border-2 border-[#FF9500]/50 shadow-[0_8px_24px_rgba(255,149,0,0.15)]' : 'border border-white/80 hover:shadow-[0_15px_40px_rgba(38,208,206,0.12)] hover:border-[#26D0CE]/30'}`}
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#26D0CE]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
@@ -183,7 +183,7 @@ export default function TransactionList({
                                 <div className="flex flex-col min-w-0 flex-1">
                                     <div className="flex items-center gap-2 min-w-0 mb-1">
                                         {isMVP && <Crown size={14} className="text-[#FF9500] shrink-0 drop-shadow-sm" />}
-                                        <h3 className="font-bold text-[#1D1D1F] text-[14px] md:text-[15px] truncate">{row.ten_san_pham || '---'}</h3>
+                                        <h3 className="font-bold text-[#1D1D1F] text-[14px] md:text-[15px] break-words">{row.ten_san_pham || '---'}</h3>
                                         {row.link_san_pham && (
                                             <a href={row.link_san_pham} target="_blank" rel="noopener noreferrer" className="text-[#33A1FD] hover:text-white hover:bg-[#33A1FD] bg-blue-50/80 p-1.5 rounded-full shrink-0 transition-colors shadow-sm">
                                                 <LinkIcon size={12}/>
@@ -201,7 +201,7 @@ export default function TransactionList({
 
                             {/* KHỐI PHẢI: */}
                             <div className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between xl:justify-end gap-4 w-full xl:w-auto border-t xl:border-none border-gray-200/60 pt-3 xl:pt-0 relative z-10">
-                                
+
                                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                                     <div className="w-[55px] md:w-[65px] bg-gray-50/80 border border-gray-200/60 rounded-[14px] py-1.5 text-center group-hover:bg-white transition-colors shadow-sm">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">Nhập</div>
@@ -218,7 +218,7 @@ export default function TransactionList({
                                 </div>
 
                                 <div className="flex flex-wrap xs:flex-nowrap items-center justify-between sm:justify-end gap-3 md:gap-5 w-full sm:w-auto pl-0 sm:border-l border-gray-200/60 sm:pl-4 mt-2 sm:mt-0">
-                                    
+
                                     {/* CỘT DOANH THU: Cố định độ rộng 130px để luôn thẳng hàng */}
                                     <div className="flex flex-col justify-center text-left sm:text-right w-[120px] md:w-[130px] shrink-0">
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[11px] md:text-[12px]">
@@ -229,7 +229,7 @@ export default function TransactionList({
                                             <span className="text-gray-400 font-bold whitespace-nowrap">V.tồn</span>
                                             <span className="font-bold text-gray-500 tabular-nums">{formatCurrency(row.tien_ton || 0)}</span>
                                         </div>
-                                        
+
                                         <div className="flex items-center sm:justify-end gap-1.5 text-[10px] md:text-[11px] mt-1 bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 shadow-sm w-fit sm:ml-auto">
                                             <span className="text-gray-500 font-bold whitespace-nowrap">Lời TB</span>
                                             <span className={`font-black tabular-nums ${loiTrungBinh >= 0 ? "text-teal-600" : "text-rose-600"}`}>
@@ -297,11 +297,11 @@ export default function TransactionList({
                 MODAL NHẬP DỮ LIỆU THÔ IG (2 CỘT SMART)
                 ========================================== */}
             {rawModal.isOpen && (
-                <div 
+                <div
                     className="fixed inset-0 z-[999] flex items-center justify-center p-4 md:p-8 bg-black/50 backdrop-blur-sm"
                     onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-[28px] w-full max-w-[1200px] h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-scale-up"
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -322,17 +322,17 @@ export default function TransactionList({
                                 <X size={20} strokeWidth={2.5}/>
                             </button>
                         </div>
-                        
+
                         {/* Khu vực 2 Cột Textarea */}
                         <div className="flex-1 flex flex-col lg:flex-row gap-5 md:gap-6 p-5 md:p-6 bg-white overflow-hidden">
-                            
+
                             {/* CỘT 1: CÒN HÀNG */}
                             <div className="flex-1 flex flex-col h-full overflow-hidden bg-emerald-50/30 rounded-[20px] border border-emerald-100/60 shadow-inner">
                                 <div className="px-5 py-3.5 bg-emerald-100/50 border-b border-emerald-100 flex items-center gap-2">
                                     <CheckCircle2 size={18} className="text-emerald-600" strokeWidth={2.5} />
                                     <span className="font-black text-emerald-800 text-[14px] uppercase tracking-wide">🛒 Còn hàng</span>
                                 </div>
-                                <textarea 
+                                <textarea
                                     name="avail"
                                     className="flex-1 w-full bg-transparent p-5 text-[14px] font-medium text-gray-700 focus:bg-white focus:ring-4 focus:ring-emerald-100/50 outline-none transition-all resize-none leading-relaxed"
                                     placeholder="Danh sách sản phẩm còn hàng..."
@@ -348,7 +348,7 @@ export default function TransactionList({
                                     <XCircle size={18} className="text-rose-600" strokeWidth={2.5} />
                                     <span className="font-black text-rose-800 text-[14px] uppercase tracking-wide">❌ Đã bán</span>
                                 </div>
-                                <textarea 
+                                <textarea
                                     name="sold"
                                     className="flex-1 w-full bg-transparent p-5 text-[14px] font-medium text-gray-700 focus:bg-white focus:ring-4 focus:ring-rose-100/50 outline-none transition-all resize-none leading-relaxed"
                                     placeholder="Danh sách sản phẩm đã bán..."
@@ -362,13 +362,13 @@ export default function TransactionList({
 
                         {/* Footer Modal */}
                         <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0">
-                            <button 
+                            <button
                                 onClick={() => setRawModal({ isOpen: false, rowData: null, textAvail: '', textSold: '' })}
                                 className="px-8 py-3 rounded-[16px] font-bold text-[14px] text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 transition-colors shadow-sm"
                             >
                                 Đóng
                             </button>
-                            <button 
+                            <button
                                 onClick={handleSaveRawData}
                                 disabled={isSavingRaw}
                                 className="px-8 py-3 rounded-[16px] font-bold text-[14px] text-white bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"

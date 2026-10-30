@@ -77,13 +77,31 @@ export const parseIGSyncText = (syncText) => {
     return { q, r };
 };
 
-export function calculateBaleSales(baleName, daily, adCostPerSale) {
+export function allocateLaundryCosts(bales, totalLaundryCost) {
+    const weights = bales.map(bale => {
+        const cost = Number(bale?.cost);
+        return Number.isFinite(cost) && cost > 0 ? cost : 0;
+    });
+    const capital = weights.reduce((sum, cost) => sum + cost, 0);
+    const total = Math.round(Number(totalLaundryCost));
+    if (!capital || !Number.isFinite(total) || total <= 0) return weights.map(() => 0);
+    const exact = weights.map(cost => total * cost / capital);
+    const amounts = exact.map(Math.floor);
+    const remainder = total - amounts.reduce((sum, amount) => sum + amount, 0);
+    // Distribute rounding remainders so the cards reconcile to the existing bill.
+    const order = exact.map((amount, index) => ({ index, fraction: amount - amounts[index] }))
+        .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+    for (let index = 0; index < remainder; index++) amounts[order[index].index]++;
+    return amounts;
+}
+
+export function calculateBaleSales(baleName, daily, adCostPerSale, laundryCost = 0) {
     const name = String(baleName || '').trim().toLowerCase();
     const rows = (Array.isArray(daily) ? daily : []).filter(row => name && String(row?.ten_san_pham || '').toLowerCase().includes(name));
     const totalRevenue = rows.reduce((sum, row) => sum + (Number(row.so_tien_ban_duoc) || 0), 0);
     const saleCount = rows.length;
     const advertisingCost = saleCount * adCostPerSale;
-    return { totalRevenue, saleCount, advertisingCost, revenueAfterAds: totalRevenue - advertisingCost };
+    return { totalRevenue, saleCount, advertisingCost, laundryCost, netRevenue: totalRevenue - advertisingCost - laundryCost };
 }
 
 export const calculateGlobalStats = (enrichedSessions) => {

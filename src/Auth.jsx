@@ -12,18 +12,18 @@ import SuccessStatus from './components/auth/SuccessStatus';
 
 export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
-    const [view, setView] = useState('LOGIN'); 
-    const [step, setStep] = useState(expiredEmail ? 'pricing' : 'auth'); 
-    const [registeredEmail, setRegisteredEmail] = useState(expiredEmail || ''); 
-    const [otpStep, setOtpStep] = useState(1); 
-    const [planIndex, setPlanIndex] = useState(1); 
+    const [view, setView] = useState('LOGIN');
+    const [step, setStep] = useState(expiredEmail ? 'pricing' : 'auth');
+    const [registeredEmail, setRegisteredEmail] = useState(expiredEmail || '');
+    const [otpStep, setOtpStep] = useState(1);
+    const [planIndex, setPlanIndex] = useState(1);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', password: '', otp: '', newPassword: '' });
-    const [billBase64, setBillBase64] = useState(null); 
+    const [billBase64, setBillBase64] = useState(null);
 
     const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
-    
+
     // STATE MỚI: Kích hoạt hiệu ứng "Tách đôi màn hình" khi Đăng nhập thành công
     const [isExiting, setIsExiting] = useState(false);
 
@@ -33,25 +33,25 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     };
 
     const plans = [
-        { 
-            id: '10k', title: 'GÓI CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg', 
+        {
+            id: '10k', title: 'GÓI CƠ BẢN', price: '10,000', period: 'Tháng', icon: Eye, qrImage: '/qr-10k.jpg',
             features: ['Xem thống kê tổng quan', 'Khóa xem chi tiết lô', 'Hỗ trợ cơ bản'],
             theme: { text: '#6D4C41', bgIcon: '#EFEBE9', gradBorder: 'bg-[linear-gradient(135deg,#8B4513,#E3A869,#8B4513)]', shadow: 'shadow-[#8B4513]/40', btn: 'bg-[linear-gradient(135deg,#8B4513,#E3A869,#8B4513)] text-white border border-[#E3A869]/50 shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_4px_15px_rgba(139,69,19,0.3)]' }
         },
-        { 
-            id: '50k', title: 'GÓI VIP', price: '50,000', period: '6 Tháng', icon: Star, qrImage: '/qr-50k.jpg', 
+        {
+            id: '50k', title: 'GÓI VIP', price: '50,000', period: '6 Tháng', icon: Star, qrImage: '/qr-50k.jpg',
             features: ['Xem đầy đủ thống kê', 'Xem chi tiết lô hàng', 'Hỗ trợ kỹ thuật 24/7'],
             theme: { text: '#334155', bgIcon: '#F1F5F9', gradBorder: 'bg-[linear-gradient(135deg,#94A3B8,#FFFFFF,#64748B)]', shadow: 'shadow-[#64748B]/30', btn: 'bg-[linear-gradient(135deg,#94A3B8,#FFFFFF,#94A3B8)] text-slate-800 border border-white shadow-[inset_0_1px_2px_rgba(255,255,255,0.9),0_4px_15px_rgba(100,116,139,0.3)]' }
         },
-        { 
-            id: '100k', title: 'GÓI VVIP', price: '100,000', period: 'Năm', icon: Crown, qrImage: '/qr-100k.jpg', 
+        {
+            id: '100k', title: 'GÓI VVIP', price: '100,000', period: 'Năm', icon: Crown, qrImage: '/qr-100k.jpg',
             features: ['Đầy đủ tính năng cao cấp', 'Xuất Excel báo cáo', 'Ưu tiên tính năng mới'],
             theme: { text: '#92400E', bgIcon: '#FEF3C7', gradBorder: 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728,#FBF5B7,#AA771C)]', shadow: 'shadow-[#F59E0B]/50', btn: 'bg-[linear-gradient(135deg,#BF953F,#FCF6BA,#B38728)] text-yellow-900 border border-[#FCF6BA] shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_4px_15px_rgba(179,135,40,0.4)]' }
         }
     ];
 
     const [rememberMe, setRememberMe] = useState(false);
-    
+
     useEffect(() => {
         const savedEmail = localStorage.getItem('rememberedEmail');
         const savedPass = localStorage.getItem('rememberedPass');
@@ -73,7 +73,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     const togglePanel = (toRegister) => {
         setIsRightPanelActive(toRegister);
         setView(toRegister ? 'REGISTER' : 'LOGIN');
-        setOtpStep(1); 
+        setOtpStep(1);
     };
 
     const handleSendOTP = async (e) => {
@@ -82,25 +82,25 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
             const type = view === 'REGISTER' ? 'register' : 'forgot';
             const res = await axios.post(`${API_URL}/send-otp`, { email: formData.email, type });
             showToast(res.data.message, 'success');
-            setOtpStep(2); 
-        } catch (err) { showToast(err.response?.data?.error || 'Lỗi gửi mail!', 'error'); } 
-        finally { setLoading(false); } 
+            setOtpStep(2);
+        } catch (err) { showToast(err.response?.data?.error || 'Lỗi gửi mail!', 'error'); }
+        finally { setLoading(false); }
     };
 
     const handleAuth = async (e) => {
-        e.preventDefault(); setLoading(true); 
+        e.preventDefault(); setLoading(true);
         try {
             const endpoint = isRightPanelActive ? '/register' : '/login';
             const res = await axios.post(`${API_URL}${endpoint}`, formData);
-            if (isRightPanelActive) { 
-                setRegisteredEmail(formData.email); 
-                setStep('pricing'); 
+            if (isRightPanelActive) {
+                setRegisteredEmail(formData.email);
+                setStep('pricing');
             }
             else {
                 const user = res.data.user;
                 if (user.role !== 'admin' && user.plan !== 'premium' && user.planExpiry && new Date(user.planExpiry) < new Date()) {
-                    setRegisteredEmail(user.email); 
-                    setStep('pricing'); 
+                    setRegisteredEmail(user.email);
+                    setStep('pricing');
                     showToast("⏳ Gói của bạn đã hết hạn, vui lòng gia hạn!", 'error');
                 } else {
                     if (rememberMe) {
@@ -110,7 +110,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                         localStorage.removeItem('rememberedEmail');
                         localStorage.removeItem('rememberedPass');
                     }
-                    
+
                     // 👉 LOGIC MỚI: Kích hoạt bay ra 2 bên, chờ 0.8 giây rồi mới Load Dashboard!
                     setIsExiting(true);
                     setTimeout(() => {
@@ -118,7 +118,7 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                     }, 800);
                 }
             }
-        } catch (err) { 
+        } catch (err) {
             const errorMsg = err.response?.data?.error;
             if (errorMsg === 'INCOMPLETE_REGISTRATION') {
                 setRegisteredEmail(err.response?.data?.email || formData.email);
@@ -151,8 +151,8 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E6F4F1] to-[#F4F9FF] p-4 font-sans box-border overflow-hidden relative">
-            
+        <div className="auth-page min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E6F4F1] to-[#F4F9FF] p-4 font-sans box-border overflow-hidden relative">
+
             {/* AMBIENT GLOWS TRANG TRÍ MỜ ẢO */}
             <div className={`absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#33A1FD]/10 rounded-full blur-[100px] transition-opacity duration-1000 ${isExiting ? 'opacity-0' : 'opacity-100'}`}></div>
             <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#1DB2A0]/10 rounded-full blur-[100px] transition-opacity duration-1000 ${isExiting ? 'opacity-0' : 'opacity-100'}`}></div>
@@ -160,14 +160,14 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
             <Toast toast={toast} />
 
             {/* VÙNG CHỨA AUTH - Bỏ bg-white và overflow-hidden để các khối con có thể bay lọt ra ngoài */}
-            <div className={`relative w-full max-w-[1000px] min-h-[600px] md:min-h-[650px] transition-all duration-700 ease-in-out z-10 flex justify-center ${step === 'auth' ? 'bg-transparent' : 'bg-white rounded-[32px] md:rounded-[40px] shadow-[0_20px_60px_rgba(0,10,30,0.08)]'}`}>
-                
-                <AuthForm 
-                    step={step} isRightPanelActive={isRightPanelActive} togglePanel={togglePanel} 
-                    view={view} setView={setView} otpStep={otpStep} setOtpStep={setOtpStep} 
-                    handleSendOTP={handleSendOTP} handleAuth={handleAuth} loading={loading} 
-                    formData={formData} setFormData={setFormData} showPassword={showPassword} 
-                    setShowPassword={setShowPassword} rememberMe={rememberMe} setRememberMe={setRememberMe} 
+            <div className={`auth-shell relative w-full max-w-[1000px] min-h-[600px] md:min-h-[650px] transition-all duration-700 ease-in-out z-10 flex justify-center ${step === 'auth' ? 'bg-transparent' : 'bg-white rounded-[32px] md:rounded-[40px] shadow-[0_20px_60px_rgba(0,10,30,0.08)]'}`}>
+
+                <AuthForm
+                    step={step} isRightPanelActive={isRightPanelActive} togglePanel={togglePanel}
+                    view={view} setView={setView} otpStep={otpStep} setOtpStep={setOtpStep}
+                    handleSendOTP={handleSendOTP} handleAuth={handleAuth} loading={loading}
+                    formData={formData} setFormData={setFormData} showPassword={showPassword}
+                    setShowPassword={setShowPassword} rememberMe={rememberMe} setRememberMe={setRememberMe}
                     isExiting={isExiting} // TRUYỀN BIẾN ANIMATION XUỐNG DƯỚI
                 />
 
@@ -176,5 +176,5 @@ export default function Auth({ onLoginSuccess, expiredEmail, onLogout }) {
                 {step === 'success' && <SuccessStatus step={step} expiredEmail={expiredEmail} forceLogoutAndReset={forceLogoutAndReset} handleBackToLogin={handleBackToLogin} />}
             </div>
         </div>
-    ); 
+    );
 }

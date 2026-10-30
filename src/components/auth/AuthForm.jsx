@@ -2,16 +2,16 @@ import React from 'react';
 import { Mail, Lock, User, Eye, EyeOff, RefreshCw, KeyRound } from 'lucide-react';
 
 export default function AuthForm({
-    step, isRightPanelActive, togglePanel, view, setView, otpStep, setOtpStep, 
-    handleSendOTP, handleAuth, loading, formData, setFormData, 
+    step, isRightPanelActive, togglePanel, view, setView, otpStep, setOtpStep,
+    handleSendOTP, handleAuth, loading, formData, setFormData,
     showPassword, setShowPassword, rememberMe, setRememberMe,
     isExiting // Biến nhận từ Auth.jsx để kích hoạt bay ra 2 bên
 }) {
     if (step !== 'auth') return null;
 
     return (
-        <div className="absolute inset-0 w-full h-full flex flex-col md:flex-row">
-            
+        <div className="auth-form absolute inset-0 w-full h-full flex flex-col md:flex-row">
+
             {/* ==========================================
                 1. PANEL TRÁI: ĐĂNG NHẬP / QUÊN MẬT KHẨU
                 Sẽ bay thẳng ra bên trái khi isExiting = true
@@ -28,23 +28,25 @@ export default function AuthForm({
                         {view === 'LOGIN' ? 'Đăng Nhập' : 'Quên Mật Khẩu'}
                     </h1>
                     <p className="text-[14px] text-gray-500 mb-8 font-bold text-center">
-                        {view === 'LOGIN' ? 'Dolphin_97ers Financial Workspace' : 'Nhập email để nhận mã khôi phục'}
+                        {view === 'LOGIN' ? 'Không gian quản lý kinh doanh Dolphin' : 'Nhập email để nhận mã khôi phục'}
                     </p>
 
                     {view === 'LOGIN' ? (
                         <>
-                            <div className="group relative w-full mb-4">
+                            <label className="auth-field-label" htmlFor="auth-field-1">Email đăng nhập</label>
+<div className="group relative w-full mb-4">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Mail size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                <input required type="email" placeholder="Email đăng nhập" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
-                                    value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} 
+                                <input id="auth-field-1" required type="email" placeholder="Email đăng nhập" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
+                                    value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
                                 />
                             </div>
-                            <div className="group relative w-full mb-5">
+                            <label className="auth-field-label" htmlFor="auth-field-2">Mật khẩu</label>
+<div className="group relative w-full mb-5">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Lock size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
-                                    value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} 
+                                <input id="auth-field-2" required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
+                                    value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
                                 />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
+                                <button type="button" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
                                     {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                                 </button>
                             </div>
@@ -62,10 +64,11 @@ export default function AuthForm({
                     ) : (
                         otpStep === 1 ? (
                             <>
-                                <div className="group relative w-full mb-6">
+                                <label className="auth-field-label" htmlFor="auth-field-3">Email của bạn</label>
+<div className="group relative w-full mb-6">
                                     <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Mail size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                    <input required type="email" placeholder="Email của bạn" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
-                                        value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} 
+                                    <input id="auth-field-3" required type="email" placeholder="Email của bạn" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
+                                        value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
                                     />
                                 </div>
                                 <button type="submit" disabled={loading} className="w-full py-4 rounded-[20px] bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white font-black text-[15px] tracking-widest shadow-[0_8px_24px_rgba(38,208,206,0.3)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2 mb-6">
@@ -75,18 +78,20 @@ export default function AuthForm({
                             </>
                         ) : (
                             <>
-                                <div className="group relative w-full mb-4">
+                                <label className="auth-field-label" htmlFor="auth-field-4">Mã OTP 6 số</label>
+<div className="group relative w-full mb-4">
                                     <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><KeyRound size={20} className="text-[#26D0CE]" /></div>
-                                    <input required type="text" placeholder="Mã OTP 6 số" maxLength={6} className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-blue-200 rounded-[20px] outline-none text-[18px] font-black tracking-[0.3em] text-center text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
-                                        value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} 
+                                    <input id="auth-field-4" required type="text" placeholder="Mã OTP 6 số" maxLength={6} className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-blue-200 rounded-[20px] outline-none text-[18px] font-black tracking-[0.3em] text-center text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
+                                        value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})}
                                     />
                                 </div>
-                                <div className="group relative w-full mb-8">
+                                <label className="auth-field-label" htmlFor="auth-field-5">Mật khẩu MỚI</label>
+<div className="group relative w-full mb-8">
                                     <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Lock size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                    <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
-                                        value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} 
+                                    <input id="auth-field-5" required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu MỚI" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
+                                        value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})}
                                     />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
+                                    <button type="button" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
                                         {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                                     </button>
                                 </div>
@@ -116,24 +121,27 @@ export default function AuthForm({
 
                     {otpStep === 1 ? (
                         <>
-                            <div className="group relative w-full mb-4">
+                            <label className="auth-field-label" htmlFor="auth-field-6">Tên hiển thị</label>
+<div className="group relative w-full mb-4">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><User size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                <input required type="text" placeholder="Tên hiển thị" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
-                                    value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} 
+                                <input id="auth-field-6" required type="text" placeholder="Tên hiển thị" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
+                                    value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
                                 />
                             </div>
-                            <div className="group relative w-full mb-4">
+                            <label className="auth-field-label" htmlFor="auth-field-7">Email đăng nhập</label>
+<div className="group relative w-full mb-4">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Mail size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                <input required type="email" placeholder="Email đăng nhập" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
-                                    value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} 
+                                <input id="auth-field-7" required type="email" placeholder="Email đăng nhập" className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
+                                    value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
                                 />
                             </div>
-                            <div className="group relative w-full mb-8">
+                            <label className="auth-field-label" htmlFor="auth-field-8">Mật khẩu</label>
+<div className="group relative w-full mb-8">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><Lock size={20} className="text-gray-400 group-focus-within:text-[#26D0CE] transition-colors" /></div>
-                                <input required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
-                                    value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} 
+                                <input id="auth-field-8" required type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu" className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-[20px] outline-none text-[15px] font-bold text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 placeholder:text-gray-400 shadow-sm"
+                                    value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
                                 />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
+                                <button type="button" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#26D0CE] transition-colors">
                                     {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                                 </button>
                             </div>
@@ -143,10 +151,11 @@ export default function AuthForm({
                         </>
                     ) : (
                         <>
-                            <div className="group relative w-full mb-6">
+                            <label className="auth-field-label" htmlFor="auth-field-9">Mã OTP 6 số</label>
+<div className="group relative w-full mb-6">
                                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><KeyRound size={20} className="text-[#26D0CE]" /></div>
-                                <input required type="text" placeholder="Mã OTP 6 số" maxLength={6} className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-blue-200 rounded-[20px] outline-none text-[18px] font-black tracking-[0.3em] text-center text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
-                                    value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})} 
+                                <input id="auth-field-9" required type="text" placeholder="Mã OTP 6 số" maxLength={6} className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-blue-200 rounded-[20px] outline-none text-[18px] font-black tracking-[0.3em] text-center text-[#1D1D1F] transition-all duration-300 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 shadow-sm"
+                                    value={formData.otp} onChange={e => setFormData({...formData, otp: e.target.value})}
                                 />
                             </div>
                             <button type="submit" disabled={loading} className="w-full py-4 rounded-[20px] bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] text-white font-black text-[15px] tracking-widest shadow-[0_8px_24px_rgba(38,208,206,0.3)] hover:shadow-[0_12px_32px_rgba(38,208,206,0.4)] active:scale-95 transition-all uppercase flex justify-center items-center gap-2">
@@ -170,11 +179,11 @@ export default function AuthForm({
                 <div className={`w-full h-full bg-gradient-to-br from-[#26D0CE] to-[#33A1FD] text-white overflow-hidden relative transition-all duration-700 shadow-2xl
                     ${isExiting ? 'rounded-[40px]' : (isRightPanelActive ? 'rounded-l-[40px] rounded-r-3xl' : 'rounded-r-[40px] rounded-l-3xl')}
                 `}>
-                    
+
                     {/* Nội dung khi đứng bên Phải (Chờ người ta Đăng ký) */}
                     <div className={`absolute inset-0 flex flex-col justify-center items-center px-12 text-center transition-all duration-700 ${!isRightPanelActive ? 'opacity-100 translate-x-0 delay-300' : 'opacity-0 translate-x-12 pointer-events-none'}`}>
                         <h1 className="text-[36px] font-black mb-4 drop-shadow-md tracking-tight">Chào Người Mới!</h1>
-                        <p className="mb-10 font-bold text-white/90 text-[15px] leading-relaxed">Đăng ký để sử dụng không gian quản lý tài chính chuẩn UI/UX Pro Max.</p>
+                        <p className="mb-10 font-bold text-white/90 text-[15px] leading-relaxed">Theo dõi doanh thu, quản lý tồn kho và sắp xếp công việc trong một không gian.</p>
                         <button type="button" onClick={() => togglePanel(true)} className="rounded-[20px] border-[2px] border-white/80 bg-transparent hover:bg-white hover:text-[#33A1FD] text-white text-[14px] font-black py-3.5 px-12 tracking-widest uppercase transition-all duration-300 active:scale-95 shadow-sm">
                             TẠO TÀI KHOẢN
                         </button>

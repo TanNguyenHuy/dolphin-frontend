@@ -13,7 +13,7 @@ export default function DetailView({
     handleStartSync
 }) {
     return (
-        <div className="relative animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4">
+        <div className="detail-page relative animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4">
 
             {/* Background accents */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none z-[-1]">
@@ -39,7 +39,7 @@ export default function DetailView({
                 />
 
                 {/* ---------- LƯỚI BỐ CỤC CHUẨN 8DP RHYTHM ---------- */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10">
+                <div className="detail-layout grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10">
 
                     {/* CỘT TRÁI (Tỷ lệ 4/12): CHI PHÍ VỐN */}
                     <div className="lg:col-span-4 flex flex-col gap-8 md:gap-10">

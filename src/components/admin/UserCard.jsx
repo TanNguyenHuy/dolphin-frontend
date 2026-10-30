@@ -15,8 +15,8 @@ export default function UserCard({
     const isAbandoned = !u.isApproved && !u.paymentImage && u.role !== 'admin';
 
     return (
-        <div className={`liquid-glass bg-white/60 backdrop-blur-xl rounded-[28px] md:rounded-[32px] p-5 md:p-6 flex flex-col gap-5 border border-white/80 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ${isAbandoned ? 'border-gray-200/50 bg-gray-50/40 opacity-80' : (!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300/50 bg-orange-50/40' : '')}`}>
-            
+        <div className={`user-card liquid-glass bg-white/60 backdrop-blur-xl rounded-[28px] md:rounded-[32px] p-5 md:p-6 flex flex-col gap-5 border border-white/80 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ${isAbandoned ? 'border-gray-200/50 bg-gray-50/40 opacity-80' : (!u.isApproved && u.role !== 'admin' && u.plan !== 'premium' ? 'border-orange-300/50 bg-orange-50/40' : '')}`}>
+
             {/* PHẦN 1: THÔNG TIN & TRẠNG THÁI */}
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -29,9 +29,9 @@ export default function UserCard({
                             <PlanBadge plan={u.role === 'admin' ? 'premium' : u.plan} />
                         )}
                     </div>
-                    
+
                     <p className="text-gray-500 text-[13px] font-bold flex items-center gap-2 mb-3"><Mail size={14} className="text-gray-400"/> {u.email}</p>
-                    
+
                     <div className="flex flex-wrap gap-2">
                         {u.role !== 'admin' ? (
                             isAbandoned ? (
@@ -52,7 +52,7 @@ export default function UserCard({
                                 </div>
                             )
                         ) : null}
-                        
+
                         {isRestricted && u.restrictedUntil && (
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-sm bg-rose-50/80 text-rose-600 border border-rose-200/60">
                                 <ShieldAlert size={12}/> Khóa web đến: {new Date(u.restrictedUntil).toLocaleString('vi-VN')}
@@ -103,7 +103,7 @@ export default function UserCard({
                 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200/50">
                     {!isAbandoned && (
                         <div className="relative group shrink-0">
-                            <select 
+                            <select
                                 className="appearance-none h-11 text-[12px] font-black pl-10 pr-5 rounded-[14px] outline-none cursor-pointer border border-indigo-200/60 bg-indigo-50/80 text-indigo-700 shadow-sm transition-all hover:bg-white focus:ring-4 focus:ring-indigo-500/20"
                                 value={u.plan || '10k'}
                                 onChange={(e) => handleChangePlan(u._id, e.target.value, u.permissions)}
@@ -120,15 +120,15 @@ export default function UserCard({
                     {!isAbandoned && u.plan !== 'premium' && (
                         editExpiryId === u._id ? (
                             <div className="flex items-center gap-1.5 bg-pink-50/80 p-1.5 rounded-[14px] border border-pink-200/60 shadow-inner h-11 animate-fade-in shrink-0">
-                                <input 
-                                    type="number" min="1" 
-                                    value={expiryVal} 
-                                    onChange={e => setExpiryVal(e.target.value)} 
-                                    className="w-12 h-full px-1 text-[13px] font-black text-center rounded-[10px] border border-pink-200 outline-none focus:border-pink-400 bg-white" 
+                                <input
+                                    type="number" min="1"
+                                    value={expiryVal}
+                                    onChange={e => setExpiryVal(e.target.value)}
+                                    className="w-12 h-full px-1 text-[13px] font-black text-center rounded-[10px] border border-pink-200 outline-none focus:border-pink-400 bg-white"
                                 />
-                                <select 
-                                    value={expiryUnit} 
-                                    onChange={e => setExpiryUnit(e.target.value)} 
+                                <select
+                                    value={expiryUnit}
+                                    onChange={e => setExpiryUnit(e.target.value)}
                                     className="h-full text-[12px] font-bold px-2 rounded-[10px] outline-none border border-pink-200 text-pink-700 bg-white cursor-pointer"
                                 >
                                     <option value="seconds">Giây</option>
@@ -140,8 +140,8 @@ export default function UserCard({
                                 <button onClick={() => setEditExpiryId(null)} className="h-full w-8 flex items-center justify-center bg-white text-gray-500 border border-gray-200 rounded-[10px] hover:bg-gray-100 transition-colors shadow-sm"><X size={16} strokeWidth={3}/></button>
                             </div>
                         ) : (
-                            <button 
-                                onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }} 
+                            <button
+                                onClick={() => { setEditExpiryId(u._id); setExpiryVal(1); setExpiryUnit('minutes'); }}
                                 className="flex items-center justify-center gap-2 h-11 text-[12px] font-bold px-4 rounded-[14px] border border-pink-200/60 bg-pink-50/80 text-pink-600 hover:bg-white transition-all shadow-sm active:scale-95 shrink-0"
                             >
                                 <TimerReset size={16} strokeWidth={2.5}/> Sửa Hạn
@@ -151,9 +151,9 @@ export default function UserCard({
 
                     {!isAbandoned && (u.plan === '100k' || u.plan === 'premium') && (
                         <div className="relative group shrink-0">
-                            <select 
-                                className={`appearance-none h-11 text-[12px] font-bold pl-9 pr-5 rounded-[14px] outline-none cursor-pointer border transition-colors shadow-sm focus:ring-4 focus:ring-orange-500/20 ${chatRestrictStatus !== '0' ? 'bg-orange-50/80 text-orange-600 border-orange-200/60' : 'bg-white/80 text-gray-600 border-gray-200/60 hover:bg-white'}`} 
-                                onChange={(e) => handleRestrictChat(u._id, e.target.value)} 
+                            <select
+                                className={`appearance-none h-11 text-[12px] font-bold pl-9 pr-5 rounded-[14px] outline-none cursor-pointer border transition-colors shadow-sm focus:ring-4 focus:ring-orange-500/20 ${chatRestrictStatus !== '0' ? 'bg-orange-50/80 text-orange-600 border-orange-200/60' : 'bg-white/80 text-gray-600 border-gray-200/60 hover:bg-white'}`}
+                                onChange={(e) => handleRestrictChat(u._id, e.target.value)}
                                 value={chatRestrictStatus}
                             >
                                 <option value="0">Chat Bình thường</option>
@@ -168,9 +168,9 @@ export default function UserCard({
                     )}
 
                     {!isAbandoned && (
-                        <select 
-                            className={`h-11 text-[12px] font-bold px-4 rounded-[14px] outline-none cursor-pointer border transition-colors shadow-sm focus:ring-4 focus:ring-rose-500/20 shrink-0 ${isRestricted ? 'bg-rose-50/80 text-rose-600 border-rose-200/60' : 'bg-white/80 text-gray-600 border-gray-200/60 hover:bg-white'}`} 
-                            onChange={(e) => handleRestrict(u._id, e.target.value)} 
+                        <select
+                            className={`h-11 text-[12px] font-bold px-4 rounded-[14px] outline-none cursor-pointer border transition-colors shadow-sm focus:ring-4 focus:ring-rose-500/20 shrink-0 ${isRestricted ? 'bg-rose-50/80 text-rose-600 border-rose-200/60' : 'bg-white/80 text-gray-600 border-gray-200/60 hover:bg-white'}`}
+                            onChange={(e) => handleRestrict(u._id, e.target.value)}
                             value={restrictStatus}
                         >
                             <option value="0">Web Bình thường</option>
@@ -181,7 +181,7 @@ export default function UserCard({
                             {restrictStatus === 'restricted' && <option value="restricted" disabled hidden>Đang bị khóa web...</option>}
                         </select>
                     )}
-                    
+
                     <button onClick={() => handleDeleteUser(u._id)} className="w-11 h-11 flex items-center justify-center text-rose-500 bg-white hover:bg-rose-50 border border-gray-200/60 rounded-[14px] transition-all shadow-sm active:scale-90 ml-auto lg:ml-0 shrink-0"><Trash2 size={18} strokeWidth={2.5}/></button>
                 </div>
             )}
