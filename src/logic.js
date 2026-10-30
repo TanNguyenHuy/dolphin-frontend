@@ -77,6 +77,15 @@ export const parseIGSyncText = (syncText) => {
     return { q, r };
 };
 
+export function calculateBaleSales(baleName, daily, adCostPerSale) {
+    const name = String(baleName || '').trim().toLowerCase();
+    const rows = (Array.isArray(daily) ? daily : []).filter(row => name && String(row?.ten_san_pham || '').toLowerCase().includes(name));
+    const totalRevenue = rows.reduce((sum, row) => sum + (Number(row.so_tien_ban_duoc) || 0), 0);
+    const saleCount = rows.length;
+    const advertisingCost = saleCount * adCostPerSale;
+    return { totalRevenue, saleCount, advertisingCost, revenueAfterAds: totalRevenue - advertisingCost };
+}
+
 export const calculateGlobalStats = (enrichedSessions) => {
     const dashboardProfit = enrichedSessions.reduce((sum, s) => sum + s.realProfit, 0);
     const totalRevenueForTax = enrichedSessions.reduce((sum, s) => sum + (s.tong_doanh_thu || 0), 0);

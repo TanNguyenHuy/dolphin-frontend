@@ -38,6 +38,10 @@ body, .font-sans, input, select, textarea, button { font-family: var(--app-font)
 .overview-cards > div > span { overflow-wrap: anywhere; }
 .session-list-panel { padding: 1.25rem; }
 .session-card { overflow-wrap: anywhere; }
+.bale-sales-summary { flex-basis: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; border-top: 1px solid #e2e8f0; margin-top: 0.875rem; padding-top: 0.875rem; }
+.bale-sales-summary dt { color: #64748b; font-size: max(10px, calc(0.7rem * var(--text-scale))); line-height: 1.5; }
+.bale-sales-summary dd { margin: 0.2rem 0 0; font-size: calc(0.8rem * var(--text-scale)); font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 380px) { .bale-sales-summary { grid-template-columns: minmax(0, 1fr); } }
 .session-list-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 1.25rem; }
 .session-list-layout > * { min-width: 0; }
 .session-quick-preview { display: none; }
