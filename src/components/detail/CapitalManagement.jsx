@@ -123,7 +123,11 @@ export default function CapitalManagement({
                                         <div><dt>Số lần bán</dt><dd><strong>{formatInput(saleCount)} lần</strong></dd></div>
                                         <div className="bale-expense"><dt>Tiền quảng cáo</dt><dd><strong>{formatCurrency(advertisingCost)} đ</strong><small>{formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận</small></dd></div>
                                         <div className="bale-expense"><dt>Chi phí giặt ủi</dt><dd><strong>{formatCurrency(laundryCost)} đ</strong><small>Phân bổ theo giá vốn</small></dd></div>
-                                        <div className={`bale-net ${profit < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><span className="bale-profit">{profit > 0 ? 'Lời' : profit < 0 ? 'Lỗ' : 'Hòa vốn'}: {formatCurrency(Math.abs(profit))} đ</span><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
+                                        <div className={`bale-net ${profit < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Sau quảng cáo và giặt ủi</small>
+                                            <span className="bale-result">
+                                                <span className="bale-result-label"><span>{profit > 0 ? 'Lời' : profit < 0 ? 'Lỗ' : 'Hòa vốn'}</span><small>Sau khi trừ giá vốn</small></span>
+                                                <strong>{formatCurrency(Math.abs(profit))} đ</strong>
+                                            </span></dd></div>
                                     </dl>
                                 </article>
                             );
