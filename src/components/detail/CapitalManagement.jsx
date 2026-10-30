@@ -98,6 +98,7 @@ export default function CapitalManagement({
                                     ? sum + (Number(row.so_luong_nhap) || 0) : sum, 0);
                             const remainingQty = originalQty - totalDeducted;
                             const { totalRevenue, saleCount, advertisingCost, laundryCost, netRevenue } = calculateBaleSales(bale.name, detailData?.daily, AD_COST_PER_SALE, laundryCosts[index]);
+                            const profit = netRevenue - (Number(bale.cost) || 0);
                             const titleId = `bale-title-${bale._id || index}`;
                             return (
                                 <article key={bale._id} role="listitem" className="bale-card" aria-labelledby={titleId} style={{ '--card-delay': `${Math.min(index * 40, 160)}ms` }}>
@@ -122,7 +123,7 @@ export default function CapitalManagement({
                                         <div><dt>Số lần bán</dt><dd><strong>{formatInput(saleCount)} lần</strong></dd></div>
                                         <div className="bale-expense"><dt>Tiền quảng cáo</dt><dd><strong>{formatCurrency(advertisingCost)} đ</strong><small>{formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận</small></dd></div>
                                         <div className="bale-expense"><dt>Chi phí giặt ủi</dt><dd><strong>{formatCurrency(laundryCost)} đ</strong><small>Phân bổ theo giá vốn</small></dd></div>
-                                        <div className={`bale-net ${netRevenue < (Number(bale.cost) || 0) ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
+                                        <div className={`bale-net ${profit < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><span className="bale-profit">{profit > 0 ? 'Lời' : profit < 0 ? 'Lỗ' : 'Hòa vốn'}: {formatCurrency(Math.abs(profit))} đ</span><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
                                     </dl>
                                 </article>
                             );

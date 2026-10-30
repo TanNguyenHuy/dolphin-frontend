@@ -105,10 +105,11 @@
 .bale-sales-summary .bale-net { grid-column: 1 / -1; border-top: 1px solid var(--ui-line); background: var(--accent-soft); padding: 16px; }
 .bale-net dt { color: var(--accent-strong); font-weight: 800; }
 .bale-net dd > strong { color: var(--accent-strong); font-size: calc(1.3rem * var(--text-scale)); letter-spacing: -0.03em; }
+.bale-net .bale-profit { display: block; margin-top: 8px; color: var(--accent-strong); font-weight: 750; overflow-wrap: anywhere; }
 .bale-net.is-negative { background: #fff1f2; }
 .bale-card :is(dt, .bale-card-stock > span, .bale-card-identity p) { font-size: max(12px, calc(0.75rem * var(--text-scale))); }
 .bale-sales-summary small { font-size: max(12px, calc(0.7rem * var(--text-scale))); }
-.bale-card .is-negative, .bale-net.is-negative :is(dt, dd > strong) { color: #be123c; }
+.bale-card .is-negative, .bale-net.is-negative :is(dt, dd > strong, .bale-profit) { color: #be123c; }
 .transaction-form { padding: 20px; container-type: inline-size; }
 .transaction-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
 .transaction-fields > div { min-width: 0; grid-column: span 2; }
