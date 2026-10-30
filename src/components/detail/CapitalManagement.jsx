@@ -122,7 +122,7 @@ export default function CapitalManagement({
                                         <div><dt>Số lần bán</dt><dd><strong>{formatInput(saleCount)} lần</strong></dd></div>
                                         <div className="bale-expense"><dt>Tiền quảng cáo</dt><dd><strong>{formatCurrency(advertisingCost)} đ</strong><small>{formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận</small></dd></div>
                                         <div className="bale-expense"><dt>Chi phí giặt ủi</dt><dd><strong>{formatCurrency(laundryCost)} đ</strong><small>Phân bổ theo giá vốn</small></dd></div>
-                                        <div className={`bale-net ${netRevenue < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
+                                        <div className={`bale-net ${netRevenue < (Number(bale.cost) || 0) ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Đã trừ quảng cáo + giặt ủi. Chưa trừ giá vốn.</small></dd></div>
                                     </dl>
                                 </article>
                             );
