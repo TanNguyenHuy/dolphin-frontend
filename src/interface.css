@@ -37,6 +37,15 @@
 .personal-calendar { border-radius: 24px; }
 .personal-calendar-cell { border-color: var(--ui-line); }
 .calendar-day:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+.calendar-sale-preview { position: fixed; z-index: 150; pointer-events: none; overflow: hidden; padding: 12px; border: 1px solid var(--ui-line); border-radius: 14px; background: white; color: var(--ui-ink); box-shadow: var(--ui-shadow-raised); font-size: 13px; }
+.calendar-sale-preview :is(header, li) { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.calendar-sale-preview header { padding-bottom: 8px; border-bottom: 1px solid var(--ui-line); }
+.calendar-sale-preview ul { display: grid; gap: 8px; margin-top: 8px; }
+.calendar-sale-preview li > span { min-width: 0; overflow-wrap: anywhere; }
+.calendar-sale-preview li > strong { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.calendar-sale-preview :is(header span, small, p) { color: var(--ui-muted); font-size: 12px; }
+.calendar-sale-preview small { display: block; }
+.calendar-sale-preview p { margin-top: 8px; }
 .user-card { border-radius: 20px; border-left: 4px solid var(--accent); background: white; }
 .user-card h3 { overflow-wrap: anywhere; }
 .user-card :is(select, input) { min-height: 44px; }
