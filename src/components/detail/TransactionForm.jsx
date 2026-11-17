@@ -8,6 +8,10 @@ export default function TransactionForm({ canEdit, handleAddItem, newItem, setNe
         <form id="transaction-form" onSubmit={handleAddItem} className="transaction-form liquid-glass">
             <h3>Ghi nhận giao dịch mới</h3>
             <div className="transaction-fields">
+                <label>Ngày giao dịch
+                    <input type="date" required disabled={isProcessingAdd} value={newItem.ngay_ban}
+                        onChange={event => setNewItem(previous => ({ ...previous, ngay_ban: event.target.value }))} />
+                </label>
                 <label className="transaction-name">Sản phẩm
                     <input required placeholder="VD: Sơ mi" value={newItem.ten_san_pham}
                         onChange={event => setNewItem(previous => ({ ...previous, ten_san_pham: event.target.value }))} />

@@ -35,9 +35,6 @@ export default function DetailView({
                     progressPercent={progressPercent}
                     canEdit={canEdit}
                     updateSessionField={updateSessionField}
-                    transactionDate={newItem.ngay_ban}
-                    onTransactionDateChange={ngay_ban => setNewItem(previous => ({ ...previous, ngay_ban }))}
-                    isProcessingAdd={isProcessingAdd}
                 />
 
                 {/* ---------- LƯỚI BỐ CỤC CHUẨN 8DP RHYTHM ---------- */}

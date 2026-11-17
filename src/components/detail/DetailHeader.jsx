@@ -5,7 +5,7 @@ import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate,
     isTargetReached, detailProfit, dynamicTarget, targetSession, progressPercent,
-    canEdit, updateSessionField, transactionDate, onTransactionDateChange, isProcessingAdd
+    canEdit, updateSessionField
 }) {
     // STATE: Quản lý hộp thoại xác nhận xịn xò
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null });
@@ -69,7 +69,7 @@ export default function DetailHeader({
             )}
 
             {/* Thanh công cụ */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/40 pb-6">
+            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-white/40 pb-6">
                 <button
                     onClick={handleBack}
                     className="group h-11 flex items-center gap-2 text-[#1A5B82] hover:text-[#0B3B60] font-bold text-[15px] bg-white/40 hover:bg-white/80 backdrop-blur-md px-5 rounded-full border border-white/60 shadow-sm hover:shadow-md transition-all duration-300 active:scale-95"
@@ -78,7 +78,14 @@ export default function DetailHeader({
                     Trở về
                 </button>
 
-                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
+                <div className="min-w-0 sm:flex-1 sm:text-center">
+                    <h2 className="break-words text-xl md:text-2xl font-black leading-tight tracking-tight text-[#1D1D1F]">
+                        {getSessionName(detailData?.name, actualStartDate, actualEndDate)}
+                    </h2>
+                    <p className="mt-1 text-xs font-semibold text-slate-600">Hoạt động: {calculateDaysDiff(actualStartDate, actualEndDate)} ngày</p>
+                </div>
+
+                <div className="w-full xl:w-auto flex flex-wrap items-center gap-2">
                     {/* NÚT KÍCH HOẠT HỘP THOẠI */}
                     {canEdit && (
                         !detailData?.is_completed ? (
@@ -109,25 +116,7 @@ export default function DetailHeader({
             </div>
 
             {/* Thông tin Tổng quan & Thẻ Mục tiêu */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 px-2 md:px-4">
-                <div className="min-w-0 flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                        <h2 className="text-[32px] md:text-[44px] font-black text-[#1D1D1F] tracking-tight leading-tight drop-shadow-sm break-words">
-                            {getSessionName(detailData?.name, actualStartDate, actualEndDate)}
-                        </h2>
-                        {canEdit && (
-                            <label className="transaction-date">
-                                Ngày giao dịch
-                                <input type="date" form="transaction-form" required disabled={isProcessingAdd}
-                                    value={transactionDate} onChange={event => onTransactionDateChange(event.target.value)} />
-                            </label>
-                        )}
-                    </div>
-                    <div className="inline-flex items-center bg-white/50 backdrop-blur-sm border border-white/60 px-4 py-1.5 rounded-full text-[14px] text-gray-700 font-bold tabular-nums shadow-sm">
-                        Hoạt động: <span className="text-[#1A5B82] ml-1.5">{calculateDaysDiff(actualStartDate, actualEndDate)} ngày</span>
-                    </div>
-                </div>
-
+            <div className="flex justify-end">
                 {/* Thẻ Lợi Nhuận */}
                 <div data-testid="profit-target" className={`profit-target relative liquid-glass p-6 rounded-[32px] w-full lg:w-auto min-w-[300px] shrink-0 overflow-hidden transition-all duration-500 border ${isTargetReached ? 'border-[#1DB2A0]/40 shadow-[0_10px_40px_rgba(29,178,160,0.15)]' : 'border-white/60 shadow-lg'}`}>
                     {isTargetReached && <div className="absolute inset-0 bg-gradient-to-tr from-[#1DB2A0]/10 to-transparent animate-pulse-slow"></div>}
