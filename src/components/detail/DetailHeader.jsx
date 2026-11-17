@@ -5,7 +5,7 @@ import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate,
     isTargetReached, detailProfit, dynamicTarget, targetSession, progressPercent,
-    canEdit, updateSessionField
+    canEdit, updateSessionField, transactionDate, onTransactionDateChange, isProcessingAdd
 }) {
     // STATE: Quản lý hộp thoại xác nhận xịn xò
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, action: null });
@@ -111,9 +111,18 @@ export default function DetailHeader({
             {/* Thông tin Tổng quan & Thẻ Mục tiêu */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 px-2 md:px-4">
                 <div className="min-w-0 flex-1 space-y-2">
-                    <h2 className="text-[32px] md:text-[44px] font-black text-[#1D1D1F] tracking-tight leading-tight drop-shadow-sm break-words">
-                        {getSessionName(detailData?.name, actualStartDate, actualEndDate)}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                        <h2 className="text-[32px] md:text-[44px] font-black text-[#1D1D1F] tracking-tight leading-tight drop-shadow-sm break-words">
+                            {getSessionName(detailData?.name, actualStartDate, actualEndDate)}
+                        </h2>
+                        {canEdit && (
+                            <label className="transaction-date">
+                                Ngày giao dịch
+                                <input type="date" form="transaction-form" required disabled={isProcessingAdd}
+                                    value={transactionDate} onChange={event => onTransactionDateChange(event.target.value)} />
+                            </label>
+                        )}
+                    </div>
                     <div className="inline-flex items-center bg-white/50 backdrop-blur-sm border border-white/60 px-4 py-1.5 rounded-full text-[14px] text-gray-700 font-bold tabular-nums shadow-sm">
                         Hoạt động: <span className="text-[#1A5B82] ml-1.5">{calculateDaysDiff(actualStartDate, actualEndDate)} ngày</span>
                     </div>

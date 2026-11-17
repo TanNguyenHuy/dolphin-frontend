@@ -9,8 +9,7 @@ export default function DetailView({
     dynamicTarget, targetSession, progressPercent, detailAutoAdCost, canEdit, canDelete,
     handleAddBale, baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
     importedBales, handleDeleteBale, handleUpdateBale, updateSessionField, handleAddItem, newItem, setNewItem,
-    isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete,
-    handleStartSync
+    isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete
 }) {
     return (
         <div className="detail-page relative animate-fade-in-up pb-24 max-w-[1400px] mx-auto pt-4">
@@ -36,6 +35,9 @@ export default function DetailView({
                     progressPercent={progressPercent}
                     canEdit={canEdit}
                     updateSessionField={updateSessionField}
+                    transactionDate={newItem.ngay_ban}
+                    onTransactionDateChange={ngay_ban => setNewItem(previous => ({ ...previous, ngay_ban }))}
+                    isProcessingAdd={isProcessingAdd}
                 />
 
                 {/* ---------- LƯỚI BỐ CỤC CHUẨN 8DP RHYTHM ---------- */}
@@ -73,7 +75,6 @@ export default function DetailView({
                             mvpRowId={mvpRowId}
                             canEdit={canEdit}
                             canDelete={canDelete}
-                            handleStartSync={handleStartSync}
                             isProcessingEdit={isProcessingEdit}
                             isProcessingDelete={isProcessingDelete}
                             handleStartEdit={handleStartEdit}

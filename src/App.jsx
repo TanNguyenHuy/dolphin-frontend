@@ -16,7 +16,6 @@ import { buildSessionSummary } from './lib/sessionSummary';
 import MotionProvider from './components/motion/MotionProvider';
 import { AppearanceContext } from './components/appearance/AppearanceContext';
 
-import SyncModal from './components/modals/SyncModal';
 import EditRowModal from './components/modals/EditRowModal';
 import EditSessionModal from './components/modals/EditSessionModal';
 import DeleteSessionModal from './components/modals/DeleteSessionModal';
@@ -25,7 +24,7 @@ import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
 import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
-import { parseIGSyncText, calculateGlobalStats, calculateDetailStats, calculateProfitTarget } from './logic';
+import { calculateGlobalStats, calculateDetailStats, calculateProfitTarget } from './logic';
 
 
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -97,14 +96,10 @@ export default function App() {
 
     const [editingRow, setEditingRow] = useState(null);
     const [editingSession, setEditingSession] = useState(null);
-    const [syncRow, setSyncRow] = useState(null);
 
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [salarySession, setSalarySession] = useState(null);
 
-    const [syncText, setSyncText] = useState('');
-    const [syncManualQty, setSyncManualQty] = useState('');
-    const [syncManualRev, setSyncManualRev] = useState('');
     const [isProcessingCreate, setIsProcessingCreate] = useState(false);
     const [isProcessingDelete, setIsProcessingDelete] = useState(false);
     const [isProcessingAdd, setIsProcessingAdd] = useState(false);
@@ -112,7 +107,7 @@ export default function App() {
     const [showFireworks, setShowFireworks] = useState(false);
 
     const [momoPhone, setMomoPhone] = useState(() => readStoredText('momoPhone'));
-    const [newItem, setNewItem] = useState({ ten_san_pham: '', link_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
+    const [newItem, setNewItem] = useState({ ten_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
     const [baleName, setBaleName] = useState(''); const [baleCost, setBaleCost] = useState(''); const [baleQty, setBaleQty] = useState('');
     const [importedBales, setImportedBales] = useState([]);
 
@@ -206,7 +201,10 @@ export default function App() {
             setDetailData({ ...detail.data, daily: Array.isArray(detail.data.daily) ? detail.data.daily : [] });
             setImportedBales(Array.isArray(bales.data) ? bales.data : []);
             setCurrentId(id);
-            if (navigate) window.history.pushState({ view: 'DETAIL', id }, '');
+            if (navigate) {
+                setNewItem(previous => ({ ...previous, ngay_ban: getTodayString() }));
+                window.history.pushState({ view: 'DETAIL', id }, '');
+            }
             setView('DETAIL');
             setIsSidebarOpen(false);
         } catch {
@@ -263,11 +261,6 @@ export default function App() {
         setRowToDelete(id);
         setShowDeleteRowModal(true);
     }, []);
-
-    const handleStartSync = useCallback((row) => {
-        setSyncRow({ ...row });
-    }, []);
-
 
     const refreshDetail = async () => {
         const request = detailRequest.current;
@@ -364,30 +357,12 @@ export default function App() {
 
     const handleAddItem = async (e) => {
         e.preventDefault(); if (!canEdit || isProcessingAdd) return; setIsProcessingAdd(true);
-        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, link_san_pham: newItem.link_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); await refreshDetail(); setNewItem({ ten_san_pham: '', link_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '', ngay_ban: getTodayString() }); } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingAdd(false); }
+        try { await axios.post(`${API_URL}/daily`, { session_id: currentId, ten_san_pham: newItem.ten_san_pham, ngay_ban: newItem.ngay_ban, so_luong_nhap: parseInput(newItem.so_luong_nhap), so_luong: parseInput(newItem.so_luong), so_tien_ban_duoc: parseInput(newItem.so_tien_ban_duoc), updatedAt: new Date().toISOString() }); await refreshDetail(); setNewItem(previous => ({ ...previous, ten_san_pham: '', so_luong: '', so_luong_nhap: '', so_tien_ban_duoc: '' })); } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingAdd(false); }
     };
 
     const handleSaveEdit = async () => {
         if (!canEdit || !editingRow || isProcessingEdit) return; setIsProcessingEdit(true);
         try { const updatedRow = { ...editingRow, so_luong_nhap: parseInput(editingRow.so_luong_nhap), so_luong: parseInput(editingRow.so_luong), so_tien_ban_duoc: parseInput(editingRow.so_tien_ban_duoc), updatedAt: new Date().toISOString() }; await axios.put(`${API_URL}/daily/${updatedRow.id}`, updatedRow); await refreshDetail(); setEditingRow(null); } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingEdit(false); }
-    };
-
-    useEffect(() => {
-        if (typeof syncText !== 'string' || !syncText.trim()) { setSyncManualQty(''); setSyncManualRev(''); return; }
-        const { q, r } = parseIGSyncText(syncText);
-        setSyncManualQty(q > 0 ? q.toString() : ''); setSyncManualRev(String(r));
-    }, [syncText]);
-
-    const handleConfirmSync = async () => {
-        if (!canEdit || !syncRow || isProcessingEdit) return; setIsProcessingEdit(true);
-        try {
-            const newQty = syncManualQty !== '' ? parseInput(syncManualQty) : (Number(syncRow.so_luong) || 0);
-            const newRev = syncManualRev !== '' ? parseInput(syncManualRev) : (Number(syncRow.so_tien_ban_duoc) || 0);
-            const updatedRow = { ...syncRow, so_luong: newQty, so_tien_ban_duoc: newRev, updatedAt: new Date().toISOString() };
-            await axios.put(`${API_URL}/daily/${syncRow.id}`, updatedRow);
-            await refreshDetail();
-            setSyncRow(null); setSyncText(''); setSyncManualQty(''); setSyncManualRev('');
-        } catch { showToast('Không thể hoàn tất thao tác. Kiểm tra kết nối và thử lại.', 'error'); } finally { setIsProcessingEdit(false); }
     };
 
     const handleSaveSession = async () => {
@@ -583,7 +558,6 @@ export default function App() {
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}
 
                                     handleStartEdit={handleStartEdit}
-                                    handleStartSync={handleStartSync}
                                     handleDeleteRow={handleDeleteRow}
 
                                     isProcessingEdit={isProcessingEdit} isProcessingDelete={isProcessingDelete}
@@ -650,20 +624,6 @@ export default function App() {
                         />
                     )}
 
-                    {syncRow && (
-                        <SyncModal
-                            syncRow={syncRow}
-                            setSyncRow={setSyncRow}
-                            syncText={syncText}
-                            setSyncText={setSyncText}
-                            syncManualQty={syncManualQty}
-                            setSyncManualQty={setSyncManualQty}
-                            syncManualRev={syncManualRev}
-                            setSyncManualRev={setSyncManualRev}
-                            handleConfirmSync={handleConfirmSync}
-                            isProcessingEdit={isProcessingEdit}
-                        />
-                    )}
 
                     {showSalaryModal && (
                         <SalaryModal
