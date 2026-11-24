@@ -396,7 +396,7 @@ export default function App() {
         const computedGiatUi = Math.round(cost * 0.04);
         return { ...session, autoAdCost, computedGiatUi, realProfit: (Number(session.tong_doanh_thu) || 0) - cost - computedGiatUi - autoAdCost };
     }), [sessions]);
-    const { taxAmount, totalRevenueForTax, revenueProgress, globalTongNhap, globalVonTon, globalTongCon } = useMemo(
+    const { taxAmount, globalTongNhap, globalVonTon, globalTongCon } = useMemo(
         () => calculateGlobalStats(enrichedSessions.filter(session => session.is_completed === true)), [enrichedSessions],
     );
     const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate } = useMemo(
@@ -540,7 +540,7 @@ export default function App() {
                             {!isLoadingDashboard && !dashboardError && (
                                 <div hidden={view !== 'DASHBOARD'}>
                                 <DashboardView
-                                    globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} totalRevenueForTax={totalRevenueForTax} revenueProgress={revenueProgress} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} canEdit={canEdit} canDelete={canDelete} canPay={canPay}
+                                    globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} canEdit={canEdit} canDelete={canDelete} canPay={canPay}
 
                                     setSalarySession={setSalarySession}
                                     setShowSalaryModal={setShowSalaryModal}

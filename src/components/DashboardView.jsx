@@ -11,7 +11,7 @@ import { calculateDetailStats } from '../logic';
 import ScrollReveal from './motion/ScrollReveal';
 
 export default memo(function DashboardView({
-    globalTongCon, globalTongNhap, globalVonTon, taxAmount, totalRevenueForTax, revenueProgress,
+    globalTongCon, globalTongNhap, globalVonTon, taxAmount,
     enrichedSessions, fetchDetail, canEdit, canDelete, canPay,
     setSalarySession, setShowSalaryModal, handleStartEditSession, handleDeleteSession
 }) {
@@ -40,7 +40,7 @@ export default memo(function DashboardView({
             <ScrollReveal><MiniCharts sessions={completedSessions} /></ScrollReveal>
             <div className="dashboard-grid">
                 <div className="dashboard-chart"><ScrollReveal><DashboardChart enrichedSessions={completedSessions} /></ScrollReveal></div>
-                <div className="dashboard-inventory"><ScrollReveal delay={50}><DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} totalRevenueForTax={totalRevenueForTax} revenueProgress={revenueProgress} /></ScrollReveal></div>
+                <div className="dashboard-inventory"><ScrollReveal delay={50}><DashboardStats globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} /></ScrollReveal></div>
                 <div className="dashboard-calendar"><ScrollReveal delay={100}><SmartCalendar sessions={safeEnrichedSessions} /></ScrollReveal></div>
             </div>
 
