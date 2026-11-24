@@ -207,7 +207,29 @@ export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE
 
     return { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate };
 };
-// Compare actual profits, including live edits to the currently open session.
+export function getSessionDays(session) {
+    const daily = Array.isArray(session?.daily) ? session.daily : session?.detail?.daily;
+    const dates = (Array.isArray(daily) ? daily : []).map(row => Date.parse(String(row?.ngay_ban || '').slice(0, 10))).filter(Number.isFinite);
+    const start = dates.length ? Math.min(...dates) : Date.parse(session?.actual_start_date || session?.start_date);
+    const end = dates.length ? Math.max(...dates) : Date.parse(session?.actual_end_date || session?.end_date || session?.actual_start_date || session?.start_date);
+    return Number.isFinite(start) && Number.isFinite(end) ? Math.max(1, Math.round((end - start) / 86400000) + 1) : 1;
+}
+
+export function getSessionGroup(session) {
+    const name = String(session?.name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
+    return name.includes('sale') ? 'sale' : name.includes('dang lai') ? 'repost' : 'normal';
+}
+
+export function rankDailyRevenue(sessions) {
+    return sessions.map(session => ({
+        ...session,
+        dayCount: getSessionDays(session),
+        revenuePerDay: (Number(session.tong_doanh_thu) || 0) / getSessionDays(session),
+    })).filter(session => Number.isFinite(session.revenuePerDay))
+        .sort((a, b) => b.revenuePerDay - a.revenuePerDay).slice(0, 3);
+}
+
+
 export function calculateProfitTarget(sessions = [], currentSession = null, currentProfit = 0) {
     const identity = session => String(session?.id || session?._id || '');
     const currentId = identity(currentSession);
@@ -216,17 +238,17 @@ export function calculateProfitTarget(sessions = [], currentSession = null, curr
     let targetSession = null;
     let dynamicTarget = 0;
     for (const session of candidates) {
-        const name = String(session.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
-        if (name.includes('sale') || name.includes('dang lai')) continue;
-        const profit = Number(session.realProfit);
+        if (getSessionGroup(session) !== 'normal') continue;
+        const profit = Number(session.realProfit) / getSessionDays(session);
         if (Number.isFinite(profit) && profit > dynamicTarget) {
             dynamicTarget = profit;
             targetSession = session;
         }
     }
-    const profit = Number(currentProfit) || 0;
+    const profit = (Number(currentProfit) || 0) / getSessionDays(currentSession);
     return {
         dynamicTarget,
+        dailyProfit: profit,
         targetSession,
         isTargetReached: Boolean(currentSession) && dynamicTarget > 0 && profit >= dynamicTarget,
         progressPercent: dynamicTarget > 0 ? Math.max(0, Math.min(100, profit / dynamicTarget * 100)) : 0,

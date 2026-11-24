@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { ComposedChart, Line, Area, Bar, ResponsiveContainer, YAxis } from 'recharts';
-import { formatCurrency } from '../../utils';
+import QuickPreview from '../QuickPreview';
+import { getSessionGroup, rankDailyRevenue } from '../../logic';
+import { formatCurrency, getSessionName } from '../../utils';
 import { useReducedMotion } from '../motion/motion';
 import { useAppearance } from '../appearance/AppearanceContext';
 
@@ -9,34 +11,27 @@ export default function MiniCharts({ sessions }) {
     const reducedMotion = useReducedMotion();
     const stats = useMemo(() => {
         const result = {
-            total: { label: "Tổng Doanh Thu", value: 0, data: [], color: "#33A1FD", bg: "bg-blue-50/50" },
-            sale: { label: "Đợt Sale", value: 0, data: [], color: "#F59E0B", bg: "bg-amber-50/50" },
-            repost: { label: "Đăng Lại", value: 0, data: [], color: "#10B981", bg: "bg-emerald-50/50" },
-            normal: { label: "Bình Thường", value: 0, data: [], color: "#8B5CF6", bg: "bg-purple-50/50" }
+            total: { label: "Tổng Doanh Thu", value: 0, data: [], sessions: [], color: "#33A1FD", bg: "bg-blue-50/50" },
+            sale: { label: "Đợt Sale", value: 0, data: [], sessions: [], color: "#F59E0B", bg: "bg-amber-50/50" },
+            repost: { label: "Đăng Lại", value: 0, data: [], sessions: [], color: "#10B981", bg: "bg-emerald-50/50" },
+            normal: { label: "Bình Thường", value: 0, data: [], sessions: [], color: "#8B5CF6", bg: "bg-purple-50/50" }
         };
 
         // Lọc từ cũ đến mới để vẽ biểu đồ
         [...sessions].reverse().forEach(s => {
-            const name = (s.name || "").toLowerCase();
-            const rev = s.tong_doanh_thu || 0;
-
+            const rev = Number(s.tong_doanh_thu) || 0;
             result.total.value += rev;
             result.total.data.push({ val: rev });
-
-            if (name.includes('sale')) {
-                result.sale.value += rev;
-                result.sale.data.push({ val: rev });
-            } else if (name.includes('đăng lại')) {
-                result.repost.value += rev;
-                result.repost.data.push({ val: rev });
-            } else {
-                result.normal.value += rev;
-                result.normal.data.push({ val: rev });
-            }
+            result.total.sessions.push(s);
+            const group = result[getSessionGroup(s)];
+            group.value += rev;
+            group.data.push({ val: rev });
+            group.sessions.push(s);
         });
 
         // Đảm bảo Recharts có ít nhất 2 điểm để vẽ đường thẳng nếu dữ liệu quá ít
         Object.values(result).forEach(item => {
+            item.rankings = rankDailyRevenue(item.sessions);
             if (item.data.length === 1) item.data.push(item.data[0]);
             if (item.data.length === 0) item.data = [{val: 0}, {val: 0}];
         });
@@ -47,7 +42,7 @@ export default function MiniCharts({ sessions }) {
     return (
         <div className="overview-cards grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {stats.map((stat, idx) => (
-                <div key={idx} className={`backdrop-blur-xl border border-white/60 rounded-[24px] p-5 shadow-sm flex flex-col ${stat.bg}`}>
+                <QuickPreview key={idx} label={`Top 3 doanh thu/ngày · ${stat.label}`} triggerClassName="mini-chart-trigger" className={`backdrop-blur-xl border border-white/60 rounded-[24px] p-5 shadow-sm flex flex-col ${stat.bg}`} triggerContent={<>
                     <span className="text-[12px] font-bold text-gray-500 mb-1">{stat.label}</span>
                     <span className="text-[18px] font-black text-[#1D1D1F] mb-4">{formatCurrency(stat.value)}đ</span>
                     <div className="h-[40px] w-full mt-auto">
@@ -59,7 +54,14 @@ export default function MiniCharts({ sessions }) {
                             </ComposedChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
+                </>}>
+                    {stat.rankings.length ? <ol className="preview-rows">{stat.rankings.map((session, index) => (
+                        <li key={session.id || session._id || index}>
+                            <div><strong>{index + 1}. {getSessionName(session.name, session.actual_start_date || session.start_date, session.actual_end_date || session.end_date)}</strong><small>{session.dayCount} ngày · Tổng {formatCurrency(session.tong_doanh_thu)} đ</small></div>
+                            <strong>{formatCurrency(session.revenuePerDay)} đ/ngày</strong>
+                        </li>
+                    ))}</ol> : <p>Chưa có đợt bán trong nhóm này.</p>}
+                </QuickPreview>
             ))}
         </div>
     );

@@ -4,7 +4,7 @@ import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
 
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate,
-    isTargetReached, detailProfit, dynamicTarget, targetSession, progressPercent,
+    isTargetReached, dailyProfit, dynamicTarget, targetSession, progressPercent,
     canEdit, updateSessionField
 }) {
     // STATE: Quản lý hộp thoại xác nhận xịn xò
@@ -125,19 +125,19 @@ export default function DetailHeader({
                         {isTargetReached ? 'Mục tiêu · Đã đạt' : 'Mục tiêu'}
                     </div>
 
-                    <div className="relative z-10 flex items-baseline w-full mb-4">
-                        <span className={`text-[40px] md:text-[48px] font-black tracking-tighter tabular-nums drop-shadow-sm block leading-none ${parseFloat(detailProfit) >= 0 ? (isTargetReached ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#1DB2A0] to-[#128C7E]' : 'text-[#1DB2A0]') : 'text-[#FF453A]'}`}>
-                            <AnimatedNumber value={detailProfit} />
+                    <div className="relative z-10 flex flex-wrap items-baseline w-full mb-4">
+                        <span className={`text-[32px] md:text-[40px] font-black tracking-tighter tabular-nums drop-shadow-sm block leading-none ${parseFloat(dailyProfit) >= 0 ? (isTargetReached ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#1DB2A0] to-[#128C7E]' : 'text-[#1DB2A0]') : 'text-[#FF453A]'}`}>
+                            <AnimatedNumber value={dailyProfit} />
                         </span>
-                        <span className="text-[20px] font-bold ml-1.5 opacity-60">đ</span>
+                        <span className="text-[12px] font-bold ml-1.5 opacity-60">đ/ngày</span>
                     </div>
 
                     <div className="relative z-10">
                         <div className="profit-target-progress flex justify-between items-center w-full mb-2 text-[12px] font-bold text-gray-500">
                             <span>Tiến độ</span>
-                            <span className="profit-target-value text-[#1D1D1F]">{dynamicTarget > 0 ? `Đích: ${formatCurrency(dynamicTarget)}đ` : 'Chưa có mốc'}</span>
+                            <span className="profit-target-value text-[#1D1D1F]">{dynamicTarget > 0 ? `Đích: ${formatCurrency(dynamicTarget)} đ/ngày` : 'Chưa có mốc'}</span>
                         </div>
-                        <div role="progressbar" aria-label="Tiến độ so với lợi nhuận thực tế cao nhất" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercent)} className="w-full h-3 bg-gray-200/50 border border-gray-300/30 rounded-full overflow-hidden shadow-inner p-[2px]">
+                        <div role="progressbar" aria-label="Tiến độ so với lợi nhuận mỗi ngày cao nhất" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercent)} className="w-full h-3 bg-gray-200/50 border border-gray-300/30 rounded-full overflow-hidden shadow-inner p-[2px]">
                             <div
                                 className="h-full bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] rounded-full transition-all duration-1000 ease-out relative"
                                 style={{ width: `${progressPercent}%` }}
@@ -145,7 +145,7 @@ export default function DetailHeader({
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
-                        <p className="profit-target-reference">{targetSession ? <>Mốc lợi nhuận đợt thường cao nhất: <strong>{getSessionName(targetSession.name, targetSession.actual_start_date || targetSession.start_date, targetSession.actual_end_date || targetSession.end_date || targetSession.start_date)}</strong></> : 'Chưa có đợt bán thường có lãi để làm mốc.'}</p>
+                        <p className="profit-target-reference">{targetSession ? <>Lợi nhuận/ngày cao nhất của đợt thường: <strong>{getSessionName(targetSession.name, targetSession.actual_start_date || targetSession.start_date, targetSession.actual_end_date || targetSession.end_date || targetSession.start_date)}</strong></> : 'Chưa có đợt bán thường có lãi để làm mốc.'}</p>
                     </div>
                 </div>
             </div>

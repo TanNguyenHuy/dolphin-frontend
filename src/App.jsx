@@ -394,7 +394,7 @@ export default function App() {
         () => calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE), [detailData, importedBales],
     );
 
-    const { dynamicTarget, targetSession, isTargetReached, progressPercent } = useMemo(
+    const { dynamicTarget, dailyProfit, targetSession, isTargetReached, progressPercent } = useMemo(
         () => calculateProfitTarget(enrichedSessions, detailData, detailProfit), [enrichedSessions, detailData, detailProfit],
     );
 
@@ -552,7 +552,7 @@ export default function App() {
                             {view === 'DETAIL' && detailData && (
                                 <DetailView
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dynamicTarget={dynamicTarget} targetSession={targetSession} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dailyProfit={dailyProfit} dynamicTarget={dynamicTarget} targetSession={targetSession} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} handleUpdateBale={handleUpdateBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}
