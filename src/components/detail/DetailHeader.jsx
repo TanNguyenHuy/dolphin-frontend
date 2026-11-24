@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Download, Check, AlertCircle } from 'lucide-react';
-import { formatCurrency, getSessionName, AnimatedNumber } from '../../utils';
+import { getSessionName, AnimatedNumber } from '../../utils';
 
 export default function DetailHeader({
     detailData, handleBack, handleExport, actualStartDate, actualEndDate,
-    isTargetReached, dailyProfit, dynamicTarget, targetSession, progressPercent,
+    detailProfit,
     canEdit, updateSessionField
 }) {
     // STATE: Quản lý hộp thoại xác nhận xịn xò
@@ -115,39 +115,16 @@ export default function DetailHeader({
                 </div>
             </div>
 
-            {/* Thông tin Tổng quan & Thẻ Mục tiêu */}
             <div className="flex justify-end">
-                {/* Thẻ Lợi Nhuận */}
-                <div data-testid="profit-target" className={`profit-target relative liquid-glass p-6 rounded-[32px] w-full lg:w-auto min-w-[300px] shrink-0 overflow-hidden transition-all duration-500 border ${isTargetReached ? 'border-[#1DB2A0]/40 shadow-[0_10px_40px_rgba(29,178,160,0.15)]' : 'border-white/60 shadow-lg'}`}>
-                    {isTargetReached && <div className="absolute inset-0 bg-gradient-to-tr from-[#1DB2A0]/10 to-transparent animate-pulse-slow"></div>}
-
-                    <div className="relative z-10 text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2 whitespace-nowrap">
-                        {isTargetReached ? 'Mục tiêu · Đã đạt' : 'Mục tiêu'}
+                <section aria-label="Tổng lợi nhuận đợt bán" className="session-profit liquid-glass p-5 rounded-[24px] w-full lg:w-auto border border-white/60 shadow-sm">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Tổng lợi nhuận</h3>
+                    <div className="flex flex-wrap items-baseline gap-1.5">
+                        <strong className={`text-[32px] md:text-[40px] font-black tracking-tight tabular-nums break-words ${detailProfit >= 0 ? 'text-teal-700' : 'text-rose-600'}`}>
+                            <AnimatedNumber value={detailProfit} />
+                        </strong>
+                        <span className="text-sm font-bold text-gray-500">đ</span>
                     </div>
-
-                    <div className="relative z-10 flex flex-wrap items-baseline w-full mb-4">
-                        <span className={`text-[32px] md:text-[40px] font-black tracking-tighter tabular-nums drop-shadow-sm block leading-none ${parseFloat(dailyProfit) >= 0 ? (isTargetReached ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#1DB2A0] to-[#128C7E]' : 'text-[#1DB2A0]') : 'text-[#FF453A]'}`}>
-                            <AnimatedNumber value={dailyProfit} />
-                        </span>
-                        <span className="text-[12px] font-bold ml-1.5 opacity-60">đ/ngày</span>
-                    </div>
-
-                    <div className="relative z-10">
-                        <div className="profit-target-progress flex justify-between items-center w-full mb-2 text-[12px] font-bold text-gray-500">
-                            <span>Tiến độ</span>
-                            <span className="profit-target-value text-[#1D1D1F]">{dynamicTarget > 0 ? `Đích: ${formatCurrency(dynamicTarget)} đ/ngày` : 'Chưa có mốc'}</span>
-                        </div>
-                        <div role="progressbar" aria-label="Tiến độ so với lợi nhuận mỗi ngày cao nhất" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercent)} className="w-full h-3 bg-gray-200/50 border border-gray-300/30 rounded-full overflow-hidden shadow-inner p-[2px]">
-                            <div
-                                className="h-full bg-gradient-to-r from-[#33A1FD] to-[#26D0CE] rounded-full transition-all duration-1000 ease-out relative"
-                                style={{ width: `${progressPercent}%` }}
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite]"></div>
-                            </div>
-                        </div>
-                        <p className="profit-target-reference">{targetSession ? <>Lợi nhuận/ngày cao nhất của đợt thường: <strong>{getSessionName(targetSession.name, targetSession.actual_start_date || targetSession.start_date, targetSession.actual_end_date || targetSession.end_date || targetSession.start_date)}</strong></> : 'Chưa có đợt bán thường có lãi để làm mốc.'}</p>
-                    </div>
-                </div>
+                </section>
             </div>
         </div>
     );

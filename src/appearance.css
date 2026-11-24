@@ -49,11 +49,8 @@ body, .font-sans, input, select, textarea, button { font-family: var(--app-font)
 .quick-preview-placeholder { padding: 1.25rem; background: #ffffffb3; border: 1px dashed #cbd5e1; border-radius: 20px; color: #64748b; font-size: calc(0.8rem * var(--text-scale)); line-height: 1.65; }
 .quick-preview-content { overflow-wrap: anywhere; }
 [data-layout="focused"] .session-list-layout { grid-template-columns: minmax(0, 1fr); }
-.profit-target { min-width: 0; max-width: 100%; }
-.profit-target [class~="text-[40px]"] { font-size: calc(clamp(1.5rem, 4.5vw, 2.75rem) * var(--text-scale)); min-width: 0; overflow-wrap: anywhere; }
-.profit-target-progress { flex-wrap: wrap; gap: 0.5rem; }
-.profit-target-reference { margin-top: 0.75rem; font-size: calc(0.72rem * var(--text-scale)); line-height: 1.6; color: #64748b; max-width: 26rem; overflow-wrap: anywhere; }
-.profit-target-reference strong { color: #475569; font-weight: 600; }
+.session-profit { min-width: 0; max-width: 100%; }
+.session-profit strong { overflow-wrap: anywhere; font-size: calc(clamp(1.5rem, 4.5vw, 2.5rem) * var(--text-scale)); }
 @media (min-width: 1280px) {
   .session-list-layout { grid-template-columns: minmax(0, 1fr) 290px; }
   .session-quick-preview { display: block; position: sticky; top: 1rem; max-height: calc(100dvh - 4rem); overflow-y: auto; scrollbar-width: thin; padding: 0.25rem; }

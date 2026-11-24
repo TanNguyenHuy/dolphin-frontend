@@ -1,17 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitTarget, getSessionDays, rankDailyRevenue } from '../src/logic.js';
+import { calculateDetailStats, getSessionDays, rankDailyRevenue } from '../src/logic.js';
 
-test('profit target uses inclusive daily averages rather than total profit', () => {
-    const slow = { id: 'slow', name: 'Thường dài ngày', actual_start_date: '2026-11-01', actual_end_date: '2026-11-10', realProfit: 10000000 };
-    const fast = { id: 'fast', name: 'Thường ngắn ngày', actual_start_date: '2026-11-01', actual_end_date: '2026-11-02', realProfit: 4000000 };
-    const current = { id: 'live', daily: [{ ngay_ban: '2026-11-01' }, { ngay_ban: '2026-11-04' }] };
-    const result = calculateProfitTarget([slow, fast, { name: 'Sale', realProfit: 999999999 }], current, 6000000);
-    assert.equal(result.targetSession.id, 'fast');
-    assert.equal(result.dynamicTarget, 2000000);
-    assert.equal(result.dailyProfit, 1500000);
-    assert.equal(result.progressPercent, 75);
-    assert.equal(result.isTargetReached, false);
+test('total profit deducts capital, laundry and advertising without dividing by days', () => {
+    const detail = { so_tien_cua_kien: 1000000, computed: { tong_doanh_thu: 7735000 }, daily: [{ ngay_ban: '2026-11-01' }, { ngay_ban: '2026-11-10' }] };
+    assert.equal(calculateDetailStats(detail, [], 350000).detailProfit, 5995000);
 });
 
 test('date spans use live transactions and support one-day, legacy and invalid dates', () => {

@@ -23,8 +23,8 @@ import DeleteRowModal from './components/modals/DeleteRowModal';
 import SalaryModal from './components/modals/SalaryModal';
 import BlockModal from './components/modals/BlockModal';
 
-import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString, Confetti } from './utils';
-import { calculateGlobalStats, calculateDetailStats, calculateProfitTarget } from './logic';
+import { API_URL, AD_COST_PER_SALE, parseInput, formatDateDisplay, getSessionName, getTodayString } from './utils';
+import { calculateGlobalStats, calculateDetailStats } from './logic';
 
 
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -104,7 +104,6 @@ export default function App() {
     const [isProcessingDelete, setIsProcessingDelete] = useState(false);
     const [isProcessingAdd, setIsProcessingAdd] = useState(false);
     const [isProcessingEdit, setIsProcessingEdit] = useState(false);
-    const [showFireworks, setShowFireworks] = useState(false);
 
     const [momoPhone, setMomoPhone] = useState(() => readStoredText('momoPhone'));
     const [newItem, setNewItem] = useState({ ten_san_pham: '', ngay_ban: getTodayString(), so_luong_nhap: '', so_luong: '', so_tien_ban_duoc: '' });
@@ -234,12 +233,11 @@ export default function App() {
                 fetchDetail(event.state.id, { navigate: false });
             } else {
                 setView(destination);
-                if (destination === 'DASHBOARD' && authUser) fetchDashboard();
             }
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [authUser, fetchDashboard, fetchDetail]);
+    }, [fetchDetail]);
 
 
     const handleStartEditSession = useCallback((e, session) => {
@@ -268,6 +266,13 @@ export default function App() {
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid detail response');
         if (request === detailRequest.current) setDetailData({ ...data, daily: Array.isArray(data.daily) ? data.daily : [] });
     };
+
+    useEffect(() => {
+        if (!detailData || !currentId || String(detailData.id || detailData._id) !== String(currentId)) return;
+        setSessions(previous => previous.map(session => String(session.id) === String(currentId)
+            ? buildSessionSummary({ ...session, ...detailData }, detailData, importedBales, AD_COST_PER_SALE)
+            : session));
+    }, [detailData, importedBales, currentId]);
 
     const handleCreateAutoSession = async () => {
         if (!canEdit || isProcessingCreate) return;
@@ -341,7 +346,6 @@ export default function App() {
             }));
             showToast('Đã cập nhật số lượng và giá vốn lô hàng.');
         }
-        fetchDashboard();
     };
 
     const handleDeleteBale = async (id) => {
@@ -378,7 +382,7 @@ export default function App() {
 
     const handleBack = () => {
         if (window.history.state) { window.history.back(); }
-        else { handleNavigate('DASHBOARD'); fetchDashboard(); setDetailData(null); setImportedBales([]); }
+        else { handleNavigate('DASHBOARD'); }
     };
 
     const enrichedSessions = useMemo(() => sessions.map(session => {
@@ -393,15 +397,6 @@ export default function App() {
     const { detailProfit, mvpRowId, enrichedDaily, detailAutoAdCost, actualStartDate, actualEndDate } = useMemo(
         () => calculateDetailStats(detailData, importedBales, AD_COST_PER_SALE), [detailData, importedBales],
     );
-
-    const { dynamicTarget, dailyProfit, targetSession, isTargetReached, progressPercent } = useMemo(
-        () => calculateProfitTarget(enrichedSessions, detailData, detailProfit), [enrichedSessions, detailData, detailProfit],
-    );
-
-    useEffect(() => {
-        if (view === 'DETAIL' && isTargetReached) { setShowFireworks(true); const t = setTimeout(() => setShowFireworks(false), 5500); return () => clearTimeout(t); }
-        else { setShowFireworks(false); }
-    }, [view, isTargetReached, currentId]);
 
     const handleExport = () => {
         if (!canExportExcel) { showToast("Tính năng Xuất Excel báo cáo chỉ dành cho gói VVIP (100k) và PREMIUM!", "error"); return; }
@@ -418,7 +413,6 @@ export default function App() {
         <AppearanceContext.Provider value={preferences}>
         <MotionProvider reduced={preferences.reduceMotion}>
         <div data-dolphin-theme={preferences.theme} data-layout={preferences.layout} data-density={preferences.density} data-lunar={preferences.showLunar} className="dolphin-app flex h-screen w-full bg-[#f4f7fa] overflow-hidden font-sans text-[#1D1D1F] selection:bg-[#26D0CE]/30 relative">
-            {showFireworks && !preferences.reduceMotion && <Confetti />}
             <Toast toast={toast} />
             <BlockModal blockModal={blockModal} />
 
@@ -552,7 +546,7 @@ export default function App() {
                             {view === 'DETAIL' && detailData && (
                                 <DetailView
                                     detailData={detailData} handleBack={handleBack} handleExport={handleExport} actualStartDate={actualStartDate} actualEndDate={actualEndDate}
-                                    isTargetReached={isTargetReached} detailProfit={detailProfit} dailyProfit={dailyProfit} dynamicTarget={dynamicTarget} targetSession={targetSession} progressPercent={progressPercent} detailAutoAdCost={detailAutoAdCost}
+                                    detailProfit={detailProfit} detailAutoAdCost={detailAutoAdCost}
                                     canEdit={canEdit} canDelete={canDelete} handleAddBale={handleAddBale} baleName={baleName} setBaleName={setBaleName} baleCost={baleCost} setBaleCost={setBaleCost}
                                     baleQty={baleQty} setBaleQty={setBaleQty} importedBales={importedBales} handleDeleteBale={handleDeleteBale} handleUpdateBale={handleUpdateBale} updateSessionField={updateSessionField} handleAddItem={handleAddItem}
                                     newItem={newItem} setNewItem={setNewItem} isProcessingAdd={isProcessingAdd} enrichedDaily={enrichedDaily} mvpRowId={mvpRowId}

@@ -5,8 +5,8 @@ import TransactionForm from './detail/TransactionForm';
 import TransactionList from './detail/TransactionList';
 
 export default function DetailView({
-    detailData, handleBack, handleExport, actualStartDate, actualEndDate, isTargetReached, detailProfit, dailyProfit,
-    dynamicTarget, targetSession, progressPercent, detailAutoAdCost, canEdit, canDelete,
+    detailData, handleBack, handleExport, actualStartDate, actualEndDate, detailProfit,
+    detailAutoAdCost, canEdit, canDelete,
     handleAddBale, baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
     importedBales, handleDeleteBale, handleUpdateBale, updateSessionField, handleAddItem, newItem, setNewItem,
     isProcessingAdd, enrichedDaily, mvpRowId, handleStartEdit, handleDeleteRow, isProcessingEdit, isProcessingDelete
@@ -28,11 +28,7 @@ export default function DetailView({
                     handleExport={handleExport}
                     actualStartDate={actualStartDate}
                     actualEndDate={actualEndDate}
-                    isTargetReached={isTargetReached}
-                    dailyProfit={dailyProfit}
-                    dynamicTarget={dynamicTarget}
-                    targetSession={targetSession}
-                    progressPercent={progressPercent}
+                    detailProfit={detailProfit}
                     canEdit={canEdit}
                     updateSessionField={updateSessionField}
                 />

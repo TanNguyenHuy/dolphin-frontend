@@ -228,29 +228,3 @@ export function rankDailyRevenue(sessions) {
     })).filter(session => Number.isFinite(session.revenuePerDay))
         .sort((a, b) => b.revenuePerDay - a.revenuePerDay).slice(0, 3);
 }
-
-
-export function calculateProfitTarget(sessions = [], currentSession = null, currentProfit = 0) {
-    const identity = session => String(session?.id || session?._id || '');
-    const currentId = identity(currentSession);
-    const candidates = sessions.filter(session => !currentId || identity(session) !== currentId);
-    if (currentSession) candidates.push({ ...currentSession, realProfit: currentProfit });
-    let targetSession = null;
-    let dynamicTarget = 0;
-    for (const session of candidates) {
-        if (getSessionGroup(session) !== 'normal') continue;
-        const profit = Number(session.realProfit) / getSessionDays(session);
-        if (Number.isFinite(profit) && profit > dynamicTarget) {
-            dynamicTarget = profit;
-            targetSession = session;
-        }
-    }
-    const profit = (Number(currentProfit) || 0) / getSessionDays(currentSession);
-    return {
-        dynamicTarget,
-        dailyProfit: profit,
-        targetSession,
-        isTargetReached: Boolean(currentSession) && dynamicTarget > 0 && profit >= dynamicTarget,
-        progressPercent: dynamicTarget > 0 ? Math.max(0, Math.min(100, profit / dynamicTarget * 100)) : 0,
-    };
-};
