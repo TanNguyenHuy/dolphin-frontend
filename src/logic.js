@@ -95,19 +95,26 @@ export function allocateLaundryCosts(bales, totalLaundryCost) {
     return amounts;
 }
 
-export function calculateBaleSales(baleName, daily, adCostPerSale, laundryCost = 0) {
+export function getBaleSaleRows(baleName, daily) {
     const name = String(baleName || '').trim().toLowerCase();
-    const rows = (Array.isArray(daily) ? daily : []).filter(row => name && String(row?.ten_san_pham || '').toLowerCase().includes(name));
+    return (Array.isArray(daily) ? daily : []).filter(row => name && String(row?.ten_san_pham || '').toLowerCase().includes(name));
+}
+
+export function calculateBaleSales(baleName, daily, adCostPerSale, laundryCost = 0) {
+    const rows = getBaleSaleRows(baleName, daily);
     const totalRevenue = rows.reduce((sum, row) => sum + (Number(row.so_tien_ban_duoc) || 0), 0);
     const saleCount = rows.length;
     const advertisingCost = saleCount * adCostPerSale;
     return { totalRevenue, saleCount, advertisingCost, laundryCost, netRevenue: totalRevenue - advertisingCost - laundryCost };
 }
 
+export const REVENUE_THRESHOLD = 1000000000;
+
 export const calculateGlobalStats = (enrichedSessions) => {
     const dashboardProfit = enrichedSessions.reduce((sum, s) => sum + s.realProfit, 0);
     const totalRevenueForTax = enrichedSessions.reduce((sum, s) => sum + (s.tong_doanh_thu || 0), 0);
-    const taxBase = totalRevenueForTax - 500000000;
+    const taxBase = totalRevenueForTax - REVENUE_THRESHOLD;
+    const revenueProgress = Math.max(0, Math.min(100, totalRevenueForTax / REVENUE_THRESHOLD * 100));
     const taxAmount = taxBase > 0 ? taxBase * 0.015 : 0;
     const showTax = taxAmount > 0;
     const displayRevenueTr = (totalRevenueForTax / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
@@ -135,7 +142,7 @@ export const calculateGlobalStats = (enrichedSessions) => {
 
     const globalTongCon = Math.max(0, globalTongNhap - globalTongBan - hangBiLoai);
 
-    return { dashboardProfit, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon };
+    return { dashboardProfit, revenueProgress, totalRevenueForTax, taxAmount, showTax, displayRevenueTr, globalTongNhap, globalTongBan, globalVonTon, globalTongCon };
 };
 
 export const calculateDetailStats = (detailData, importedBales, AD_COST_PER_SALE) => {
@@ -209,6 +216,8 @@ export function calculateProfitTarget(sessions = [], currentSession = null, curr
     let targetSession = null;
     let dynamicTarget = 0;
     for (const session of candidates) {
+        const name = String(session.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        if (name.includes('sale') || name.includes('dang lai')) continue;
         const profit = Number(session.realProfit);
         if (Number.isFinite(profit) && profit > dynamicTarget) {
             dynamicTarget = profit;

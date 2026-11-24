@@ -122,7 +122,7 @@ export default function DetailHeader({
                     {isTargetReached && <div className="absolute inset-0 bg-gradient-to-tr from-[#1DB2A0]/10 to-transparent animate-pulse-slow"></div>}
 
                     <div className="relative z-10 text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2 whitespace-nowrap">
-                        {isTargetReached ? '🏆 MỤC TIÊU: ĐÃ ĐẠT MỐC' : '📈 MỤC TIÊU LEO RANK'}
+                        {isTargetReached ? 'Mục tiêu · Đã đạt' : 'Mục tiêu'}
                     </div>
 
                     <div className="relative z-10 flex items-baseline w-full mb-4">
@@ -145,7 +145,7 @@ export default function DetailHeader({
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite]"></div>
                             </div>
                         </div>
-                        <p className="profit-target-reference">{targetSession ? <>Mốc lợi nhuận thực tế cao nhất: <strong>{getSessionName(targetSession.name, targetSession.actual_start_date || targetSession.start_date, targetSession.actual_end_date || targetSession.end_date || targetSession.start_date)}</strong></> : 'Chưa có đợt bán có lãi để làm mốc so sánh.'}</p>
+                        <p className="profit-target-reference">{targetSession ? <>Mốc lợi nhuận đợt thường cao nhất: <strong>{getSessionName(targetSession.name, targetSession.actual_start_date || targetSession.start_date, targetSession.actual_end_date || targetSession.end_date || targetSession.start_date)}</strong></> : 'Chưa có đợt bán thường có lãi để làm mốc.'}</p>
                     </div>
                 </div>
             </div>

@@ -161,3 +161,20 @@
 }
 @media (prefers-reduced-motion: reduce) { .bale-card { animation: none; } }
 html[data-dolphin-motion="reduced"] .bale-card { animation: none; }
+
+.revenue-threshold { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ui-line); font-size: 12px; color: var(--ui-muted); }
+.revenue-threshold > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; }
+.revenue-threshold strong { color: var(--ui-ink); font-variant-numeric: tabular-nums; }
+.revenue-threshold progress { display: block; width: 100%; height: 8px; margin: 8px 0; border: 0; border-radius: 8px; overflow: hidden; appearance: none; background: var(--ui-line); }
+.revenue-threshold progress::-webkit-progress-bar { background: var(--ui-line); }
+.revenue-threshold progress::-webkit-progress-value { background: var(--accent); border-radius: 8px; }
+.revenue-threshold progress::-moz-progress-bar { background: var(--accent); border-radius: 8px; }
+.bale-sale-trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: -8px 0; padding: 4px 8px; border-radius: 8px; color: var(--accent-strong); font-weight: 800; }
+.bale-sale-trigger:hover, .bale-sale-trigger[aria-expanded="true"] { background: var(--accent-soft); }
+.bale-sales-summary .bale-sale-details { grid-column: 1 / -1; border-top: 1px solid var(--ui-line); background: var(--ui-surface-muted); }
+.bale-sale-details ol { max-height: 260px; overflow-y: auto; }
+.bale-sale-details li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--ui-line); font-size: 12px; }
+.bale-sale-details li:last-child { border-bottom: 0; }
+.bale-sale-details li > div { min-width: 0; overflow-wrap: anywhere; }
+.bale-sale-details li span { display: block; margin-top: 3px; color: var(--ui-muted); }
+.bale-sale-details li > strong { font-variant-numeric: tabular-nums; }

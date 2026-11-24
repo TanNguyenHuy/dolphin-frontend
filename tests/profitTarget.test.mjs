@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateDetailStats, calculateProfitTarget } from '../src/logic.js';
 
-test('target uses the highest actual profit across sale types and completion states', () => {
+test('target uses the highest actual profit from regular sales excluding sale and repost sessions', () => {
     const sessions = [
         { id: 'normal', name: 'Đợt thường', realProfit: 30000000, is_completed: true },
         { id: 'sale', name: 'Sale', realProfit: '45000000', is_completed: false },
-        { id: 'repost', name: 'Đăng lại', realProfit: 20000000, projected15d: 999000000 },
+        { id: 'repost', name: 'Đăng lại', realProfit: 90000000, projected15d: 999000000 },
     ];
     const result = calculateProfitTarget(sessions, { id: 'current' }, 6345000);
-    assert.equal(result.dynamicTarget, 45000000);
-    assert.equal(result.targetSession.id, 'sale');
+    assert.equal(result.dynamicTarget, 30000000);
+    assert.equal(result.targetSession.id, 'normal');
     assert.equal(result.isTargetReached, false);
-    assert.ok(Math.abs(result.progressPercent - 14.1) < 1e-9);
+    assert.ok(Math.abs(result.progressPercent - 21.15) < 1e-9);
 });
 
 test('live detail overrides the stale cached profit of the current session', () => {
@@ -42,4 +42,13 @@ test('profit is computed after capital, laundry and advertising before it become
     const { detailProfit } = calculateDetailStats(detail, [], 350000);
     assert.equal(detailProfit, 6345000);
     assert.equal(calculateProfitTarget([], detail, detailProfit).dynamicTarget, 6345000);
+});
+
+test('sale and repost current records never become the benchmark', () => {
+    for (const name of ['SALE 2-9', 'ĐĂNG LẠI', 'dang lai']) {
+        const result = calculateProfitTarget([{ id: 'regular', realProfit: 100 }], { id: 'current', name }, 1000);
+        assert.equal(result.targetSession.id, 'regular');
+        assert.equal(result.dynamicTarget, 100);
+    }
+    assert.equal(calculateProfitTarget([{ name: 'Sale', realProfit: 999 }]).dynamicTarget, 0);
 });

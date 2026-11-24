@@ -1,16 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Package, X, Pencil } from 'lucide-react';
-import { formatCurrency, formatInput, parseInput, AD_COST_PER_SALE } from '../../utils';
-import { calculateBaleSales, allocateLaundryCosts } from '../../logic';
+import { formatCurrency, formatInput, parseInput, formatDateDisplay, AD_COST_PER_SALE } from '../../utils';
+import { calculateBaleSales, allocateLaundryCosts, getBaleSaleRows } from '../../logic';
 
 export default function CapitalManagement({
     detailData, detailAutoAdCost, canEdit, canDelete, handleAddBale,
     baleName, setBaleName, baleCost, setBaleCost, baleQty, setBaleQty,
     importedBales, handleDeleteBale, handleUpdateBale
 }) {
+    const [saleDetails, setSaleDetails] = useState(null);
     const [editingBale, setEditingBale] = useState(null);
     const [savingBale, setSavingBale] = useState(false);
     const [editError, setEditError] = useState('');
+    useEffect(() => {
+        if (!saleDetails) return;
+        const dismiss = event => { if (event.key === 'Escape') setSaleDetails(null); };
+        window.addEventListener('keydown', dismiss);
+        return () => window.removeEventListener('keydown', dismiss);
+    }, [saleDetails]);
     const editTrigger = useRef(null);
     useEffect(() => { if (!editingBale) editTrigger.current?.focus(); }, [editingBale]);
     const saveBale = async (event, minimumQty) => {
@@ -92,6 +99,9 @@ export default function CapitalManagement({
                     <div className="bale-list" role="list" aria-label="Danh sách lô hàng">
                         {(importedBales || []).map((bale, index) => {
                             if (!bale) return null;
+                            const saleRows = getBaleSaleRows(bale.name, detailData?.daily);
+                            const detailsId = `bale-sales-${bale._id || index}`;
+                            const showSales = saleDetails === detailsId;
                             const originalQty = Number(bale.qty) || 0;
                             const totalDeducted = (detailData?.daily || []).reduce((sum, row) =>
                                 String(row.ten_san_pham || '').toLowerCase().includes(String(bale.name || '').toLowerCase())
@@ -101,7 +111,9 @@ export default function CapitalManagement({
                             const profit = netRevenue - (Number(bale.cost) || 0);
                             const titleId = `bale-title-${bale._id || index}`;
                             return (
-                                <article key={bale._id} role="listitem" className="bale-card" aria-labelledby={titleId} style={{ '--card-delay': `${Math.min(index * 40, 160)}ms` }}>
+                                <article key={bale._id} role="listitem" className="bale-card" aria-labelledby={titleId}
+                                    onPointerLeave={event => { if (event.pointerType === 'mouse') setSaleDetails(null); }}
+                                    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSaleDetails(null); }} style={{ '--card-delay': `${Math.min(index * 40, 160)}ms` }}>
                                     <header className="bale-card-heading">
                                         <div className="bale-card-identity"><span className="bale-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div><p>Lô hàng</p><h4 id={titleId}>{bale.name || 'Chưa đặt tên'}</h4></div></div>
                                         <div className="bale-card-actions">
@@ -120,7 +132,23 @@ export default function CapitalManagement({
                                     <dl className="bale-capital-values"><div><dt>Giá vốn lô</dt><dd>{formatCurrency(bale.cost || 0)} đ</dd></div><div><dt>Giá vốn / sản phẩm</dt><dd>{formatCurrency((bale.cost || 0) / (bale.qty || 1))} đ</dd></div></dl>
                                     <dl className="bale-sales-summary" aria-label={`Thống kê bán hàng ${bale.name || ''}`}>
                                         <div className="bale-revenue"><dt>Tổng doanh thu</dt><dd><strong>{formatCurrency(totalRevenue)} đ</strong></dd></div>
-                                        <div><dt>Số lần bán</dt><dd><strong>{formatInput(saleCount)} lần</strong></dd></div>
+                                        <div><dt>Số lần bán</dt><dd>
+                                            <button type="button" className="bale-sale-trigger" aria-expanded={showSales} aria-controls={detailsId} aria-label={`Xem ${saleCount} lần bán của ${bale.name || 'lô hàng'}`}
+                                                onPointerEnter={event => { if (event.pointerType === 'mouse') setSaleDetails(detailsId); }}
+                                                onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setSaleDetails(detailsId); }}
+                                                onClick={() => setSaleDetails(showSales ? null : detailsId)}>
+                                                {formatInput(saleCount)} lần <span aria-hidden="true">⌄</span>
+                                            </button>
+                                        </dd></div>
+                                        {showSales && <div id={detailsId} className="bale-sale-details">
+                                            <dt>Chi tiết từng lần bán</dt>
+                                            <dd>{saleRows.length ? <ol>{saleRows.map((row, saleIndex) => (
+                                                <li key={row.id || row._id || saleIndex}>
+                                                    <div><strong>{row.ten_san_pham || 'Sản phẩm'}</strong><span>{formatDateDisplay(row.ngay_ban)} · Nhập {formatInput(row.so_luong_nhap || 0)} · Bán {formatInput(row.so_luong || 0)}</span></div>
+                                                    <strong>{formatCurrency(row.so_tien_ban_duoc)} đ</strong>
+                                                </li>
+                                            ))}</ol> : <p>Chưa có lần bán nào.</p>}</dd>
+                                        </div>}
                                         <div className="bale-expense"><dt>Tiền quảng cáo</dt><dd><strong>{formatCurrency(advertisingCost)} đ</strong><small>{formatCurrency(AD_COST_PER_SALE)}đ/lần ghi nhận</small></dd></div>
                                         <div className="bale-expense"><dt>Chi phí giặt ủi</dt><dd><strong>{formatCurrency(laundryCost)} đ</strong><small>Phân bổ theo giá vốn</small></dd></div>
                                         <div className={`bale-net ${profit < 0 ? 'is-negative' : ''}`}><dt>Doanh thu thực</dt><dd><strong>{formatCurrency(netRevenue)} đ</strong><small>Sau quảng cáo và giặt ủi</small>
