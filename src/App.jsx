@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { createPortal } from 'react-dom';
@@ -85,6 +85,8 @@ export default function App() {
     const [detailData, setDetailData] = useState(null);
 
     const mainRef = useRef(null);
+    const scrollPositions = useRef({});
+    const scrollKey = view === 'DETAIL' ? `DETAIL:${currentId}` : view;
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pendingTasksCount, setPendingTasksCount] = useState(0);
 
@@ -122,14 +124,15 @@ export default function App() {
     const [blockModal] = useState({ show: false, message: '' });
     const { toast, showToast } = useToast();
 
-    useEffect(() => {
-        mainRef.current?.scrollTo({ top: 0, behavior: 'instant' });
-    }, [view, currentId]);
+    useLayoutEffect(() => {
+        mainRef.current?.scrollTo({ top: scrollPositions.current[scrollKey] || 0, behavior: 'instant' });
+    }, [scrollKey]);
 
     const handleNavigate = (newView) => {
         detailRequest.current++;
         setIsLoadingDetail(false);
         if (view !== newView) {
+            scrollPositions.current[scrollKey] = mainRef.current?.scrollTop || 0;
             window.history.pushState({ view: newView }, '');
             setView(newView);
         }
@@ -199,6 +202,7 @@ export default function App() {
             if (request !== detailRequest.current) return;
             setDetailData({ ...detail.data, daily: Array.isArray(detail.data.daily) ? detail.data.daily : [] });
             setImportedBales(Array.isArray(bales.data) ? bales.data : []);
+            if (navigate) scrollPositions.current[scrollKey] = mainRef.current?.scrollTop || 0;
             setCurrentId(id);
             if (navigate) {
                 setNewItem(previous => ({ ...previous, ngay_ban: getTodayString() }));
@@ -214,7 +218,7 @@ export default function App() {
         } finally {
             if (request === detailRequest.current) setIsLoadingDetail(false);
         }
-    }, [canViewDetail, showToast]);
+    }, [canViewDetail, showToast, scrollKey]);
 
     useEffect(() => {
         if (authUser) fetchDashboard();
@@ -225,6 +229,7 @@ export default function App() {
 
     useEffect(() => {
         const handlePopState = event => {
+            scrollPositions.current[scrollKey] = mainRef.current?.scrollTop || 0;
             const destination = event.state?.view || 'DASHBOARD';
             detailRequest.current++;
             setIsLoadingDetail(false);
@@ -237,7 +242,7 @@ export default function App() {
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [fetchDetail]);
+    }, [fetchDetail, scrollKey]);
 
 
     const handleStartEditSession = useCallback((e, session) => {
@@ -513,12 +518,12 @@ export default function App() {
                     <Menu size={24} aria-label="Mở menu" />
                 </button>
 
-                <main ref={mainRef} className="dolphin-main flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24 relative z-10">
+                <main ref={mainRef} onScroll={event => { scrollPositions.current[scrollKey] = event.currentTarget.scrollTop; }} className="dolphin-main flex-1 w-full overflow-y-auto custom-scrollbar p-3 pt-16 sm:p-6 md:pt-6 pb-24 relative z-10">
                     <Suspense fallback={<div role="status" className="loading-indicator">Đang mở trang…</div>}>
                     <ErrorBoundary>
                         <div className="w-full max-w-[1600px] mx-auto space-y-6">
 
-                            {isLoadingDetail && <div role="status" className="loading-indicator"><RefreshCw size={16} className="animate-spin" /> Đang tải chi tiết…</div>}
+                            {isLoadingDetail && <div role="status" className="loading-indicator absolute top-4 right-4 z-20"><RefreshCw size={16} className="animate-spin" /> Đang tải chi tiết…</div>}
                             {view === 'DASHBOARD' && isLoadingDashboard && (
                                 <div role="status" aria-label="Đang tải thống kê" className="dashboard-skeleton grid gap-5 md:grid-cols-3">
                                     <span className="sr-only">Đang tải thống kê…</span>
@@ -532,7 +537,8 @@ export default function App() {
                                     <button type="button" onClick={fetchDashboard} className="bg-teal-700 text-white rounded-xl px-5 py-3 font-bold">Thử lại</button>
                                 </div>
                             )}
-                            {view === 'DASHBOARD' && !isLoadingDashboard && !dashboardError && (
+                            {!isLoadingDashboard && !dashboardError && (
+                                <div hidden={view !== 'DASHBOARD'}>
                                 <DashboardView
                                     globalTongCon={globalTongCon} globalTongNhap={globalTongNhap} globalVonTon={globalVonTon} taxAmount={taxAmount} totalRevenueForTax={totalRevenueForTax} revenueProgress={revenueProgress} enrichedSessions={enrichedSessions} fetchDetail={fetchDetail} canEdit={canEdit} canDelete={canDelete} canPay={canPay}
 
@@ -541,6 +547,7 @@ export default function App() {
                                     handleStartEditSession={handleStartEditSession}
                                     handleDeleteSession={handleDeleteSession}
                                 />
+                                </div>
                             )}
 
                             {view === 'DETAIL' && detailData && (
