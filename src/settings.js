@@ -1,3 +1,5 @@
+import { validCalendarDate } from './lib/calendarEvents.js';
+
 export const THEMES = [
     { value: 'ocean', name: 'Xanh biển', from: '#eaf5ff', to: '#c4e5f4', accent: '#0874b9', soft: '#e7f3fe', strong: '#145378' },
     { value: 'mint', name: 'Bạc hà', from: '#edfdf7', to: '#c6e9dc', accent: '#087f70', soft: '#e5f7ef', strong: '#135d50' },
@@ -34,6 +36,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     calendarView: 'month',
     calendarShape: 'rounded',
     showLunar: true,
+    importantDates: Object.freeze([]),
     layout: 'balanced',
     density: 'comfortable',
 });
@@ -75,6 +78,10 @@ export function normalizeSettings(value) {
         chartCurve: choice(source.chartCurve, ['monotone', 'linear', 'step'], DEFAULT_SETTINGS.chartCurve),
         calendarView: choice(source.calendarView, ['month', 'agenda'], DEFAULT_SETTINGS.calendarView),
         calendarShape: choice(source.calendarShape, ['circle', 'rounded', 'square'], DEFAULT_SETTINGS.calendarShape),
+        importantDates: (Array.isArray(source.importantDates) ? source.importantDates : [])
+            .filter(item => typeof item?.title === 'string' && item.title.trim()
+                && validCalendarDate(item.startDate) && validCalendarDate(item.endDate) && item.endDate >= item.startDate)
+            .map(item => ({ title: item.title.trim().slice(0, 80), startDate: item.startDate, endDate: item.endDate })),
         showLunar: typeof source.showLunar === 'boolean' ? source.showLunar : DEFAULT_SETTINGS.showLunar,
         layout: choice(source.layout, ['balanced', 'wide', 'focused'], DEFAULT_SETTINGS.layout),
         density: choice(source.density, ['comfortable', 'compact'], DEFAULT_SETTINGS.density),

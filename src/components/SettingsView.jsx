@@ -1,5 +1,7 @@
 import { useState, useId } from 'react';
 import { ArrowLeft, Settings, Store, Palette, MessageCircle, Save, RotateCcw, Type, ChartNoAxesCombined, CalendarDays, PanelsTopLeft, ChevronDown } from 'lucide-react';
+import { getTodayString } from '../utils';
+import { validCalendarDate } from '../lib/calendarEvents';
 import { DEFAULT_SETTINGS, THEMES, FONTS, FONT_SIZES, appearanceVariables } from '../settings';
 
 function Toggle({ checked, onChange, title, description }) {
@@ -42,6 +44,11 @@ export default function SettingsView({ settings, onSave, onBack }) {
     const save = event => {
         event.preventDefault();
         if (!draft.storeName.trim()) { setFeedback({ error: true, message: 'Vui lòng nhập tên cửa hàng.' }); return; }
+        if (draft.importantDates.some(item => !item.title.trim() || !validCalendarDate(item.startDate)
+            || !validCalendarDate(item.endDate) || item.endDate < item.startDate)) {
+            setFeedback({ error: true, message: 'Nhập tên và khoảng ngày hợp lệ. Ngày kết thúc phải từ ngày bắt đầu trở đi.' });
+            return;
+        }
         try {
             const saved = onSave(draft);
             setDraft(saved);
@@ -68,6 +75,36 @@ export default function SettingsView({ settings, onSave, onBack }) {
                         <div className="settings-field-grid"><Select label="Cách hiển thị lịch" value={draft.calendarView} options={options([['month', 'Lưới tháng'], ['agenda', 'Danh sách theo ngày']])} onChange={value => update('calendarView', value)} description="Danh sách giúp đọc nội dung dài trên điện thoại." /><Select label="Hình dạng ô ngày" value={draft.calendarShape} options={options([['circle', 'Tròn'], ['rounded', 'Bo góc'], ['square', 'Vuông']])} onChange={value => update('calendarShape', value)} /></div>
                         <Toggle title="Hiển thị âm lịch" description="Hiện ngày âm bên cạnh ngày dương trên lịch." checked={draft.showLunar} onChange={value => update('showLunar', value)} />
                     </Section>
+                    <Section id="settings-important-dates" icon={CalendarDays} title="Ngày quan trọng">
+                        <p className="important-dates-help">Chọn khoảng ngày hiển thị trên lịch. Muốn hiện một ngày, chọn ngày bắt đầu và kết thúc giống nhau. Ngày lễ Việt Nam và Tin Lành được đánh dấu đỏ tự động.</p>
+                        <div className="important-dates-editor">
+                            {draft.importantDates.map((item, index) => (
+                                <fieldset className="important-date-row" key={index}>
+                                    <legend className="sr-only">Ngày quan trọng {index + 1}</legend>
+                                    <label className="setting-field"><span>Tên ngày quan trọng</span>
+                                        <input required maxLength={80} value={item.title}
+                                            onChange={event => update('importantDates', draft.importantDates.map((entry, position) => position === index ? { ...entry, title: event.target.value } : entry))} />
+                                    </label>
+                                    <div className="important-date-range">
+                                        <label className="setting-field"><span>Hiển thị từ ngày</span>
+                                            <input type="date" required value={item.startDate}
+                                                onChange={event => update('importantDates', draft.importantDates.map((entry, position) => position === index ? { ...entry, startDate: event.target.value } : entry))} />
+                                        </label>
+                                        <label className="setting-field"><span>Đến hết ngày</span>
+                                            <input type="date" required min={item.startDate} value={item.endDate}
+                                                onChange={event => update('importantDates', draft.importantDates.map((entry, position) => position === index ? { ...entry, endDate: event.target.value } : entry))} />
+                                        </label>
+                                    </div>
+                                    <button type="button" className="important-date-delete" aria-label={`Xóa ngày quan trọng ${item.title || index + 1}`}
+                                        onClick={() => update('importantDates', draft.importantDates.filter((_, position) => position !== index))}>Xóa</button>
+                                </fieldset>
+                            ))}
+                        </div>
+                        <button type="button" className="important-date-add" onClick={() => {
+                            const today = getTodayString();
+                            update('importantDates', [...draft.importantDates, { title: '', startDate: today, endDate: today }]);
+                        }}>Thêm ngày quan trọng</button>
+                    </Section>
                     <Section id="settings-layout" icon={PanelsTopLeft} title="Bố cục và khoảng cách">
                         <div className="settings-field-grid"><Select label="Bố cục trang tổng quan" value={draft.layout} options={options([['balanced', 'Cân đối · hai cột'], ['wide', 'Rộng · biểu đồ toàn chiều ngang'], ['focused', 'Tập trung · ưu tiên số liệu và đợt bán']])} onChange={value => update('layout', value)} description="Điện thoại luôn tự xếp một cột. Bố cục Tập trung ẩn lịch tổng quan và bảng xếp hạng." /><Select label="Mật độ nội dung" value={draft.density} options={options([['comfortable', 'Thoáng · dễ đọc'], ['compact', 'Gọn · nhiều thông tin']])} onChange={value => update('density', value)} /></div>
                     </Section>
@@ -81,7 +118,7 @@ export default function SettingsView({ settings, onSave, onBack }) {
                 </div>
                 <Preview draft={draft} />
             </div>
-            <footer className="settings-actions"><div role="status" aria-live="polite" className={feedback?.error ? 'text-red-700' : 'text-gray-600'}>{feedback?.message || (dirty ? 'Có thay đổi chưa lưu.' : 'Cài đặt đã được lưu.')}</div><div><button type="button" onClick={() => { setDraft({ ...DEFAULT_SETTINGS }); setFeedback(null); }} className="settings-reset"><RotateCcw size={17} />Mặc định</button><button type="submit" disabled={!dirty} className="settings-save"><Save size={17} />Lưu cài đặt</button></div></footer>
+            <footer className="settings-actions"><div role={feedback?.error ? 'alert' : 'status'} aria-live="polite" className={feedback?.error ? 'text-red-700' : 'text-gray-600'}>{feedback?.message || (dirty ? 'Có thay đổi chưa lưu.' : 'Cài đặt đã được lưu.')}</div><div><button type="button" onClick={() => { setDraft({ ...DEFAULT_SETTINGS }); setFeedback(null); }} className="settings-reset"><RotateCcw size={17} />Mặc định</button><button type="submit" disabled={!dirty} className="settings-save"><Save size={17} />Lưu cài đặt</button></div></footer>
         </form>
     </div>;
 }

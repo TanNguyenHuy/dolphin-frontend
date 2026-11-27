@@ -60,3 +60,20 @@ test('all color, font and size choices survive persistence and provide valid sty
         assert.equal(css['--day-radius'], '4px');
     }
 });
+
+
+test('important date periods persist per account and malformed stored periods are ignored', () => {
+    const event = { title: '  Ngày quan trọng  ', startDate: '2026-12-24', endDate: '2027-01-02' };
+    const settings = normalizeSettings({ importantDates: [
+        event, { title: 'Invalid range', startDate: '2026-12-24', endDate: '2026-12-23' },
+        { title: 'Invalid date', startDate: '2026-02-30', endDate: '2026-03-01' }, null,
+    ] });
+    assert.deepEqual(settings.importantDates, [{ ...event, title: 'Ngày quan trọng' }]);
+    assert.deepEqual(normalizeSettings({}).importantDates, []);
+    const entries = new Map();
+    const storage = { setItem: (key, value) => entries.set(key, value), getItem: key => entries.get(key) };
+    writeSettings('user-a', settings, storage);
+    assert.deepEqual(readSettings('user-a', storage).importantDates, settings.importantDates);
+    assert.deepEqual(readSettings('user-b', storage).importantDates, []);
+    assert.deepEqual(normalizeSettings({ importantDates: 'invalid' }).importantDates, []);
+});

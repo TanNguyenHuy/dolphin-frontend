@@ -173,3 +173,23 @@ html[data-dolphin-motion="reduced"] .bale-card { animation: none; }
 .preview-rows small { display: block; margin-top: 4px; color: var(--ui-muted); font-size: 12px; }
 .preview-rows li > strong { font-variant-numeric: tabular-nums; }
 .mini-chart-trigger { display: flex; flex-direction: column; text-align: left; width: 100%; height: 100%; }
+
+.important-dates-help { font-size: 13px; line-height: 1.6; color: var(--ui-muted); margin-bottom: 12px; }
+.important-dates-editor { display: grid; gap: 12px; }
+.important-date-row { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--ui-line); border-radius: 12px; background: var(--ui-surface-muted); }
+.important-date-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; min-width: 0; }
+.important-date-row input { min-width: 0; width: 100%; }
+.important-date-add, .important-date-delete { min-height: 44px; padding: 8px 12px; border: 1px solid var(--ui-line); border-radius: 10px; font-size: 13px; font-weight: 700; }
+.important-date-add { margin-top: 12px; background: var(--accent-soft); color: var(--accent-strong); }
+.important-date-delete { justify-self: end; background: white; color: #be123c; }
+.calendar-day { position: relative; }
+.calendar-day.is-holiday, .calendar-day.is-holiday small, .calendar-day.is-holiday[aria-pressed="true"] small { color: #be123c; }
+.calendar-day.is-holiday[aria-pressed="true"] { background: #fff1f2; box-shadow: inset 0 0 0 1px #be123c; }
+.calendar-day.has-important::after { content: ''; position: absolute; top: 3px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent-strong); }
+.calendar-holiday-name, .agenda-sale .calendar-holiday-name { color: #be123c; font-weight: 700; }
+.calendar-important-name, .agenda-sale .calendar-important-name { color: var(--accent-strong); font-weight: 700; }
+.calendar-event-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--ui-muted); font-size: 12px; }
+.calendar-events-list { display: grid; gap: 6px; padding: 8px 0; }
+.calendar-agenda .agenda-sale { min-width: 0; }
+.calendar-agenda .agenda-sale small { overflow-wrap: anywhere; }
+@media (max-width: 380px) { .important-date-range { grid-template-columns: minmax(0, 1fr); } }
