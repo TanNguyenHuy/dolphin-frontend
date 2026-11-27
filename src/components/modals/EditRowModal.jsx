@@ -118,10 +118,6 @@ export default function EditRowModal({ editingRow, setEditingRow, handleSaveEdit
                         <input type="text" className="w-full px-4 py-3.5 rounded-[16px] border border-white/60 bg-white/50 focus:bg-white focus:border-[#26D0CE] focus:ring-4 focus:ring-[#26D0CE]/20 outline-none text-[20px] font-black text-gray-800 text-right tabular-nums transition-all shadow-sm" value={formatInput(editingRow.so_tien_ban_duoc)} onChange={e => setEditingRow({...editingRow, so_tien_ban_duoc: e.target.value})} />
                     </div>
 
-                    <div>
-                        <label className="text-[10px] md:text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1.5 pl-1">Link (Tùy chọn)</label>
-                        <input type="text" placeholder="https://..." className="w-full px-4 py-3.5 rounded-[16px] border border-white/60 bg-white/50 focus:bg-white focus:border-[#33A1FD] focus:ring-4 focus:ring-[#33A1FD]/20 outline-none text-[14px] font-bold text-[#33A1FD] transition-all shadow-sm placeholder:text-blue-200" value={editingRow.link_san_pham || ''} onChange={e => setEditingRow({...editingRow, link_san_pham: e.target.value})} />
-                    </div>
 
                     {/* Khu vực Máy tính mini */}
                     <div className="bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-200/40 rounded-[24px] p-4 md:p-5 mt-2 shadow-inner">

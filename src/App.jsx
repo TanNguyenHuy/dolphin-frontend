@@ -3,7 +3,7 @@ import axios from 'axios';
 import { saveAs } from 'file-saver';
 import { createPortal } from 'react-dom';
 
-import { LayoutDashboard, Users, CalendarDays, LogOut, Menu, Plus, Clock, RefreshCw, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Menu, Plus, Clock, RefreshCw, Settings } from 'lucide-react';
 
 import Auth from './Auth';
 import ChatBox from './components/ChatBox';
@@ -30,7 +30,6 @@ import { calculateGlobalStats, calculateDetailStats } from './logic';
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const DashboardView = lazy(() => import('./components/DashboardView'));
 const DetailView = lazy(() => import('./components/DetailView'));
-const PersonalCalendar = lazy(() => import('./components/dashboard/PersonalCalendar'));
 
 class ErrorBoundary extends React.Component {
     constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
@@ -88,7 +87,6 @@ export default function App() {
     const scrollPositions = useRef({});
     const scrollKey = view === 'DETAIL' ? `DETAIL:${currentId}` : view;
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [pendingTasksCount, setPendingTasksCount] = useState(0);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
@@ -230,7 +228,7 @@ export default function App() {
     useEffect(() => {
         const handlePopState = event => {
             scrollPositions.current[scrollKey] = mainRef.current?.scrollTop || 0;
-            const destination = event.state?.view || 'DASHBOARD';
+            const destination = event.state?.view === 'CALENDAR' ? 'DASHBOARD' : event.state?.view || 'DASHBOARD';
             detailRequest.current++;
             setIsLoadingDetail(false);
             setIsSidebarOpen(false);
@@ -470,20 +468,6 @@ export default function App() {
                         </div>
                     )}
 
-                    <div>
-                        <p className="px-3 mb-2 text-[11px] font-black text-gray-400 uppercase tracking-widest">Công việc</p>
-                        <button onClick={() => handleNavigate('CALENDAR')} className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${view === 'CALENDAR' ? 'bg-blue-50 text-[#1A5B82] font-bold' : 'text-gray-600 hover:bg-gray-50 font-medium'}`}>
-                            <div className="flex items-center gap-3">
-                                <CalendarDays size={20} className={view === 'CALENDAR' ? 'text-[#1A5B82]' : 'text-gray-400'} />
-                                <span className="text-[14px]">Lịch cá nhân</span>
-                            </div>
-                            {pendingTasksCount > 0 && (
-                                <span className="bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                    {pendingTasksCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
                 </div>
 
                 <div className="p-4 border-t border-gray-100 shrink-0">
@@ -573,12 +557,6 @@ export default function App() {
                                 <AdminPanel setView={handleNavigate} authUser={authUser} />
                             )}
 
-                            {view === 'CALENDAR' && (
-                                <PersonalCalendar
-                                    sessions={enrichedSessions}
-                                    onUpdatePendingCount={setPendingTasksCount}
-                                />
-                            )}
 
                         </div>
                     </ErrorBoundary>

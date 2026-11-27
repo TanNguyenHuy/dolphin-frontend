@@ -146,15 +146,7 @@ body, .font-sans, input, select, textarea, button { font-family: var(--app-font)
 .calendar-day-detail li { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
 .calendar-day-detail li span { overflow-wrap: anywhere; min-width: 0; }
 .calendar-day-detail li strong { flex-shrink: 0; }
-.personal-calendar-date { border-radius: var(--day-radius) !important; }
 [data-lunar="false"] .lunar-label { display: none; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-weekdays { display: none; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding: 0.75rem; background: transparent; border: 0; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-cell { height: auto; min-height: 100px; padding: 1rem; border-radius: 16px; overflow: visible; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-cell > div:first-child { flex-direction: row; justify-content: flex-start; gap: 0.75rem; margin-bottom: 0.75rem; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-date { width: auto; height: auto; padding: 0.35rem 0.6rem; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-cell > div:last-child { overflow: visible; }
-.personal-calendar[data-calendar-view="agenda"] .personal-calendar-cell .truncate { white-space: normal; overflow-wrap: anywhere; }
 
 @media (min-width: 640px) {
   .inventory-values { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -189,7 +181,4 @@ body, .font-sans, input, select, textarea, button { font-family: var(--app-font)
   .session-list-panel h2 { overflow-wrap: anywhere; }
   .session-list-panel > div:nth-child(2) { gap: 0.5rem; align-items: flex-start; }
   .session-list-panel > div:nth-child(2) > span { flex-shrink: 0; font-size: 0.7rem; padding: 0.4rem; }
-  .personal-calendar { padding: 0.625rem; }
-  .personal-calendar[data-calendar-view="month"] .personal-calendar-grid { overflow-x: auto; }
-  .personal-calendar[data-calendar-view="month"] .personal-calendar-cell { min-height: 120px; }
 }
